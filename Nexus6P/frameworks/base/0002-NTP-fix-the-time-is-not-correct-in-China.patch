@@ -1,0 +1,30 @@
+From 5775ce343aa8ecba745c6af284578b0160d57d2a Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Tue, 5 Jun 2018 17:44:28 +0800
+Subject: [PATCH 2/2] NTP: fix the time is not correct in China
+
+Ntp server time.android.com is not accessible in China.
+So modify the ntpServer to "time.asia.apple.com".
+
+Change-Id: Ic2dcc61a09ad5ef251efe8bc9d31efc3d2753c1a
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ core/res/res/values/config.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/core/res/res/values/config.xml b/core/res/res/values/config.xml
+index 3d75785..10ee3dc 100644
+--- a/core/res/res/values/config.xml
++++ b/core/res/res/values/config.xml
+@@ -1842,7 +1842,7 @@
+     <bool name="config_actionMenuItemAllCaps">true</bool>
+ 
+     <!-- Remote server that can provide NTP responses. -->
+-    <string translatable="false" name="config_ntpServer">time.android.com</string>
++    <string translatable="false" name="config_ntpServer">time.asia.apple.com</string>
+     <!-- Normal polling frequency in milliseconds -->
+     <integer name="config_ntpPollingInterval">86400000</integer>
+     <!-- Try-again polling interval in milliseconds, in case the network request failed -->
+-- 
+2.7.4
+
