@@ -1,0 +1,49 @@
+From 62d7db8c947c70f47c7839680961b8977632e2a0 Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Fri, 1 Jun 2018 16:51:34 +0800
+Subject: [PATCH 1/2] NetworkMonitor: fix Wifi "Connected, no Internet"
+
+For some reason, China networks can't access google network.
+Replace google http service URL with brahamos service URL,
+"https://connectivitycheck.brahmaos.io/generate_204"
+
+Change-Id: I32d3197d7ab3ce07ed10731ad95cc66a8f17c71b
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ .../com/android/server/connectivity/NetworkMonitor.java     | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/services/core/java/com/android/server/connectivity/NetworkMonitor.java b/services/core/java/com/android/server/connectivity/NetworkMonitor.java
+index d3a9354..be55584 100644
+--- a/services/core/java/com/android/server/connectivity/NetworkMonitor.java
++++ b/services/core/java/com/android/server/connectivity/NetworkMonitor.java
+@@ -91,12 +91,10 @@ public class NetworkMonitor extends StateMachine {
+     // Default configuration values for captive portal detection probes.
+     // TODO: append a random length parameter to the default HTTPS url.
+     // TODO: randomize browser version ids in the default User-Agent String.
+-    private static final String DEFAULT_HTTPS_URL     = "https://www.google.com/generate_204";
+-    private static final String DEFAULT_HTTP_URL      =
+-            "http://connectivitycheck.gstatic.com/generate_204";
+-    private static final String DEFAULT_FALLBACK_URL  = "http://www.google.com/gen_204";
+-    private static final String DEFAULT_OTHER_FALLBACK_URLS =
+-            "http://play.googleapis.com/generate_204";
++    private static final String DEFAULT_HTTPS_URL     = "https://connectivitycheck.brahmaos.io/generate_204";
++    private static final String DEFAULT_HTTP_URL      = "http://connectivitycheck.brahmaos.io/generate_204";
++    private static final String DEFAULT_FALLBACK_URL  = "http://connectivitycheck.brahmaos.io/generate_204";
++    private static final String DEFAULT_OTHER_FALLBACK_URLS = "http://connectivitycheck.brahmaos.io/generate_204";
+     private static final String DEFAULT_USER_AGENT    = "Mozilla/5.0 (X11; Linux x86_64) "
+                                                       + "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                                       + "Chrome/60.0.3112.32 Safari/537.36";
+@@ -309,7 +307,8 @@ public class NetworkMonitor extends StateMachine {
+                 Settings.Global.CAPTIVE_PORTAL_MODE, Settings.Global.CAPTIVE_PORTAL_MODE_PROMPT)
+                 != Settings.Global.CAPTIVE_PORTAL_MODE_IGNORE;
+         mUseHttps = Settings.Global.getInt(mContext.getContentResolver(),
+-                Settings.Global.CAPTIVE_PORTAL_USE_HTTPS, 1) == 1;
++        //  default disable https probe
++                Settings.Global.CAPTIVE_PORTAL_USE_HTTPS, 0) == 1;
+ 
+         mCaptivePortalUserAgent = getCaptivePortalUserAgent(context);
+         mCaptivePortalHttpsUrl = makeURL(getCaptivePortalServerHttpsUrl(context));
+-- 
+2.7.4
+
