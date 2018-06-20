@@ -1,0 +1,95 @@
+From fc83588b974293e5bc6b2692f1ec070b2391eadb Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Wed, 20 Jun 2018 09:46:51 +0800
+Subject: [PATCH] selinux: add sepolicy for ipfs
+
+add sepolicy for ipfs
+
+Change-Id: I2e55154f760d8cddd5a64fc7537ef38c70544211
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ private/file_contexts |  5 +++++
+ private/ipfs.te       | 19 +++++++++++++++++++
+ public/file.te        |  3 +++
+ 3 files changed, 27 insertions(+)
+ create mode 100644 private/ipfs.te
+
+diff --git a/private/file_contexts b/private/file_contexts
+index 5369758..bb565b1 100644
+--- a/private/file_contexts
++++ b/private/file_contexts
+@@ -130,6 +130,7 @@
+ /dev/socket/mdnsd	u:object_r:mdnsd_socket:s0
+ /dev/socket/mtpd	u:object_r:mtpd_socket:s0
+ /dev/socket/netd	u:object_r:netd_socket:s0
++/dev/socket/ipfsd	u:object_r:ipfsd_socket:s0
+ /dev/socket/pdx/system/buffer_hub	u:object_r:pdx_bufferhub_dir:s0
+ /dev/socket/pdx/system/buffer_hub/client	u:object_r:pdx_bufferhub_client_endpoint_socket:s0
+ /dev/socket/pdx/system/performance	u:object_r:pdx_performance_dir:s0
+@@ -274,6 +275,9 @@
+ /system/bin/vr_hwc               u:object_r:vr_hwc_exec:s0
+ /system/bin/adbd                 u:object_r:adbd_exec:s0
+ 
++# BrahmaOS files
++/system/bin/ipfs                u:object_r:ipfs_exec:s0
++
+ #############################
+ # Vendor files
+ #
+@@ -364,6 +368,7 @@
+ /data/misc/bluedroid/\.a2dp_data u:object_r:bluetooth_socket:s0
+ /data/misc/camera(/.*)?         u:object_r:camera_data_file:s0
+ /data/misc/dhcp(/.*)?           u:object_r:dhcp_data_file:s0
++/data/misc/ipfs(/.*)?           u:object_r:ipfs_data_file:s0
+ /data/misc/dhcp-6.8.2(/.*)?     u:object_r:dhcp_data_file:s0
+ /data/misc/gatekeeper(/.*)?     u:object_r:gatekeeper_data_file:s0
+ /data/misc/incidents(/.*)?	    u:object_r:incident_data_file:s0
+diff --git a/private/ipfs.te b/private/ipfs.te
+new file mode 100644
+index 0000000..bd0bbe6
+--- /dev/null
++++ b/private/ipfs.te
+@@ -0,0 +1,19 @@
++# ipfs service
++type ipfs, domain, mlstrustedsubject;
++type ipfs_exec, exec_type, file_type;
++
++typeattribute ipfs coredomain;
++init_daemon_domain(ipfs)
++
++allow ipfs system_data_file:dir r_dir_perms;
++allow ipfs ipfs_data_file:dir create_dir_perms;
++allow ipfs ipfs_data_file:file create_file_perms;
++allow ipfs proc_stat:file r_file_perms;
++allow ipfs proc:file r_file_perms;
++
++net_domain(ipfs)
++r_dir_file(ipfs, proc_net)
++
++allow ipfs self:capability { net_admin net_raw };
++allow ipfs self:packet_socket create_socket_perms_no_ioctl;
++allow ipfs self:capability2 block_suspend;
+diff --git a/public/file.te b/public/file.te
+index bcdc461..7002cd8 100644
+--- a/public/file.te
++++ b/public/file.te
+@@ -162,6 +162,8 @@ type preloads_data_file, file_type, data_file_type, core_data_file_type;
+ type preloads_media_file, file_type, data_file_type, core_data_file_type;
+ # /data/misc/dhcp and /data/misc/dhcp-6.8.2
+ type dhcp_data_file, file_type, data_file_type, core_data_file_type;
++# /data/misc/ipfs
++type ipfs_data_file, file_type, data_file_type, core_data_file_type;
+ 
+ # Mount locations managed by vold
+ type mnt_media_rw_file, file_type;
+@@ -265,6 +267,7 @@ type mdns_socket, file_type, coredomain_socket;
+ type mdnsd_socket, file_type, coredomain_socket, mlstrustedobject;
+ type misc_logd_file, coredomain_socket, file_type, data_file_type;
+ type mtpd_socket, file_type, coredomain_socket;
++type ipfsd_socket, file_type, coredomain_socket;
+ type netd_socket, file_type, coredomain_socket;
+ type property_socket, file_type, coredomain_socket, mlstrustedobject;
+ type racoon_socket, file_type, coredomain_socket;
+-- 
+2.7.4
+

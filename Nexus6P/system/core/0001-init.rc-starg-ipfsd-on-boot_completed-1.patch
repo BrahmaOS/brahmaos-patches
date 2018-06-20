@@ -1,0 +1,26 @@
+From f32ec29adf4457c26eb25765dab6ad1faeee425f Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Sat, 16 Jun 2018 21:24:48 +0800
+Subject: [PATCH] init.rc: starg ipfsd on boot_completed=1
+
+Change-Id: I2c57c2e17a55d8ed8c940950ce946c2af338c2ff
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ rootdir/init.rc | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/rootdir/init.rc b/rootdir/init.rc
+index 2a73335..2a9dab7 100644
+--- a/rootdir/init.rc
++++ b/rootdir/init.rc
+@@ -685,6 +685,7 @@ on property:vold.decrypt=trigger_shutdown_framework
+ 
+ on property:sys.boot_completed=1
+     bootchart stop
++    start ipfsd
+ 
+ # system server cannot write to /proc/sys files,
+ # and chown/chmod does not work for /proc/sys/ entries.
+-- 
+2.7.4
+
