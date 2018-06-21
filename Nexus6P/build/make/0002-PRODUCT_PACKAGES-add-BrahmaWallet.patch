@@ -1,27 +1,27 @@
-From 50ce616955f4886773339478cf7770944b705742 Mon Sep 17 00:00:00 2001
+From e05f34cce63f0afc033bec0def35d98b7c3e345a Mon Sep 17 00:00:00 2001
 From: "winton.liu" <admin@brahmaos.io>
-Date: Wed, 20 Jun 2018 09:35:52 +0800
-Subject: [PATCH 1/2] PRODUCT_PACKAGES: add ipfs
+Date: Thu, 21 Jun 2018 14:56:24 +0800
+Subject: [PATCH 2/2] PRODUCT_PACKAGES: add BrahmaWallet
 
-build ipfs for default
+build BrahmaWallet for default
 
-Change-Id: If7dc211ec318b526f6fb10799e623b12ed1572e6
+Change-Id: I5be0785f28aad23368d74f0ecc2ee2044cb3941f
 Signed-off-by: winton.liu <admin@brahmaos.io>
 ---
  target/product/core.mk | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/target/product/core.mk b/target/product/core.mk
-index a2b0f1c..d13b870 100644
+index d13b870..f8dcf97 100644
 --- a/target/product/core.mk
 +++ b/target/product/core.mk
-@@ -59,7 +59,8 @@ PRODUCT_PACKAGES += \
-     TeleService \
+@@ -60,7 +60,8 @@ PRODUCT_PACKAGES += \
      VpnDialogs \
      vr \
--    MmsService
-+    MmsService \
-+    ipfs
+     MmsService \
+-    ipfs
++    ipfs \
++    BrahmaWallet
  
  # The set of packages whose code can be loaded by the system server.
  PRODUCT_SYSTEM_SERVER_APPS += \
