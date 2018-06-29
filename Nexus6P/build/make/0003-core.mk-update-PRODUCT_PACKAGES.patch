@@ -1,0 +1,46 @@
+From 1184a2aa948d20709d4b3d1cc58ea7074f0d7a1a Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Fri, 29 Jun 2018 14:14:42 +0800
+Subject: [PATCH 3/3] core.mk: update PRODUCT_PACKAGES
+
+1.Delete Browser2 and QuickSearchBox
+2.Add preloadapp which contains BrahmaWallet
+
+Change-Id: I75c7ff5ab0bc6789fa7b57a1911a84306e4c8ffc
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ target/product/core.mk | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/target/product/core.mk b/target/product/core.mk
+index f8dcf97..48667e7 100644
+--- a/target/product/core.mk
++++ b/target/product/core.mk
+@@ -24,7 +24,6 @@ PRODUCT_PACKAGES += \
+     BasicDreams \
+     BlockedNumberProvider \
+     BookmarkProvider \
+-    Browser2 \
+     BuiltInPrintService \
+     Calendar \
+     CalendarProvider \
+@@ -51,7 +50,6 @@ PRODUCT_PACKAGES += \
+     PrintSpooler \
+     PrintRecommendationService \
+     ProxyHandler \
+-    QuickSearchBox \
+     Settings \
+     SharedStorageBackup \
+     StorageManager \
+@@ -61,7 +59,7 @@ PRODUCT_PACKAGES += \
+     vr \
+     MmsService \
+     ipfs \
+-    BrahmaWallet
++    preloadapp
+ 
+ # The set of packages whose code can be loaded by the system server.
+ PRODUCT_SYSTEM_SERVER_APPS += \
+-- 
+2.7.4
+

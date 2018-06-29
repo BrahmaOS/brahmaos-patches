@@ -1,0 +1,30 @@
+From 2bc40a557fc48d6a2904cf83aec3c8afd962769d Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Fri, 29 Jun 2018 17:44:22 +0800
+Subject: [PATCH 3/3] PackageManagerService: fix scan /data/app error
+
+To ensure /data/app could be installed after flashing image,
+don't use SCAN_REQUIRE_KNOWN flag.
+
+Change-Id: If17528e50629162399ec6d3670c12320b9800237
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ services/core/java/com/android/server/pm/PackageManagerService.java | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/services/core/java/com/android/server/pm/PackageManagerService.java b/services/core/java/com/android/server/pm/PackageManagerService.java
+index 06600bf..eb7bc73 100644
+--- a/services/core/java/com/android/server/pm/PackageManagerService.java
++++ b/services/core/java/com/android/server/pm/PackageManagerService.java
+@@ -2759,7 +2759,7 @@ public class PackageManagerService extends IPackageManager.Stub
+             if (!mOnlyCore) {
+                 EventLog.writeEvent(EventLogTags.BOOT_PROGRESS_PMS_DATA_SCAN_START,
+                         SystemClock.uptimeMillis());
+-                scanDirTracedLI(mAppInstallDir, 0, scanFlags | SCAN_REQUIRE_KNOWN, 0);
++                scanDirTracedLI(mAppInstallDir, 0, scanFlags , 0);
+ 
+                 scanDirTracedLI(mDrmAppPrivateInstallDir, mDefParseFlags
+                         | PackageParser.PARSE_FORWARD_LOCK,
+-- 
+2.7.4
+
