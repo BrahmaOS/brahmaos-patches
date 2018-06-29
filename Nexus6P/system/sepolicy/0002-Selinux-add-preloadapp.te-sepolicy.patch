@@ -1,0 +1,50 @@
+From 0c32d32f535b556b184082565ad5b0d36426868a Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Fri, 29 Jun 2018 14:30:53 +0800
+Subject: [PATCH 2/2] Selinux: add preloadapp.te sepolicy
+
+add sepolicy for preloadapp
+
+Change-Id: I9c4ff7e14e06ea141959d54973d4f193f3ccc82a
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ private/file_contexts |  1 +
+ private/preloadapp.te | 14 ++++++++++++++
+ 2 files changed, 15 insertions(+)
+ create mode 100644 private/preloadapp.te
+
+diff --git a/private/file_contexts b/private/file_contexts
+index bb565b1..0ca649d 100644
+--- a/private/file_contexts
++++ b/private/file_contexts
+@@ -277,6 +277,7 @@
+ 
+ # BrahmaOS files
+ /system/bin/ipfs                u:object_r:ipfs_exec:s0
++/system/bin/preloadapp          u:object_r:preloadapp_exec:s0
+ 
+ #############################
+ # Vendor files
+diff --git a/private/preloadapp.te b/private/preloadapp.te
+new file mode 100644
+index 0000000..321b272
+--- /dev/null
++++ b/private/preloadapp.te
+@@ -0,0 +1,14 @@
++# preloadapp service
++type preloadapp, domain, mlstrustedsubject;
++type preloadapp_exec, exec_type, file_type;
++
++#typeattribute preloadapp coredomain;
++init_daemon_domain(preloadapp)
++
++set_prop(preloadapp, system_prop)
++allow preloadapp shell_exec:file rx_file_perms;
++allow preloadapp system_file:dir r_dir_perms;
++allow preloadapp apk_data_file:dir create_dir_perms;
++allow preloadapp apk_data_file:file create_file_perms; 
++allow preloadapp toolbox_exec:file rx_file_perms;
++allow preloadapp self:capability dac_override;
+-- 
+2.7.4
+

@@ -1,7 +1,7 @@
 From fc83588b974293e5bc6b2692f1ec070b2391eadb Mon Sep 17 00:00:00 2001
 From: "winton.liu" <admin@brahmaos.io>
 Date: Wed, 20 Jun 2018 09:46:51 +0800
-Subject: [PATCH] selinux: add sepolicy for ipfs
+Subject: [PATCH 1/2] selinux: add sepolicy for ipfs
 
 add sepolicy for ipfs
 
