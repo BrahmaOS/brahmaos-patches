@@ -1,0 +1,73 @@
+From 9bb6ef1e630753cb155112051a01a9ce804fe068 Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Mon, 2 Jul 2018 09:42:19 +0800
+Subject: [PATCH] Remove desktop google search bar
+
+Change-Id: I862052dfb8f496493c47527e91d16087d90a2286
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ res/layout/qsb_default_view.xml                      | 4 ++--
+ src/com/android/launcher3/qsb/QsbContainerView.java  | 6 +++---
+ src/com/android/launcher3/qsb/QsbWidgetHostView.java | 4 ++--
+ 3 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/res/layout/qsb_default_view.xml b/res/layout/qsb_default_view.xml
+index 04fe236..754468a 100644
+--- a/res/layout/qsb_default_view.xml
++++ b/res/layout/qsb_default_view.xml
+@@ -18,7 +18,7 @@
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+ 
+-    <LinearLayout
++    <!--<LinearLayout
+         android:layout_width="match_parent"
+         android:layout_height="48dp"
+         android:layout_margin="8dp"
+@@ -50,5 +50,5 @@
+             android:contentDescription="@string/gadget_setup_text"
+             android:padding="8dp"
+             android:background="?android:attr/selectableItemBackground" />
+-    </LinearLayout>
++    </LinearLayout>-->
+ </FrameLayout>
+\ No newline at end of file
+diff --git a/src/com/android/launcher3/qsb/QsbContainerView.java b/src/com/android/launcher3/qsb/QsbContainerView.java
+index 65acaa9..8a503f0 100644
+--- a/src/com/android/launcher3/qsb/QsbContainerView.java
++++ b/src/com/android/launcher3/qsb/QsbContainerView.java
+@@ -164,9 +164,9 @@ public class QsbContainerView extends FrameLayout {
+ 
+             // Return a default widget with setup icon.
+             View v = QsbWidgetHostView.getDefaultView(container);
+-            View setupButton = v.findViewById(R.id.btn_qsb_setup);
+-            setupButton.setVisibility(View.VISIBLE);
+-            setupButton.setOnClickListener(this);
++            // View setupButton = v.findViewById(R.id.btn_qsb_setup);
++            // setupButton.setVisibility(View.VISIBLE);
++            // setupButton.setOnClickListener(this);
+             return v;
+         }
+ 
+diff --git a/src/com/android/launcher3/qsb/QsbWidgetHostView.java b/src/com/android/launcher3/qsb/QsbWidgetHostView.java
+index a8a41f6..6ab539c 100644
+--- a/src/com/android/launcher3/qsb/QsbWidgetHostView.java
++++ b/src/com/android/launcher3/qsb/QsbWidgetHostView.java
+@@ -76,12 +76,12 @@ public class QsbWidgetHostView extends AppWidgetHostView {
+     public static View getDefaultView(ViewGroup parent) {
+         View v = LayoutInflater.from(parent.getContext())
+                 .inflate(R.layout.qsb_default_view, parent, false);
+-        v.findViewById(R.id.btn_qsb_search).setOnClickListener(new OnClickListener() {
++        /*v.findViewById(R.id.btn_qsb_search).setOnClickListener(new OnClickListener() {
+             @Override
+             public void onClick(View view) {
+                 Launcher.getLauncher(view.getContext()).startSearch("", false, null, true);
+             }
+-        });
++        });*/
+         return v;
+     }
+ }
+-- 
+2.7.4
+
