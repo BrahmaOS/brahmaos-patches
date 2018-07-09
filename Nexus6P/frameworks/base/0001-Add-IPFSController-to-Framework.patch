@@ -1,0 +1,543 @@
+From c79fd03074302c652ef7ffd62a66d002e1d01056 Mon Sep 17 00:00:00 2001
+From: koala <koalo@brahmaos.io>
+Date: Mon, 9 Jul 2018 11:18:51 +0800
+Subject: [PATCH] Add IPFSController to Framework:
+
+-add IPFSCManagerService.java
+-add IPFSController.java jni android_IPFS_Controller.cpp
+-add IIPFSControllerManager.aidl interface
+-add IPFSCManager.java to app
+-other change is produced by "make update-api"
+
+Change-Id: I8f70d3e15260f1ea8a4a543ae3aff05c5425ac84
+Signed-off-by: koala <koalo@brahmaos.io>
+---
+ Android.mk                                         |  1 +
+ api/current.txt                                    | 40 +++++++++++
+ api/system-current.txt                             | 40 +++++++++++
+ api/test-current.txt                               | 40 +++++++++++
+ core/java/android/app/IPFSCManager.java            | 29 ++++++++
+ core/java/android/app/SystemServiceRegistry.java   | 11 +++
+ core/java/android/ipfs/IPFSController.java         | 43 ++++++++++++
+ core/java/android/os/IIPFSControllerManager.aidl   |  7 ++
+ core/jni/Android.bp                                |  1 +
+ core/jni/AndroidRuntime.cpp                        |  3 +
+ core/jni/android_IPFS_Controller.cpp               | 81 ++++++++++++++++++++++
+ .../com/android/server/IPFSCManagerService.java    | 20 ++++++
+ services/java/com/android/server/SystemServer.java |  4 ++
+ 13 files changed, 320 insertions(+)
+ create mode 100644 core/java/android/app/IPFSCManager.java
+ create mode 100644 core/java/android/ipfs/IPFSController.java
+ create mode 100644 core/java/android/os/IIPFSControllerManager.aidl
+ create mode 100644 core/jni/android_IPFS_Controller.cpp
+ create mode 100644 services/java/com/android/server/IPFSCManagerService.java
+
+diff --git a/Android.mk b/Android.mk
+index dfcfa2b..761741f 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -442,6 +442,7 @@ LOCAL_SRC_FILES += \
+ 	location/java/android/location/INetInitiatedListener.aidl \
+ 	location/java/com/android/internal/location/ILocationProvider.aidl \
+ 	media/java/android/media/IAudioService.aidl \
++	core/java/android/os/IIPFSControllerManager.aidl \
+ 	media/java/android/media/IAudioFocusDispatcher.aidl \
+ 	media/java/android/media/IAudioRoutesObserver.aidl \
+ 	media/java/android/media/IMediaHTTPConnection.aidl \
+diff --git a/api/current.txt b/api/current.txt
+index 25e998c..10f2354 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -4875,6 +4875,12 @@ package android.app {
+     field public static final int TRANSIT_UNSET = -1; // 0xffffffff
+   }
+ 
++  public class IPFSCManager {
++    ctor public IPFSCManager(android.content.Context, android.os.IIPFSControllerManager);
++    method public int start_IPFSController(int) throws android.os.RemoteException;
++    method public int stop_IPFSController(int) throws android.os.RemoteException;
++  }
++
+   public class Instrumentation {
+     ctor public Instrumentation();
+     method public android.os.TestLooperManager acquireLooperManager(android.os.Looper);
+@@ -20528,6 +20534,16 @@ package android.inputmethodservice {
+ 
+ }
+ 
++package android.ipfs {
++
++  public class IPFSController {
++    ctor public IPFSController();
++    method public static int JStartIPFSController(int);
++    method public static int JStopIPFSController(int);
++  }
++
++}
++
+ package android.location {
+ 
+   public class Address implements android.os.Parcelable {
+@@ -31032,10 +31048,34 @@ package android.os {
+     method public abstract void binderDied();
+   }
+ 
++  public abstract interface IIPFSControllerManager implements android.os.IInterface {
++    method public abstract int IPFSController_start(int) throws android.os.RemoteException;
++    method public abstract int IPFSController_stop(int) throws android.os.RemoteException;
++  }
++
++  public static abstract class IIPFSControllerManager.Stub extends android.os.Binder implements android.os.IIPFSControllerManager {
++    ctor public IIPFSControllerManager.Stub();
++    method public android.os.IBinder asBinder();
++    method public static android.os.IIPFSControllerManager asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public abstract interface IInterface {
+     method public abstract android.os.IBinder asBinder();
+   }
+ 
++  public abstract interface ISelfManager implements android.os.IInterface {
++    method public abstract int selfAddNumber(int, int) throws android.os.RemoteException;
++    method public abstract java.lang.String selfAddString(java.lang.String) throws android.os.RemoteException;
++  }
++
++  public static abstract class ISelfManager.Stub extends android.os.Binder implements android.os.ISelfManager {
++    ctor public ISelfManager.Stub();
++    method public android.os.IBinder asBinder();
++    method public static android.os.ISelfManager asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public final class LocaleList implements android.os.Parcelable {
+     ctor public LocaleList(java.util.Locale...);
+     method public int describeContents();
+diff --git a/api/system-current.txt b/api/system-current.txt
+index 2bc8a92..4b88c7a 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -5046,6 +5046,12 @@ package android.app {
+     field public static final int TRANSIT_UNSET = -1; // 0xffffffff
+   }
+ 
++  public class IPFSCManager {
++    ctor public IPFSCManager(android.content.Context, android.os.IIPFSControllerManager);
++    method public int start_IPFSController(int) throws android.os.RemoteException;
++    method public int stop_IPFSController(int) throws android.os.RemoteException;
++  }
++
+   public abstract class InstantAppResolverService extends android.app.Service {
+     ctor public InstantAppResolverService();
+     method public final void attachBaseContext(android.content.Context);
+@@ -22071,6 +22077,16 @@ package android.inputmethodservice {
+ 
+ }
+ 
++package android.ipfs {
++
++  public class IPFSController {
++    ctor public IPFSController();
++    method public static int JStartIPFSController(int);
++    method public static int JStopIPFSController(int);
++  }
++
++}
++
+ package android.location {
+ 
+   public class Address implements android.os.Parcelable {
+@@ -33758,10 +33774,34 @@ package android.os {
+     method public abstract void binderDied();
+   }
+ 
++  public abstract interface IIPFSControllerManager implements android.os.IInterface {
++    method public abstract int IPFSController_start(int) throws android.os.RemoteException;
++    method public abstract int IPFSController_stop(int) throws android.os.RemoteException;
++  }
++
++  public static abstract class IIPFSControllerManager.Stub extends android.os.Binder implements android.os.IIPFSControllerManager {
++    ctor public IIPFSControllerManager.Stub();
++    method public android.os.IBinder asBinder();
++    method public static android.os.IIPFSControllerManager asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public abstract interface IInterface {
+     method public abstract android.os.IBinder asBinder();
+   }
+ 
++  public abstract interface ISelfManager implements android.os.IInterface {
++    method public abstract int selfAddNumber(int, int) throws android.os.RemoteException;
++    method public abstract java.lang.String selfAddString(java.lang.String) throws android.os.RemoteException;
++  }
++
++  public static abstract class ISelfManager.Stub extends android.os.Binder implements android.os.ISelfManager {
++    ctor public ISelfManager.Stub();
++    method public android.os.IBinder asBinder();
++    method public static android.os.ISelfManager asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public class IncidentManager {
+     method public void reportIncident(android.os.IncidentReportArgs);
+     method public void reportIncident(java.lang.String, byte[]);
+diff --git a/api/test-current.txt b/api/test-current.txt
+index bbaf021..22d9d72 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -4888,6 +4888,12 @@ package android.app {
+     field public static final int TRANSIT_UNSET = -1; // 0xffffffff
+   }
+ 
++  public class IPFSCManager {
++    ctor public IPFSCManager(android.content.Context, android.os.IIPFSControllerManager);
++    method public int start_IPFSController(int) throws android.os.RemoteException;
++    method public int stop_IPFSController(int) throws android.os.RemoteException;
++  }
++
+   public class Instrumentation {
+     ctor public Instrumentation();
+     method public android.os.TestLooperManager acquireLooperManager(android.os.Looper);
+@@ -20626,6 +20632,16 @@ package android.inputmethodservice {
+ 
+ }
+ 
++package android.ipfs {
++
++  public class IPFSController {
++    ctor public IPFSController();
++    method public static int JStartIPFSController(int);
++    method public static int JStopIPFSController(int);
++  }
++
++}
++
+ package android.location {
+ 
+   public class Address implements android.os.Parcelable {
+@@ -31188,10 +31204,34 @@ package android.os {
+     method public abstract void binderDied();
+   }
+ 
++  public abstract interface IIPFSControllerManager implements android.os.IInterface {
++    method public abstract int IPFSController_start(int) throws android.os.RemoteException;
++    method public abstract int IPFSController_stop(int) throws android.os.RemoteException;
++  }
++
++  public static abstract class IIPFSControllerManager.Stub extends android.os.Binder implements android.os.IIPFSControllerManager {
++    ctor public IIPFSControllerManager.Stub();
++    method public android.os.IBinder asBinder();
++    method public static android.os.IIPFSControllerManager asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public abstract interface IInterface {
+     method public abstract android.os.IBinder asBinder();
+   }
+ 
++  public abstract interface ISelfManager implements android.os.IInterface {
++    method public abstract int selfAddNumber(int, int) throws android.os.RemoteException;
++    method public abstract java.lang.String selfAddString(java.lang.String) throws android.os.RemoteException;
++  }
++
++  public static abstract class ISelfManager.Stub extends android.os.Binder implements android.os.ISelfManager {
++    ctor public ISelfManager.Stub();
++    method public android.os.IBinder asBinder();
++    method public static android.os.ISelfManager asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public class IncidentManager {
+     method public void reportIncident(android.os.IncidentReportArgs);
+     method public void reportIncident(java.lang.String, byte[]);
+diff --git a/core/java/android/app/IPFSCManager.java b/core/java/android/app/IPFSCManager.java
+new file mode 100644
+index 0000000..b1a11b5
+--- /dev/null
++++ b/core/java/android/app/IPFSCManager.java
+@@ -0,0 +1,29 @@
++package android.app;
++import android.util.Log;
++import android.os.IIPFSControllerManager;
++import android.content.Context;
++import android.os.RemoteException;
++import android.ipfs.IPFSController;
++
++
++public class IPFSCManager {
++    private static String TAG = "IPFS_LOG";
++
++    IIPFSControllerManager mIIPFSCManager;
++
++    public IPFSCManager(Context ctx,IIPFSControllerManager IPFSCManager) {
++        mIIPFSCManager = IPFSCManager;
++    }
++
++    public int start_IPFSController(int numberFirst) throws RemoteException  {
++        Log.d(TAG,"stop_IPFSController");
++        //IPFSControllerM.JStartIPFSController(10);
++        return mIIPFSCManager.IPFSController_start(1);
++    }
++
++    public int stop_IPFSController(int numberFirst) throws RemoteException {
++        Log.d(TAG,"stop_IPFSController");
++		//IPFSControllerM.JStopIPFSController(0);
++        return mIIPFSCManager.IPFSController_stop(1);
++    }
++}
+diff --git a/core/java/android/app/SystemServiceRegistry.java b/core/java/android/app/SystemServiceRegistry.java
+index ab70f0e..4f35110 100644
+--- a/core/java/android/app/SystemServiceRegistry.java
++++ b/core/java/android/app/SystemServiceRegistry.java
+@@ -152,6 +152,8 @@ import com.android.internal.os.IDropBoxManagerService;
+ import com.android.internal.policy.PhoneLayoutInflater;
+ 
+ import java.util.HashMap;
++import android.os.IIPFSControllerManager;
++
+ 
+ /**
+  * Manages all of the system services that can be returned by {@link Context#getSystemService}.
+@@ -186,6 +188,15 @@ final class SystemServiceRegistry {
+                 return new CaptioningManager(ctx);
+             }});
+ 
++	registerService("IPFSControllerManagerService", IPFSCManager.class,
++                new CachedServiceFetcher<IPFSCManager>() {
++                    @Override
++                    public IPFSCManager createService(ContextImpl ctx) {
++                        IBinder b = ServiceManager.getService("IPFSControllerManagerService");
++                        IIPFSControllerManager service = IIPFSControllerManager.Stub.asInterface(b);
++                        return new IPFSCManager(ctx,service);
++            }});
++
+         registerService(Context.ACCOUNT_SERVICE, AccountManager.class,
+                 new CachedServiceFetcher<AccountManager>() {
+             @Override
+diff --git a/core/java/android/ipfs/IPFSController.java b/core/java/android/ipfs/IPFSController.java
+new file mode 100644
+index 0000000..18b3eab
+--- /dev/null
++++ b/core/java/android/ipfs/IPFSController.java
+@@ -0,0 +1,43 @@
++/*
++ * Copyright (C) 2006 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package android.ipfs;
++
++import android.os.Parcelable;
++import android.text.method.MetaKeyKeyListener;
++import android.util.Log;
++import android.util.SparseIntArray;
++import android.view.KeyCharacterMap.KeyData;
++
++/**
++ * Object used to report key and button events.
++ * <p>
++ * Each key press is described by a sequence of key events.  A key press
++ * input devices and sources represent keys and buttons.
++ * </p>
++ */
++public class IPFSController  {
++    private static native int nativestartIPFSController(int cmd_value);
++    private static native int nativestopIPFSController(int cmd_value);
++
++    public static int JStartIPFSController(int cmd_value) {
++        return nativestartIPFSController(cmd_value);
++    }
++    public static int JStopIPFSController(int cmd_value) {
++        return nativestopIPFSController(cmd_value);
++    }
++
++}
+diff --git a/core/java/android/os/IIPFSControllerManager.aidl b/core/java/android/os/IIPFSControllerManager.aidl
+new file mode 100644
+index 0000000..600f3c9
+--- /dev/null
++++ b/core/java/android/os/IIPFSControllerManager.aidl
+@@ -0,0 +1,7 @@
++package android.os;
++
++interface IIPFSControllerManager {
++
++    int IPFSController_start(int parameter);
++    int IPFSController_stop(int parameter);
++}
+diff --git a/core/jni/Android.bp b/core/jni/Android.bp
+index c629341..ede83d3 100644
+--- a/core/jni/Android.bp
++++ b/core/jni/Android.bp
+@@ -66,6 +66,7 @@ cc_library_shared {
+         "android_view_InputQueue.cpp",
+         "android_view_KeyCharacterMap.cpp",
+         "android_view_KeyEvent.cpp",
++        "android_IPFS_Controller.cpp",
+         "android_view_MotionEvent.cpp",
+         "android_view_PointerIcon.cpp",
+         "android_view_RenderNode.cpp",
+diff --git a/core/jni/AndroidRuntime.cpp b/core/jni/AndroidRuntime.cpp
+index 4c137b1..0efee0c 100644
+--- a/core/jni/AndroidRuntime.cpp
++++ b/core/jni/AndroidRuntime.cpp
+@@ -195,6 +195,7 @@ extern int register_android_view_InputEventSender(JNIEnv* env);
+ extern int register_android_view_InputQueue(JNIEnv* env);
+ extern int register_android_view_KeyCharacterMap(JNIEnv *env);
+ extern int register_android_view_KeyEvent(JNIEnv* env);
++extern int register_android_IPFSController(JNIEnv* env);
+ extern int register_android_view_MotionEvent(JNIEnv* env);
+ extern int register_android_view_PointerIcon(JNIEnv* env);
+ extern int register_android_view_VelocityTracker(JNIEnv* env);
+@@ -1464,6 +1465,8 @@ static const RegJNIRec gRegJNI[] = {
+     REG_JNI(register_android_view_InputEventSender),
+     REG_JNI(register_android_view_InputQueue),
+     REG_JNI(register_android_view_KeyEvent),
++    REG_JNI(register_android_IPFSController),
++
+     REG_JNI(register_android_view_MotionEvent),
+     REG_JNI(register_android_view_PointerIcon),
+     REG_JNI(register_android_view_VelocityTracker),
+diff --git a/core/jni/android_IPFS_Controller.cpp b/core/jni/android_IPFS_Controller.cpp
+new file mode 100644
+index 0000000..54c3c52
+--- /dev/null
++++ b/core/jni/android_IPFS_Controller.cpp
+@@ -0,0 +1,81 @@
++/*
++ * Copyright (C) 2010 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#define LOG_TAG "IPFSControler-JNI"
++
++#include <nativehelper/JNIHelp.h>
++
++#include <android_runtime/AndroidRuntime.h>
++#include <android_runtime/Log.h>
++#include <utils/Log.h>
++#include <input/Input.h>
++#include <nativehelper/ScopedUtfChars.h>
++#include <stdlib.h>
++#include <string.h>
++#include "core_jni_helpers.h"
++#include <unistd.h>
++#include <sys/wait.h>
++#include <sys/types.h>
++#include <cutils/properties.h>
++
++
++
++using std::string;
++namespace android {
++
++
++//const string IPFSController_NAME = "ipfsd";
++//const string CTL_STARTNAME = "ctl.start";
++//const string CTL_STOPTNAME = "ctl.stop";
++
++const char IPFSController_NAME[] = "ipfsd";
++const char CTL_STARTNAME[] = "ctl.start";
++const char CTL_STOPTNAME[] = "ctl.stop";
++
++
++// -------------------------------s---------------------------------------------
++
++static jint android_start_IPFSController(JNIEnv* env, jobject clazz,
++        jint cmd_value) {
++	int ret;
++	ret = property_set(CTL_STARTNAME,IPFSController_NAME);
++    ALOGW("IPFS_LOG android_start_IPFSController:ret:%d",ret);
++    return 0;
++}
++
++static jint android_stop_IPFSController(JNIEnv* env, jobject clazz,
++        jint cmd_value) {
++    int ret;
++	ret = property_set(CTL_STOPTNAME,IPFSController_NAME);
++	ALOGW("IPFS_LOG android_stop_IPFSController:ret:%d",ret);
++	return 0;
++
++}
++
++
++// ----------------------------------------------------------------------------
++
++static const JNINativeMethod g_methods[] = {
++    { "nativestartIPFSController", "(I)I",(void*)android_start_IPFSController},
++    { "nativestopIPFSController", "(I)I",(void*)android_stop_IPFSController},
++};
++
++int register_android_IPFSController(JNIEnv* env) {
++
++    return RegisterMethodsOrDie(env, "android/ipfs/IPFSController", g_methods, NELEM(g_methods));
++}
++
++} // namespace android
+diff --git a/services/java/com/android/server/IPFSCManagerService.java b/services/java/com/android/server/IPFSCManagerService.java
+new file mode 100644
+index 0000000..e75db79
+--- /dev/null
++++ b/services/java/com/android/server/IPFSCManagerService.java
+@@ -0,0 +1,20 @@
++package com.android.server;
++import android.util.Log;
++import android.os.IIPFSControllerManager;
++import android.ipfs.IPFSController;
++
++
++public class IPFSCManagerService extends IIPFSControllerManager.Stub {
++    private static final String TAG = "IPFS_LOG";
++	IPFSController IPFSControllerM;
++
++    public int IPFSController_start(int parameter) {
++	IPFSControllerM.JStartIPFSController(parameter);
++        return 0;
++    }
++    public int IPFSController_stop(int parameter) {
++	IPFSControllerM.JStopIPFSController(0);
++        return 0;
++    }
++
++}
+diff --git a/services/java/com/android/server/SystemServer.java b/services/java/com/android/server/SystemServer.java
+index 4fbd919..1a970cb 100644
+--- a/services/java/com/android/server/SystemServer.java
++++ b/services/java/com/android/server/SystemServer.java
+@@ -752,6 +752,10 @@ public final class SystemServer {
+                     new KeyAttestationApplicationIdProviderService(context));
+             traceEnd();
+ 
++            traceBeginAndSlog("IPFSControllerManagerService");
++            ServiceManager.addService("IPFSControllerManagerService",new IPFSCManagerService());
++	    traceEnd();
++
+             traceBeginAndSlog("StartKeyChainSystemService");
+             mSystemServiceManager.startService(KeyChainSystemService.class);
+             traceEnd();
+-- 
+2.7.4
+
