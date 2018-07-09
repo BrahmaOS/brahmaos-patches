@@ -1,0 +1,115 @@
+From b07de0fac3f2c9cdda0e84ce790ea7b4db411056 Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Thu, 5 Jul 2018 14:33:41 +0800
+Subject: [PATCH 3/4] generate-factory-images-packages.sh: script to release
+ image
+
+The release image is like that:
+angler-BrahmaOS_V0.1-2018.07.05-d21a2dd4.zip
+
+Change-Id: Id908bb0e07e3a9b7fbaf8a41d10defa6dec47894
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ factory-images/README                             | 11 ++++
+ factory-images/generate-factory-images-package.sh | 64 +++++++++++++++++++----
+ 2 files changed, 65 insertions(+), 10 deletions(-)
+ create mode 100644 factory-images/README
+
+diff --git a/factory-images/README b/factory-images/README
+new file mode 100644
+index 0000000..9230ff1
+--- /dev/null
++++ b/factory-images/README
+@@ -0,0 +1,11 @@
++How to build factory images:
++
++Do a normal build prep, then in the ANDROID_TOP_DIR run:
++
++$ cd out/target/product/angler
++$ . ../../../../device/huawei/angler/factory-images/generate-factory-images-package.sh
++
++# Package with an existing image
++# First download the image to the android build top directory
++
++$ device/huawei/angler/factory-images/generate-factory-images-package.sh
+diff --git a/factory-images/generate-factory-images-package.sh b/factory-images/generate-factory-images-package.sh
+index 0ce059a..366d1ff 100755
+--- a/factory-images/generate-factory-images-package.sh
++++ b/factory-images/generate-factory-images-package.sh
+@@ -1,6 +1,4 @@
+-#!/bin/sh
+-
+-# Copyright 2015 The Android Open Source Project
++# Copyright 2011, 2016 The Android Open Source Project
+ #
+ # Licensed under the Apache License, Version 2.0 (the "License");
+ # you may not use this file except in compliance with the License.
+@@ -14,12 +12,58 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+ 
+-source ../../../common/clear-factory-images-variables.sh
+-BUILD=2078061
++source $ANDROID_BUILD_TOP/build/make/core/build_id.mk
++DEVICE_DIR=out/target/product/angler
+ DEVICE=angler
+ PRODUCT=angler
+-VERSION=mda09b
+-SRCPREFIX=signed-
+-BOOTLOADER=angler-00.30
+-RADIO=angler-00.23
+-source ../../../common/generate-factory-images-common.sh
++RELEASETIME=`date +"%Y.%m.%d"`
++VERSION="$BUILD_ID-$RELEASETIME"
++
++# Prepare the staging directory
++rm -rf tmp
++mkdir -p tmp/$PRODUCT-$VERSION
++
++# copy over bootloader binaries
++cp $ANDROID_BUILD_TOP/$DEVICE_DIR/vendor.img tmp/$PRODUCT-$VERSION/
++cp $ANDROID_BUILD_TOP/$DEVICE_DIR/system.img tmp/$PRODUCT-$VERSION/
++cp $ANDROID_BUILD_TOP/$DEVICE_DIR/boot.img tmp/$PRODUCT-$VERSION/
++cp $ANDROID_BUILD_TOP/$DEVICE_DIR/recovery.img tmp/$PRODUCT-$VERSION/
++
++
++# Write flash-all.sh
++cat > tmp/$PRODUCT-$VERSION/flash-all.sh << EOF
++#!/bin/bash
++
++fastboot flash boot     boot.img
++fastboot flash system   system.img
++fastboot flash vendor   vendor.img
++fastboot flash recovery recovery.img
++fastboot reboot
++
++EOF
++
++chmod a+x tmp/$PRODUCT-$VERSION/flash-all.sh
++
++# Write flash-all.bat
++cat > tmp/$PRODUCT-$VERSION/flash-all.bat << EOF
++@ECHO OFF
++
++PATH=%PATH%;"%SYSTEMROOT%\System32"
++
++fastboot flash boot     boot.img
++fastboot flash system   system.img
++fastboot flash vendor   vendor.img
++fastboot flash recovery recovery.img
++fastboot reboot
++
++EOF
++
++
++chmod a+x tmp/$PRODUCT-$VERSION/flash-all.bat
++
++# Create the distributable package
++(cd tmp ; zip -r ../$PRODUCT-$VERSION.zip $PRODUCT-$VERSION)
++mv $PRODUCT-$VERSION.zip $PRODUCT-$VERSION-$(md5sum < $PRODUCT-$VERSION.zip | cut -b -8).zip
++
++# Clean up
++rm -rf tmp
+-- 
+2.7.4
+
