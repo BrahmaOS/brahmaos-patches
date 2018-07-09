@@ -1,7 +1,7 @@
 From e05f34cce63f0afc033bec0def35d98b7c3e345a Mon Sep 17 00:00:00 2001
 From: "winton.liu" <admin@brahmaos.io>
 Date: Thu, 21 Jun 2018 14:56:24 +0800
-Subject: [PATCH 2/3] PRODUCT_PACKAGES: add BrahmaWallet
+Subject: [PATCH 2/5] PRODUCT_PACKAGES: add BrahmaWallet
 
 build BrahmaWallet for default
 

@@ -1,0 +1,31 @@
+From fb8e6aa8f6fc352abf36a9781195db82b74245fb Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Mon, 9 Jul 2018 10:05:55 +0800
+Subject: [PATCH 5/5] PRODUCT_PACKAGES: add BraveBrowser and BrahmaWallet
+
+BraveBrowser and BrahmaWallet as system app
+
+Change-Id: I0a35b433beb323df8ab18f2280f52bfa93bc1a6e
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ target/product/core.mk | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/target/product/core.mk b/target/product/core.mk
+index 48667e7..76afa87 100644
+--- a/target/product/core.mk
++++ b/target/product/core.mk
+@@ -59,7 +59,9 @@ PRODUCT_PACKAGES += \
+     vr \
+     MmsService \
+     ipfs \
+-    preloadapp
++    preloadapp \
++    BraveBrowser \
++    BrahmaWallet
+ 
+ # The set of packages whose code can be loaded by the system server.
+ PRODUCT_SYSTEM_SERVER_APPS += \
+-- 
+2.7.4
+
