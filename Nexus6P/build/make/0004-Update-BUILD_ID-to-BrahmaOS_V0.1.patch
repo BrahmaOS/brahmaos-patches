@@ -1,0 +1,24 @@
+From 21148fe8625c1271b6d645279dfa84e0f7ea3904 Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Mon, 9 Jul 2018 09:53:13 +0800
+Subject: [PATCH 4/5] Update BUILD_ID to BrahmaOS_V0.1
+
+Change-Id: I5e5add7cdd546a5e29d8cef7f0c9260015d75b49
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ core/build_id.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/core/build_id.mk b/core/build_id.mk
+index 17d2605..b9002cd 100644
+--- a/core/build_id.mk
++++ b/core/build_id.mk
+@@ -18,4 +18,4 @@
+ # (like "CRB01").  It must be a single word, and is
+ # capitalized by convention.
+ 
+-export BUILD_ID=OPM5.171019.019
++export BUILD_ID=BrahmaOS_V0.1
+-- 
+2.7.4
+
