@@ -1,0 +1,561 @@
+From 91a99f296fa7d701c8abce31ee66f65d27169bcb Mon Sep 17 00:00:00 2001
+From: koala <koalo@brahmaos.io>
+Date: Mon, 9 Jul 2018 11:31:50 +0800
+Subject: [PATCH]  Add Decentralize Storage in settings
+
+ -add IpfsPreferenceController.java
+ -add ipfs switch in Decentralize Storage
+
+Change-Id: Ia466fcecd9ecb0dcf2e7b4db47ef67cd71dd0508
+Signed-off-by: koala <koalo@brahmaos.io>
+---
+ AndroidManifest.xml                                |  17 ++-
+ res/drawable/ic_settings_DecentralizeStorage.xml   |  25 ++++
+ res/values/strings.xml                             |   6 +-
+ res/xml/ipfs_settings.xml                          |  30 ++++
+ src/com/android/settings/Decentralize_Storage.java | 157 +++++++++++++++++++++
+ src/com/android/settings/Settings.java             |   1 +
+ src/com/android/settings/SettingsActivity.java     |   5 +-
+ .../settings/core/gateway/SettingsGateway.java     |   4 +
+ .../settings/ipfs/IpfsPreferenceController.java    | 151 ++++++++++++++++++++
+ 9 files changed, 392 insertions(+), 4 deletions(-)
+ create mode 100644 res/drawable/ic_settings_DecentralizeStorage.xml
+ create mode 100644 res/xml/ipfs_settings.xml
+ create mode 100644 src/com/android/settings/Decentralize_Storage.java
+ create mode 100644 src/com/android/settings/ipfs/IpfsPreferenceController.java
+
+diff --git a/AndroidManifest.xml b/AndroidManifest.xml
+index 9c71c4f..9365d97 100644
+--- a/AndroidManifest.xml
++++ b/AndroidManifest.xml
+@@ -147,6 +147,22 @@
+             </intent-filter>
+         </activity>
+ 
++	<activity android:name=".Settings$Decentralize_StorageActivity"
++		android:label="@string/Decentralize_title"
++		android:icon="@drawable/ic_settings_DecentralizeStorage">
++		<intent-filter android:priority="4">
++			<action android:name="com.android.settings.action.SETTINGS"/>
++		</intent-filter>
++
++		<meta-data android:name="com.android.settings.FRAGMENT_CLASS"
++			android:value="com.android.settings.Decentralize_Storage"/>
++		<meta-data android:name="com.android.settings.category"
++			android:value="com.android.settings.category.ia.homepage"/>
++		<meta-data android:name="com.android.settings.PRIMARY_PROFILE_CONTROLLED"
++			android:value="true"/>
++	        <meta-data android:name="com.android.settings.summary"
++                        android:resource="@string/decentralize_storage"/>
++	</activity>
+         <!-- Wireless Controls -->
+         <activity android:name=".Settings$NetworkDashboardActivity"
+             android:taskAffinity="com.android.settings"
+@@ -173,7 +189,6 @@
+             <meta-data android:name="com.android.settings.PRIMARY_PROFILE_CONTROLLED"
+                 android:value="true" />
+         </activity>
+-
+         <activity android:name=".Settings$ConnectedDeviceDashboardActivity"
+             android:taskAffinity="com.android.settings"
+             android:label="@string/connected_devices_dashboard_title"
+diff --git a/res/drawable/ic_settings_DecentralizeStorage.xml b/res/drawable/ic_settings_DecentralizeStorage.xml
+new file mode 100644
+index 0000000..999d433
+--- /dev/null
++++ b/res/drawable/ic_settings_DecentralizeStorage.xml
+@@ -0,0 +1,25 @@
++<!--
++    Copyright (C) 2016 The Android Open Source Project
++
++    Licensed under the Apache License, Version 2.0 (the "License");
++    you may not use this file except in compliance with the License.
++    You may obtain a copy of the License at
++
++         http://www.apache.org/licenses/LICENSE-2.0
++
++    Unless required by applicable law or agreed to in writing, software
++    distributed under the License is distributed on an "AS IS" BASIS,
++    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++    See the License for the specific language governing permissions and
++    limitations under the License.
++-->
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++        android:width="24.0dp"
++        android:height="24.0dp"
++        android:viewportWidth="24.0"
++        android:viewportHeight="24.0"
++        android:tint="?android:attr/colorControlNormal">
++    <path
++        android:fillColor="#FFFFFFFF"
++        android:pathData="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
++</vector>
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index 4bc1f62..dc63e69 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -88,7 +88,6 @@
+     <string name="radioInfo_menu_viewSDN">View Service Dialing Numbers</string>
+     <!-- Phone Info screen. Menu item label.  Used for diagnostic info screens, precise translation isn't needed -->
+     <string name="radioInfo_menu_getIMS">IMS Service Status</string>
+-
+     <!-- Phone Info screen. IMS Registration Title.  Used for diagnostic info screens, precise translation isn't needed -->
+     <string name="radio_info_ims_reg_status_title">IMS Status</string>
+ 
+@@ -2392,8 +2391,10 @@
+     <string name="brightness_summary">Adjust the brightness of the screen</string>
+     <!-- Sound & display settings screen, setting option name to enable adaptive brightness [CHAR LIMIT=30] -->
+     <string name="auto_brightness_title">Adaptive brightness</string>
++    <string name="IPFS_Switch_title">IPFS Switch</string>
+     <!-- Sound & display settings screen, setting option summary to enable adaptive brightness [CHAR LIMIT=100] -->
+     <string name="auto_brightness_summary">Optimize brightness level for available light</string>
++    <string name="ipfs_status_summary">IPFS enable or disable</string>
+     <!-- Sound & display settings screen, setting option summary when adaptive brightness is off [CHAR LIMIT=100] -->
+     <string name="auto_brightness_summary_off">Off</string>
+     <!-- Sound & display settings screen, setting option summary when preferred adaptive brightness is very low [CHAR LIMIT=100] -->
+@@ -6491,6 +6492,7 @@
+ 
+     <!-- Title for setting tile leading to network and Internet settings [CHAR LIMIT=40]-->
+     <string name="network_dashboard_title">Network &amp; Internet</string>
++    <string name="Decentralize_title">Decentralize Storage</string>
+     <!-- Summary for Network and Internet settings, explaining it contains mobile network setting [CHAR LIMIT=NONE]-->
+     <string name="network_dashboard_summary_mobile">mobile</string>
+     <!-- Summary for Network and Internet settings, explaining it contains network data usage setting [CHAR LIMIT=NONE]-->
+@@ -6508,6 +6510,7 @@
+     <string name="app_and_notification_dashboard_title">Apps &amp; notifications</string>
+     <!-- Summary for Apps & Notification settings, explaining a few important settings under it [CHAR LIMIT=NONE]-->
+     <string name="app_and_notification_dashboard_summary">Permissions, default apps</string>
++    <string name="decentralize_storage">IPFS switch</string>
+     <!-- Title for setting tile leading to User and accounts settings [CHAR LIMIT=40]-->
+     <string name="account_dashboard_title">Users &amp; accounts</string>
+     <!-- Title for setting tile leading to setting UI which allows user set default app to
+@@ -6537,6 +6540,7 @@
+     <string name="keywords_display">screen, touchscreen</string>
+     <string name="keywords_display_brightness_level">dim screen, touchscreen, battery</string>
+     <string name="keywords_display_auto_brightness">dim screen, touchscreen, battery</string>
++    <string name="keywords_ipfs_status">ipfs status</string>
+     <string name="keywords_display_night_display">dim screen, night, tint</string>
+     <string name="keywords_display_wallpaper">background, personalize, customize display</string>
+     <string name="keywords_display_font_size">text size</string>
+diff --git a/res/xml/ipfs_settings.xml b/res/xml/ipfs_settings.xml
+new file mode 100644
+index 0000000..cf0ec46
+--- /dev/null
++++ b/res/xml/ipfs_settings.xml
+@@ -0,0 +1,30 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Copyright (C) 2016 The Android Open Source Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++
++<PreferenceScreen
++    xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:settings="http://schemas.android.com/apk/res/com.android.settings"
++    android:title="@string/display_settings"
++    settings:keywords="@string/keywords_display">
++
++    <!-- Cross-listed item, if you change this, also change it in power_usage_summary.xml -->
++    <SwitchPreference
++        android:key="auto_brightness"
++        android:title="@string/IPFS_Switch_title"
++        settings:keywords="@string/keywords_ipfs_status"
++        android:summary="@string/ipfs_status_summary" />
++
++</PreferenceScreen>
+diff --git a/src/com/android/settings/Decentralize_Storage.java b/src/com/android/settings/Decentralize_Storage.java
+new file mode 100644
+index 0000000..944581d
+--- /dev/null
++++ b/src/com/android/settings/Decentralize_Storage.java
+@@ -0,0 +1,157 @@
++/*
++ * Copyright (C) 2016 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++ /*
++package com.android.settings;
++
++import android.os.Bundle;
++
++import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
++import com.android.settings.R;
++import com.android.settings.SettingsPreferenceFragment;
++*/
++
++/**
++ * Wifi information menu item on the diagnostic screen
++ */
++ /*
++public class WtkSecurityLocker extends SettingsPreferenceFragment {
++
++    @Override
++    public void onCreate(Bundle savedInstanceState) {
++        super.onCreate(savedInstanceState);
++        //addPreferencesFromResource(R.xml.testing_wifi_settings);
++    }
++
++    @Override
++    public int getMetricsCategory() {
++        return MetricsEvent.TESTING;
++    }
++}
++*/
++/*
++ * Copyright (C) 2010 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.settings;
++
++import android.content.Context;
++import android.provider.SearchIndexableResource;
++
++import com.android.internal.hardware.AmbientDisplayConfiguration;
++import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
++import com.android.settings.dashboard.DashboardFragment;
++import com.android.settings.display.AmbientDisplayPreferenceController;
++import com.android.settings.ipfs.IpfsPreferenceController;
++
++import com.android.settings.search.BaseSearchIndexProvider;
++import com.android.settings.search.Indexable;
++import com.android.settingslib.core.AbstractPreferenceController;
++import com.android.settingslib.core.lifecycle.Lifecycle;
++
++import java.util.ArrayList;
++import java.util.List;
++
++public class Decentralize_Storage extends DashboardFragment {
++    private static final String TAG = "DisplaySettings";
++
++    public static final String KEY_AUTO_BRIGHTNESS = "auto_brightness";
++    public static final String KEY_DISPLAY_SIZE = "screen_zoom";
++
++    private static final String KEY_SCREEN_TIMEOUT = "screen_timeout";
++    private static final String KEY_AMBIENT_DISPLAY = "ambient_display";
++
++    @Override
++    public int getMetricsCategory() {
++        return MetricsEvent.DISPLAY;
++    }
++
++    @Override
++    protected String getLogTag() {
++        return TAG;
++    }
++
++    @Override
++    public void onAttach(Context context) {
++        super.onAttach(context);
++        mProgressiveDisclosureMixin.setTileLimit(3);
++    }
++
++    @Override
++    protected int getPreferenceScreenResId() {
++       // return R.xml.display_settings;
++		return R.xml.ipfs_settings;
++    }
++
++    @Override
++    protected List<AbstractPreferenceController> getPreferenceControllers(Context context) {
++        return buildPreferenceControllers(context, getLifecycle());
++    }
++
++    @Override
++    protected int getHelpResource() {
++        //return R.string.help_uri_display;
++        return 0;
++    }
++
++    private static List<AbstractPreferenceController> buildPreferenceControllers(
++            Context context, Lifecycle lifecycle) {
++        final List<AbstractPreferenceController> controllers = new ArrayList<>();
++        controllers.add(new IpfsPreferenceController(context, KEY_AUTO_BRIGHTNESS));
++        return controllers;
++    }
++	/*
++    public static final Indexable.SearchIndexProvider SEARCH_INDEX_DATA_PROVIDER =
++            new BaseSearchIndexProvider() {
++                @Override
++                public List<SearchIndexableResource> getXmlResourcesToIndex(Context context,
++                        boolean enabled) {
++                    final ArrayList<SearchIndexableResource> result = new ArrayList<>();
++
++                    final SearchIndexableResource sir = new SearchIndexableResource(context);
++                    sir.xmlResId = R.xml.display_settings;
++                    result.add(sir);
++                    return result;
++                }
++
++                @Override
++                public List<String> getNonIndexableKeys(Context context) {
++                    List<String> keys = super.getNonIndexableKeys(context);
++                    keys.add(KEY_DISPLAY_SIZE);
++                    keys.add(WallpaperPreferenceController.KEY_WALLPAPER);
++                    keys.add(KEY_AMBIENT_DISPLAY);
++                    return keys;
++                }
++
++                @Override
++                public List<AbstractPreferenceController> getPreferenceControllers(Context context) {
++                    return buildPreferenceControllers(context, null);
++                }
++            };
++            */
++}
++
+diff --git a/src/com/android/settings/Settings.java b/src/com/android/settings/Settings.java
+index ee041e8..7e205de 100644
+--- a/src/com/android/settings/Settings.java
++++ b/src/com/android/settings/Settings.java
+@@ -68,6 +68,7 @@ public class Settings extends SettingsActivity {
+             return super.isValidFragment(className);
+         }
+     }
++    public static class Decentralize_StorageActivity extends SettingsActivity { };
+     public static class BackgroundCheckSummaryActivity extends SettingsActivity { /* empty */ }
+     public static class StorageUseActivity extends SettingsActivity { /* empty */ }
+     public static class DevelopmentSettingsActivity extends SettingsActivity { /* empty */ }
+diff --git a/src/com/android/settings/SettingsActivity.java b/src/com/android/settings/SettingsActivity.java
+index 609120d..95bb4f1 100644
+--- a/src/com/android/settings/SettingsActivity.java
++++ b/src/com/android/settings/SettingsActivity.java
+@@ -758,7 +758,6 @@ public class SettingsActivity extends SettingsDrawerActivity
+         somethingChanged = setTileEnabled(
+                 new ComponentName(packageName, WifiSettingsActivity.class.getName()),
+                 pm.hasSystemFeature(PackageManager.FEATURE_WIFI), isAdmin) || somethingChanged;
+-
+         somethingChanged = setTileEnabled(new ComponentName(packageName,
+                         Settings.BluetoothSettingsActivity.class.getName()),
+                 pm.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH), isAdmin)
+@@ -844,7 +843,9 @@ public class SettingsActivity extends SettingsDrawerActivity
+                         Settings.WifiDisplaySettingsActivity.class.getName()),
+                 WifiDisplaySettings.isAvailable(this), isAdmin)
+                 || somethingChanged;
+-
++		somethingChanged = setTileEnabled(new ComponentName(packageName,
++						Settings.Decentralize_StorageActivity.class.getName()),
++				true, isAdmin);
+         if (UserHandle.MU_ENABLED && !isAdmin) {
+ 
+             // When on restricted users, disable all extra categories (but only the settings ones).
+diff --git a/src/com/android/settings/core/gateway/SettingsGateway.java b/src/com/android/settings/core/gateway/SettingsGateway.java
+index 380c070..b0f7297 100644
+--- a/src/com/android/settings/core/gateway/SettingsGateway.java
++++ b/src/com/android/settings/core/gateway/SettingsGateway.java
+@@ -131,6 +131,8 @@ import com.android.settings.wifi.WifiAPITest;
+ import com.android.settings.wifi.WifiInfo;
+ import com.android.settings.wifi.WifiSettings;
+ import com.android.settings.wifi.p2p.WifiP2pSettings;
++import com.android.settings.Decentralize_Storage;
++
+ 
+ public class SettingsGateway {
+ 
+@@ -252,6 +254,7 @@ public class SettingsGateway {
+             WebViewAppPicker.class.getName(),
+             LockscreenDashboardFragment.class.getName(),
+             BluetoothDeviceDetailsFragment.class.getName(),
++            Decentralize_Storage.class.getName(),
+             DataUsageList.class.getName()
+     };
+ 
+@@ -290,5 +293,6 @@ public class SettingsGateway {
+             Settings.DateTimeSettingsActivity.class.getName(),
+             Settings.DeviceInfoSettingsActivity.class.getName(),
+             Settings.EnterprisePrivacySettingsActivity.class.getName(),
++            Settings.Decentralize_StorageActivity.class.getName(),
+     };
+ }
+diff --git a/src/com/android/settings/ipfs/IpfsPreferenceController.java b/src/com/android/settings/ipfs/IpfsPreferenceController.java
+new file mode 100644
+index 0000000..8d7b2cc
+--- /dev/null
++++ b/src/com/android/settings/ipfs/IpfsPreferenceController.java
+@@ -0,0 +1,151 @@
++/*
++ * Copyright (C) 2016 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
++ * except in compliance with the License. You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software distributed under the
++ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ * KIND, either express or implied. See the License for the specific language governing
++ * permissions and limitations under the License.
++ */
++package com.android.settings.ipfs;
++
++
++import android.app.Activity;
++import android.app.AlertDialog;
++import android.app.Dialog;
++import android.app.Fragment;
++import android.content.Context;
++import android.content.DialogInterface;
++import android.content.Intent;
++import android.graphics.Color;
++import android.graphics.drawable.Drawable;
++import android.os.AsyncTask;
++import android.os.Bundle;
++import android.os.UserHandle;
++import android.os.UserManager;
++import android.os.storage.DiskInfo;
++import android.os.storage.StorageEventListener;
++import android.os.storage.StorageManager;
++import android.os.storage.VolumeInfo;
++import android.os.storage.VolumeRecord;
++import android.support.annotation.NonNull;
++import android.support.v7.preference.Preference;
++import android.support.v7.preference.PreferenceCategory;
++import android.text.TextUtils;
++import android.text.format.Formatter;
++import android.text.format.Formatter.BytesResult;
++import android.util.Log;
++import android.widget.Toast;
++
++import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
++import com.android.settings.R;
++import com.android.settings.SettingsPreferenceFragment;
++import com.android.settings.Utils;
++import com.android.settings.core.instrumentation.InstrumentedDialogFragment;
++import com.android.settings.dashboard.SummaryLoader;
++import com.android.settings.search.BaseSearchIndexProvider;
++import com.android.settings.search.Indexable;
++import com.android.settings.search.SearchIndexableRaw;
++import com.android.settingslib.RestrictedLockUtils;
++import com.android.settingslib.deviceinfo.PrivateStorageInfo;
++import com.android.settingslib.deviceinfo.StorageManagerVolumeProvider;
++import com.android.settingslib.drawer.SettingsDrawerActivity;
++
++import android.content.Context;
++import android.content.Intent;
++import android.provider.Settings;
++import android.support.v14.preference.SwitchPreference;
++import android.support.v7.preference.Preference;
++
++import com.android.settings.DisplaySettings;
++import com.android.settings.core.PreferenceControllerMixin;
++import com.android.settings.search.DatabaseIndexingUtils;
++import com.android.settings.search.InlineSwitchPayload;
++import com.android.settings.search.ResultPayload;
++import com.android.settings.R;
++import com.android.settingslib.core.AbstractPreferenceController;
++import android.content.Context;
++
++import static android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE;
++import static android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC;
++import static android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL;
++
++import android.util.Log;
++import android.app.IPFSCManager;
++import android.os.RemoteException;
++import android.app.Activity;
++
++
++
++public class IpfsPreferenceController extends AbstractPreferenceController implements
++        PreferenceControllerMixin, Preference.OnPreferenceChangeListener {
++	public String TAG = "IPFS_LOG";
++	//SelfManager IPFSManager ;
++    private final String mAutoBrightnessKey;
++    private final String SYSTEM_KEY = SCREEN_BRIGHTNESS_MODE;
++    private final int DEFAULT_VALUE = SCREEN_BRIGHTNESS_MODE_MANUAL;
++
++    public IpfsPreferenceController(Context context, String key) {
++        super(context);
++        mAutoBrightnessKey = key;
++		Log.e(TAG,"AutoBrightnessPreferenceController");
++    }
++
++    @Override
++    public boolean isAvailable() {
++        Log.d(TAG,"isAvailable");
++        return mContext.getResources().getBoolean(
++                com.android.internal.R.bool.config_automatic_brightness_available);
++    }
++
++    @Override
++    public String getPreferenceKey() {
++        Log.d(TAG,"getPreferenceKey");
++        return mAutoBrightnessKey;
++    }
++
++    @Override
++    public void updateState(Preference preference) {
++        int brightnessMode = Settings.System.getInt(mContext.getContentResolver(),
++                SYSTEM_KEY, DEFAULT_VALUE);
++		Log.d(TAG,"updateState");
++        ((SwitchPreference) preference).setChecked(brightnessMode != DEFAULT_VALUE);
++    }
++
++    @Override
++    public boolean onPreferenceChange(Preference preference, Object newValue) {
++        boolean auto = (Boolean) newValue;
++        //Settings.System.putInt(mContext.getContentResolver(), SYSTEM_KEY,
++        //        auto ? SCREEN_BRIGHTNESS_MODE_AUTOMATIC : DEFAULT_VALUE);
++		int ret=0;
++		try{
++			final IPFSCManager IPFSManager = (IPFSCManager) mContext.getSystemService("IPFSControllerManagerService");
++			if(auto == false)
++                ret = IPFSManager.stop_IPFSController(3);
++			else if(auto == true)
++				ret = IPFSManager.start_IPFSController(3);
++			else
++                Log.d("IPFS_LOG","xulu ret= %d"+ret);
++			}
++			catch(RemoteException e) {
++                Log.d("Servicehahatest","RemoteException happend .....e is :"+e.toString());
++			}
++			Log.d(TAG,"onPreferenceChange");
++        return true;
++    }
++
++    @Override
++    public ResultPayload getResultPayload() {
++        final Intent intent = DatabaseIndexingUtils.buildSubsettingIntent(mContext,
++                DisplaySettings.class.getName(), mAutoBrightnessKey,
++                mContext.getString(R.string.display_settings));
++		Log.e(TAG,"getResultPayload");
++        return new InlineSwitchPayload(SYSTEM_KEY,
++                ResultPayload.SettingsSource.SYSTEM, SCREEN_BRIGHTNESS_MODE_AUTOMATIC, intent,
++                isAvailable(), DEFAULT_VALUE);
++    }
++}
+-- 
+2.7.4
+
