@@ -3,6 +3,9 @@
 ANDROID_DIR=`pwd`
 Target="Nexus6P"
 ANDROID_PATCHES="${ANDROID_DIR}/brahmaos-patches/${Target}"
+Brahmagithub="https://github.com/BrahmaOS/"
+BrahmaPrefix="brahmaos"
+Packages='external/ipfs packages/apps/PrebuiltApps'
 
 patchdirs=""
 
@@ -12,6 +15,29 @@ getpatchdir(){
 	echo "Following dir should apply patches"
 	echo "        ${patchdirs}"
 	echo ""
+}
+
+clonepackage(){
+	local package="$1"
+	local packagedir=${package%/*}
+	local target=${package##*/}
+	local cloneaddr=`echo $package | sed 's/\//-/g'`
+	packageurl="${Brahmagithub}${BrahmaPrefix}-${cloneaddr}"
+
+	if [ ! -d ${packagedir} ];then
+		mkdir -p ${packagedir}
+	fi
+
+	cd ${packagedir}
+	git clone ${packageurl} ${target}
+	cd ${ANDROID_DIR}
+}
+
+importpackages(){
+	for package in $Packages;
+	do
+		clonepackage $package
+	done
 }
 
 ### apply one git repository patches###
@@ -68,6 +94,7 @@ resetallpatches()
 
 echo "ANDROID_DIR=${ANDROID_DIR}"
 
+
 getpatchdir
 if [ $# -eq 1 ];then
 	if [ $1 == 'reset' ];then
@@ -76,4 +103,4 @@ if [ $# -eq 1 ];then
 else
      applyallpatches
 fi
-
+importpackages
