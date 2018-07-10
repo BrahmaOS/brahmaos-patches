@@ -1,0 +1,39 @@
+From 25b88e373ca8b3b2eb4c0fd23de0cf3ce277936c Mon Sep 17 00:00:00 2001
+From: koala <koalo@brahmaos.io>
+Date: Tue, 10 Jul 2018 11:02:10 +0800
+Subject: [PATCH 3/3] Add IPFSControllerManagerService to selinux
+
+Change-Id: I44d532009d828a5cd7eedf74d92fe8e811d7c96c
+Signed-off-by: koala <koalo@brahmaos.io>
+---
+ private/service_contexts | 1 +
+ public/service.te        | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/private/service_contexts b/private/service_contexts
+index a82243f..7ce4800 100644
+--- a/private/service_contexts
++++ b/private/service_contexts
+@@ -168,6 +168,7 @@ webviewupdate                             u:object_r:webviewupdate_service:s0
+ wifip2p                                   u:object_r:wifip2p_service:s0
+ wifiscanner                               u:object_r:wifiscanner_service:s0
+ wifi                                      u:object_r:wifi_service:s0
++IPFSControllerManagerService              u:object_r:IPFSControllerManagerService:s0
+ wificond                                  u:object_r:wificond_service:s0
+ wifiaware                                 u:object_r:wifiaware_service:s0
+ window                                    u:object_r:window_service:s0
+diff --git a/public/service.te b/public/service.te
+index e97b864..b1af697 100644
+--- a/public/service.te
++++ b/public/service.te
+@@ -145,6 +145,7 @@ type webviewupdate_service, app_api_service, ephemeral_app_api_service, system_s
+ type wifip2p_service, app_api_service, system_server_service, service_manager_type;
+ type wifiscanner_service, system_api_service, system_server_service, service_manager_type;
+ type wifi_service, app_api_service, system_server_service, service_manager_type;
++type IPFSControllerManagerService, system_api_service, system_server_service, service_manager_type;
+ type wificond_service, service_manager_type;
+ type wifiaware_service, app_api_service, system_server_service, service_manager_type;
+ type window_service, system_api_service, system_server_service, service_manager_type;
+-- 
+2.7.4
+
