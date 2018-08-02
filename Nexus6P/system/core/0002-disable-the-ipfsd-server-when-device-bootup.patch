@@ -1,0 +1,26 @@
+From 736469bcc74fe1869cde9d9d3a63ebbdd6496914 Mon Sep 17 00:00:00 2001
+From: koala <koalo@brahmaos.io>
+Date: Wed, 1 Aug 2018 17:14:15 +0800
+Subject: [PATCH 2/2] disable the ipfsd server when device bootup
+
+Change-Id: Id9d85433b1c4e0feea9d41cc631baa8973397879
+Signed-off-by: koala <koalo@brahmaos.io>
+---
+ rootdir/init.rc | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/rootdir/init.rc b/rootdir/init.rc
+index 2a9dab7..2a73335 100644
+--- a/rootdir/init.rc
++++ b/rootdir/init.rc
+@@ -685,7 +685,6 @@ on property:vold.decrypt=trigger_shutdown_framework
+ 
+ on property:sys.boot_completed=1
+     bootchart stop
+-    start ipfsd
+ 
+ # system server cannot write to /proc/sys files,
+ # and chown/chmod does not work for /proc/sys/ entries.
+-- 
+2.7.4
+
