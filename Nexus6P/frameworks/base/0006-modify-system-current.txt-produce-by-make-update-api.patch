@@ -1,0 +1,31 @@
+From 6528b9bb7fa5a90016e2682faa40bedb353bcb97 Mon Sep 17 00:00:00 2001
+From: koala <koalo@brahmaos.io>
+Date: Wed, 11 Jul 2018 17:45:05 +0800
+Subject: [PATCH 6/8] modify system-current.txt produce by make update-api
+
+Change-Id: I243c49a06966eff86d4266be609957d383215578
+Signed-off-by: koala <koalo@brahmaos.io>
+---
+ api/system-current.txt | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/api/system-current.txt b/api/system-current.txt
+index 8ec1cd6..9c2a12f 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -5046,6 +5046,12 @@ package android.app {
+     field public static final int TRANSIT_UNSET = -1; // 0xffffffff
+   }
+ 
++  public class IPFSCManager {
++    ctor public IPFSCManager(android.content.Context, android.os.IIPFSControllerManager);
++    method public int start_IPFSController(int) throws android.os.RemoteException;
++    method public int stop_IPFSController(int) throws android.os.RemoteException;
++  }
++
+   public abstract class InstantAppResolverService extends android.app.Service {
+     ctor public InstantAppResolverService();
+     method public final void attachBaseContext(android.content.Context);
+-- 
+2.7.4
+
