@@ -1,0 +1,39 @@
+From 66055ca0d9c5e138b38644e7b810bab96ff711d0 Mon Sep 17 00:00:00 2001
+From: koala <koalo@brahmaos.io>
+Date: Wed, 25 Jul 2018 17:44:57 +0800
+Subject: [PATCH 6/6] add classes of ipfs jars to package_whitelist.txt
+
+Change-Id: I9b6fc257a4ae623d8563a4cb431fd918a1b71ac4
+Signed-off-by: koala <koalo@brahmaos.io>
+---
+ core/tasks/check_boot_jars/package_whitelist.txt | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/core/tasks/check_boot_jars/package_whitelist.txt b/core/tasks/check_boot_jars/package_whitelist.txt
+index 15b9990..597e236 100644
+--- a/core/tasks/check_boot_jars/package_whitelist.txt
++++ b/core/tasks/check_boot_jars/package_whitelist.txt
+@@ -124,6 +124,20 @@ com\.android\..*
+ # legacy-test.jar
+ junit\.extensions
+ junit\.framework
++junit\.textui
++junit\.runner
++org\.junit
++org\.junit\.runners
++org\.junit\.runners\.model
++org\.junit\..*
++org\.hamcrest
++org\.hamcrest\..*
++io\.ipfs\.api
++io\.ipfs\.api\..*
++io\.ipfs\.multihash
++io\.ipfs\.multibase
++io\.ipfs\.multiaddr
++io\.ipfs\.cid
+ android\.test
+ android\.test\.suitebuilder\.annotation
+ 
+-- 
+2.7.4
+
