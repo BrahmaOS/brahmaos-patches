@@ -1,0 +1,202 @@
+From ea4e50a8ea657b1060a196b868ab814f1873ed2e Mon Sep 17 00:00:00 2001
+From: koala <koalo@brahmaos.io>
+Date: Wed, 1 Aug 2018 17:30:27 +0800
+Subject: [PATCH 7/8] modify  the ipfs switch in setting
+
+- fix the bug when restart the device,the ipfs status can be
+  saved by previou operation
+- add interface systemready in IPFSCManager server to decide whether to start IPFSserver
+- update current.txt system-current.txt test-current.txt
+
+Change-Id: I7da397cf95cb4ce15fbf20ad7f4a8f368a18a546
+Signed-off-by: koala <koalo@brahmaos.io>
+---
+ api/current.txt                                    |  1 +
+ api/system-current.txt                             |  1 +
+ api/test-current.txt                               |  1 +
+ core/java/android/app/IPFSCManager.java            |  3 +-
+ core/java/android/provider/Settings.java           |  5 +++-
+ .../com/android/server/IPFSCManagerService.java    | 35 ++++++++++++++++++++--
+ services/java/com/android/server/SystemServer.java | 16 ++++++++--
+ 7 files changed, 56 insertions(+), 6 deletions(-)
+
+diff --git a/api/current.txt b/api/current.txt
+index 7d0586a..78a7fc2 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -35132,6 +35132,7 @@ package android.provider {
+     field public static final java.lang.String HAPTIC_FEEDBACK_ENABLED = "haptic_feedback_enabled";
+     field public static final deprecated java.lang.String HTTP_PROXY = "http_proxy";
+     field public static final deprecated java.lang.String INSTALL_NON_MARKET_APPS = "install_non_market_apps";
++    field public static final java.lang.String IPFSCONTLLER_STATUS = "IPFSCONTLLER_status";
+     field public static final deprecated java.lang.String LOCATION_PROVIDERS_ALLOWED = "location_providers_allowed";
+     field public static final deprecated java.lang.String LOCK_PATTERN_ENABLED = "lock_pattern_autolock";
+     field public static final deprecated java.lang.String LOCK_PATTERN_TACTILE_FEEDBACK_ENABLED = "lock_pattern_tactile_feedback_enabled";
+diff --git a/api/system-current.txt b/api/system-current.txt
+index 9c2a12f..e69d0e3 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -38193,6 +38193,7 @@ package android.provider {
+     field public static final java.lang.String HAPTIC_FEEDBACK_ENABLED = "haptic_feedback_enabled";
+     field public static final deprecated java.lang.String HTTP_PROXY = "http_proxy";
+     field public static final deprecated java.lang.String INSTALL_NON_MARKET_APPS = "install_non_market_apps";
++    field public static final java.lang.String IPFSCONTLLER_STATUS = "IPFSCONTLLER_status";
+     field public static final deprecated java.lang.String LOCATION_PROVIDERS_ALLOWED = "location_providers_allowed";
+     field public static final deprecated java.lang.String LOCK_PATTERN_ENABLED = "lock_pattern_autolock";
+     field public static final deprecated java.lang.String LOCK_PATTERN_TACTILE_FEEDBACK_ENABLED = "lock_pattern_tactile_feedback_enabled";
+diff --git a/api/test-current.txt b/api/test-current.txt
+index 9c72960..2181bc1 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -35328,6 +35328,7 @@ package android.provider {
+     field public static final java.lang.String HAPTIC_FEEDBACK_ENABLED = "haptic_feedback_enabled";
+     field public static final deprecated java.lang.String HTTP_PROXY = "http_proxy";
+     field public static final deprecated java.lang.String INSTALL_NON_MARKET_APPS = "install_non_market_apps";
++    field public static final java.lang.String IPFSCONTLLER_STATUS = "IPFSCONTLLER_status";
+     field public static final deprecated java.lang.String LOCATION_PROVIDERS_ALLOWED = "location_providers_allowed";
+     field public static final deprecated java.lang.String LOCK_PATTERN_ENABLED = "lock_pattern_autolock";
+     field public static final deprecated java.lang.String LOCK_PATTERN_TACTILE_FEEDBACK_ENABLED = "lock_pattern_tactile_feedback_enabled";
+diff --git a/core/java/android/app/IPFSCManager.java b/core/java/android/app/IPFSCManager.java
+index b1a11b5..2f642e3 100644
+--- a/core/java/android/app/IPFSCManager.java
++++ b/core/java/android/app/IPFSCManager.java
+@@ -12,7 +12,8 @@ public class IPFSCManager {
+     IIPFSControllerManager mIIPFSCManager;
+ 
+     public IPFSCManager(Context ctx,IIPFSControllerManager IPFSCManager) {
+-        mIIPFSCManager = IPFSCManager;
++        Log.d(TAG,"IPFSManger init");
++	mIIPFSCManager = IPFSCManager;
+     }
+ 
+     public int start_IPFSController(int numberFirst) throws RemoteException  {
+diff --git a/core/java/android/provider/Settings.java b/core/java/android/provider/Settings.java
+index ba62b47..65dbf23 100755
+--- a/core/java/android/provider/Settings.java
++++ b/core/java/android/provider/Settings.java
+@@ -3113,6 +3113,7 @@ public final class Settings {
+          * @deprecated This functionality is no longer available as of
+          * {@link android.os.Build.VERSION_CODES#N_MR1}.
+          */
++
+         @Deprecated
+         public static final String SHOW_PROCESSES = Global.SHOW_PROCESSES;
+ 
+@@ -3356,6 +3357,7 @@ public final class Settings {
+          */
+         public static final String NOTIFICATION_SOUND = "notification_sound";
+ 
++        public static final String IPFSCONTLLER_STATUS = "IPFSCONTLLER_status";
+         private static final Validator NOTIFICATION_SOUND_VALIDATOR = sUriValidator;
+ 
+         /**
+@@ -3991,7 +3993,8 @@ public final class Settings {
+             LOCK_TO_APP_ENABLED,
+             NOTIFICATION_SOUND,
+             ACCELEROMETER_ROTATION,
+-            SHOW_BATTERY_PERCENT
++            SHOW_BATTERY_PERCENT,
++            IPFSCONTLLER_STATUS
+         };
+ 
+         /**
+diff --git a/services/java/com/android/server/IPFSCManagerService.java b/services/java/com/android/server/IPFSCManagerService.java
+index e75db79..8f4204c 100644
+--- a/services/java/com/android/server/IPFSCManagerService.java
++++ b/services/java/com/android/server/IPFSCManagerService.java
+@@ -2,18 +2,49 @@ package com.android.server;
+ import android.util.Log;
+ import android.os.IIPFSControllerManager;
+ import android.ipfs.IPFSController;
++import android.content.Context;
++
++import android.provider.Settings;
++
++
++import static android.provider.Settings.System.IPFSCONTLLER_STATUS;
+ 
+ 
+ public class IPFSCManagerService extends IIPFSControllerManager.Stub {
+     private static final String TAG = "IPFS_LOG";
+ 	IPFSController IPFSControllerM;
++	private final String SYSTEM_KEY = IPFSCONTLLER_STATUS;
++	/*default is close*/
++	private final int DEFAULT_VALUE = 0;
++	private final int STOP_VALUE = 1;
++	private final int START_VALUE = 2;
++	private final Context mContext;
++	private final int mparameter = 0;
++
++	IPFSCManagerService(Context context)
++	{
++		Log.d(TAG,"IPFSCManagerService");
++		mContext = context;
++	}
++
++	public int systemReady()
++	{
++		int status = Settings.System.getInt(mContext.getContentResolver(),
++                SYSTEM_KEY, DEFAULT_VALUE);
++		if(status == START_VALUE)
++			IPFSController_start(mparameter);
++		Log.d(TAG,"systemready:%d"+status);
++		return 0;
++	}
+ 
+     public int IPFSController_start(int parameter) {
+-	IPFSControllerM.JStartIPFSController(parameter);
++        Log.d(TAG,"start_IPFSCManagerService");
++		IPFSControllerM.JStartIPFSController(parameter);
+         return 0;
+     }
+     public int IPFSController_stop(int parameter) {
+-	IPFSControllerM.JStopIPFSController(0);
++		Log.d(TAG,"stop_IPFSCManagerService");
++		IPFSControllerM.JStopIPFSController(0);
+         return 0;
+     }
+ 
+diff --git a/services/java/com/android/server/SystemServer.java b/services/java/com/android/server/SystemServer.java
+index 1a970cb..6d47c98 100644
+--- a/services/java/com/android/server/SystemServer.java
++++ b/services/java/com/android/server/SystemServer.java
+@@ -692,6 +692,7 @@ public final class SystemServer {
+         CommonTimeManagementService commonTimeMgmtService = null;
+         InputManagerService inputManager = null;
+         TelephonyRegistry telephonyRegistry = null;
++		IPFSCManagerService  mIPFSCManagerService = null;
+         ConsumerIrService consumerIr = null;
+         MmsServiceBroker mmsService = null;
+         HardwarePropertiesManagerService hardwarePropertiesService = null;
+@@ -753,8 +754,9 @@ public final class SystemServer {
+             traceEnd();
+ 
+             traceBeginAndSlog("IPFSControllerManagerService");
+-            ServiceManager.addService("IPFSControllerManagerService",new IPFSCManagerService());
+-	    traceEnd();
++			mIPFSCManagerService = new IPFSCManagerService(context);
++            ServiceManager.addService("IPFSControllerManagerService",mIPFSCManagerService);
++            traceEnd();
+ 
+             traceBeginAndSlog("StartKeyChainSystemService");
+             mSystemServiceManager.startService(KeyChainSystemService.class);
+@@ -1588,6 +1590,16 @@ public final class SystemServer {
+         }
+         traceEnd();
+ 
++        traceBeginAndSlog("MakeIPFSCMangerServiceReady");
++        if (mIPFSCManagerService != null) {
++            try {
++                mIPFSCManagerService.systemReady();
++            } catch (Throwable e) {
++                reportWtf("making IPFSCManger Service ready", e);
++            }
++        }
++        traceEnd();
++
+         // Needed by DevicePolicyManager for initialization
+         traceBeginAndSlog("StartBootPhaseLockSettingsReady");
+         mSystemServiceManager.startBootPhase(SystemService.PHASE_LOCK_SETTINGS_READY);
+-- 
+2.7.4
+
