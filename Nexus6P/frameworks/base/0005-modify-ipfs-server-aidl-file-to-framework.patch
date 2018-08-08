@@ -1,0 +1,100 @@
+From e1500198d1288a959442e152aa6bd2d293ee09aa Mon Sep 17 00:00:00 2001
+From: koala <koalo@brahmaos.io>
+Date: Tue, 10 Jul 2018 11:54:12 +0800
+Subject: [PATCH 5/8] modify ipfs server aidl file to framework
+
+-produce by make update-api
+
+Change-Id: Ie1d7385a5d8d454a5eb42e103ec837ce1e163fc0
+Signed-off-by: koala <koalo@brahmaos.io>
+---
+ api/current.txt        | 12 ------------
+ api/system-current.txt | 18 ------------------
+ api/test-current.txt   | 12 ------------
+ 3 files changed, 42 deletions(-)
+
+diff --git a/api/current.txt b/api/current.txt
+index 10f2354..7d0586a 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -31064,18 +31064,6 @@ package android.os {
+     method public abstract android.os.IBinder asBinder();
+   }
+ 
+-  public abstract interface ISelfManager implements android.os.IInterface {
+-    method public abstract int selfAddNumber(int, int) throws android.os.RemoteException;
+-    method public abstract java.lang.String selfAddString(java.lang.String) throws android.os.RemoteException;
+-  }
+-
+-  public static abstract class ISelfManager.Stub extends android.os.Binder implements android.os.ISelfManager {
+-    ctor public ISelfManager.Stub();
+-    method public android.os.IBinder asBinder();
+-    method public static android.os.ISelfManager asInterface(android.os.IBinder);
+-    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+-  }
+-
+   public final class LocaleList implements android.os.Parcelable {
+     ctor public LocaleList(java.util.Locale...);
+     method public int describeContents();
+diff --git a/api/system-current.txt b/api/system-current.txt
+index 4b88c7a..8ec1cd6 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -5046,12 +5046,6 @@ package android.app {
+     field public static final int TRANSIT_UNSET = -1; // 0xffffffff
+   }
+ 
+-  public class IPFSCManager {
+-    ctor public IPFSCManager(android.content.Context, android.os.IIPFSControllerManager);
+-    method public int start_IPFSController(int) throws android.os.RemoteException;
+-    method public int stop_IPFSController(int) throws android.os.RemoteException;
+-  }
+-
+   public abstract class InstantAppResolverService extends android.app.Service {
+     ctor public InstantAppResolverService();
+     method public final void attachBaseContext(android.content.Context);
+@@ -33790,18 +33784,6 @@ package android.os {
+     method public abstract android.os.IBinder asBinder();
+   }
+ 
+-  public abstract interface ISelfManager implements android.os.IInterface {
+-    method public abstract int selfAddNumber(int, int) throws android.os.RemoteException;
+-    method public abstract java.lang.String selfAddString(java.lang.String) throws android.os.RemoteException;
+-  }
+-
+-  public static abstract class ISelfManager.Stub extends android.os.Binder implements android.os.ISelfManager {
+-    ctor public ISelfManager.Stub();
+-    method public android.os.IBinder asBinder();
+-    method public static android.os.ISelfManager asInterface(android.os.IBinder);
+-    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+-  }
+-
+   public class IncidentManager {
+     method public void reportIncident(android.os.IncidentReportArgs);
+     method public void reportIncident(java.lang.String, byte[]);
+diff --git a/api/test-current.txt b/api/test-current.txt
+index 22d9d72..9c72960 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -31220,18 +31220,6 @@ package android.os {
+     method public abstract android.os.IBinder asBinder();
+   }
+ 
+-  public abstract interface ISelfManager implements android.os.IInterface {
+-    method public abstract int selfAddNumber(int, int) throws android.os.RemoteException;
+-    method public abstract java.lang.String selfAddString(java.lang.String) throws android.os.RemoteException;
+-  }
+-
+-  public static abstract class ISelfManager.Stub extends android.os.Binder implements android.os.ISelfManager {
+-    ctor public ISelfManager.Stub();
+-    method public android.os.IBinder asBinder();
+-    method public static android.os.ISelfManager asInterface(android.os.IBinder);
+-    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+-  }
+-
+   public class IncidentManager {
+     method public void reportIncident(android.os.IncidentReportArgs);
+     method public void reportIncident(java.lang.String, byte[]);
+-- 
+2.7.4
+
