@@ -1,0 +1,98 @@
+From aa9860e0126d4e51e149d09906c1c2b90a7e97a5 Mon Sep 17 00:00:00 2001
+From: koala <koalo@brahmaos.io>
+Date: Wed, 1 Aug 2018 17:52:48 +0800
+Subject: [PATCH 2/2] modify  the ipfs switch in setting
+
+- fix the bug when restart the device,the ipfs status can be
+  saved by previou operation
+
+Change-Id: Ia268ef547e0b1d4f6e1286841b0083decec674dc
+Signed-off-by: koala <koalo@brahmaos.io>
+---
+ .../settings/ipfs/IpfsPreferenceController.java    | 41 ++++++++++++++--------
+ 1 file changed, 26 insertions(+), 15 deletions(-)
+
+diff --git a/src/com/android/settings/ipfs/IpfsPreferenceController.java b/src/com/android/settings/ipfs/IpfsPreferenceController.java
+index 8d7b2cc..0afbd61 100644
+--- a/src/com/android/settings/ipfs/IpfsPreferenceController.java
++++ b/src/com/android/settings/ipfs/IpfsPreferenceController.java
+@@ -70,15 +70,17 @@ import com.android.settings.R;
+ import com.android.settingslib.core.AbstractPreferenceController;
+ import android.content.Context;
+ 
+-import static android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE;
+ import static android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC;
+-import static android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL;
++import static android.provider.Settings.System.NOTIFICATION_SOUND;
++import static android.provider.Settings.System.IPFSCONTLLER_STATUS;
++
++
+ 
+ import android.util.Log;
+ import android.app.IPFSCManager;
+ import android.os.RemoteException;
+ import android.app.Activity;
+-
++import io.ipfs.api.IPFS;
+ 
+ 
+ public class IpfsPreferenceController extends AbstractPreferenceController implements
+@@ -86,8 +88,16 @@ public class IpfsPreferenceController extends AbstractPreferenceController imple
+ 	public String TAG = "IPFS_LOG";
+ 	//SelfManager IPFSManager ;
+     private final String mAutoBrightnessKey;
+-    private final String SYSTEM_KEY = SCREEN_BRIGHTNESS_MODE;
+-    private final int DEFAULT_VALUE = SCREEN_BRIGHTNESS_MODE_MANUAL;
++	/*
++    private final String SYSTEM_KEY = IPFS_STATE_MODE;
++    private final int DEFAULT_VALUE = IPFS_STATE_RUNNING;
++    private final int IPFS_VALUE = IPFS_STATE_STOP;
++	*/
++    private final String SYSTEM_KEY = IPFSCONTLLER_STATUS;
++    private final int DEFAULT_RUNNING = 2;
++    private final int MANUAL_RUN = 2;
++    private final int MANUAL_STOP = 1;
++    private final int DEFAULT_VALUE = 0;
+ 
+     public IpfsPreferenceController(Context context, String key) {
+         super(context);
+@@ -110,25 +120,26 @@ public class IpfsPreferenceController extends AbstractPreferenceController imple
+ 
+     @Override
+     public void updateState(Preference preference) {
+-        int brightnessMode = Settings.System.getInt(mContext.getContentResolver(),
++        int status = Settings.System.getInt(mContext.getContentResolver(),
+                 SYSTEM_KEY, DEFAULT_VALUE);
+-		Log.d(TAG,"updateState");
+-        ((SwitchPreference) preference).setChecked(brightnessMode != DEFAULT_VALUE);
++		Log.d(TAG,"updateState:%d"+status);
++        ((SwitchPreference) preference).setChecked(status == DEFAULT_RUNNING);
+     }
+ 
+     @Override
+     public boolean onPreferenceChange(Preference preference, Object newValue) {
+         boolean auto = (Boolean) newValue;
+-        //Settings.System.putInt(mContext.getContentResolver(), SYSTEM_KEY,
+-        //        auto ? SCREEN_BRIGHTNESS_MODE_AUTOMATIC : DEFAULT_VALUE);
++		int parameter = 0;
+ 		int ret=0;
+ 		try{
+ 			final IPFSCManager IPFSManager = (IPFSCManager) mContext.getSystemService("IPFSControllerManagerService");
+-			if(auto == false)
+-                ret = IPFSManager.stop_IPFSController(3);
+-			else if(auto == true)
+-				ret = IPFSManager.start_IPFSController(3);
+-			else
++			if(auto == false){
++                ret = IPFSManager.stop_IPFSController(parameter);
++				Settings.System.putInt(mContext.getContentResolver(), SYSTEM_KEY,MANUAL_STOP);
++			}  else if(auto == true){
++				ret = IPFSManager.start_IPFSController(parameter);
++				Settings.System.putInt(mContext.getContentResolver(), SYSTEM_KEY,MANUAL_RUN);
++			} else
+                 Log.d("IPFS_LOG","xulu ret= %d"+ret);
+ 			}
+ 			catch(RemoteException e) {
+-- 
+2.7.4
+
