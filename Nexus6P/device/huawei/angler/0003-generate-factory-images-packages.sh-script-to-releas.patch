@@ -1,8 +1,7 @@
 From b07de0fac3f2c9cdda0e84ce790ea7b4db411056 Mon Sep 17 00:00:00 2001
 From: "winton.liu" <admin@brahmaos.io>
 Date: Thu, 5 Jul 2018 14:33:41 +0800
-Subject: [PATCH 3/4] generate-factory-images-packages.sh: script to release
- image
+Subject: [PATCH] generate-factory-images-packages.sh: script to release image
 
 The release image is like that:
 angler-BrahmaOS_V0.1-2018.07.05-d21a2dd4.zip
