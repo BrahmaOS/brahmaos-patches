@@ -1,0 +1,59 @@
+From e84c2b393b3e68f0f6239d88425ad210ed50003b Mon Sep 17 00:00:00 2001
+From: Azalea <2206953070@qq.com>
+Date: Fri, 3 Aug 2018 16:01:23 +0800
+Subject: [PATCH] [Launcher3]: Remove qsb and add wallet/telegram app to
+ default screen
+
+Change-Id: If72e7e6326bf7c8e0ff97dc6302daaf370498854
+Signed-off-by: Azalea <2206953070@qq.com>
+---
+ res/xml/default_workspace_5x5.xml                      | 5 +++++
+ src/com/android/launcher3/config/BaseFlags.java        | 2 +-
+ src/com/android/launcher3/provider/ImportDataTask.java | 2 +-
+ 3 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/res/xml/default_workspace_5x5.xml b/res/xml/default_workspace_5x5.xml
+index f9cc0e7..30ca6dc 100644
+--- a/res/xml/default_workspace_5x5.xml
++++ b/res/xml/default_workspace_5x5.xml
+@@ -38,6 +38,11 @@
+ 
+     </resolve>
+ 
++    <!--AzaleaPan remove qsb 2018.08.03-->
++    <favorite screen="0" x="0" y="3" packageName="io.brahmaos.wallet.brahmawallet" className="io.brahmaos.wallet.brahmawallet.ui.SplashActivity"/>
++
++    <favorite screen="0" x="1" y="3" packageName="org.telegram.messenger" className="org.telegram.ui.LaunchActivity"/>
++
+     <resolve
+         launcher:screen="0"
+         launcher:x="4"
+diff --git a/src/com/android/launcher3/config/BaseFlags.java b/src/com/android/launcher3/config/BaseFlags.java
+index 6a4cbcb..203efb0 100644
+--- a/src/com/android/launcher3/config/BaseFlags.java
++++ b/src/com/android/launcher3/config/BaseFlags.java
+@@ -49,7 +49,7 @@ abstract class BaseFlags {
+     public static final boolean LAUNCHER3_SPRING_ICONS = true;
+ 
+     // Feature flag to enable moving the QSB on the 0th screen of the workspace.
+-    public static final boolean QSB_ON_FIRST_SCREEN = true;
++    public static final boolean QSB_ON_FIRST_SCREEN = false;//true;//AzaleaPan remove qsb 2018.08.02
+     // When enabled the all-apps icon is not added to the hotseat.
+     public static final boolean NO_ALL_APPS_ICON = true;
+     // When enabled fling down gesture on the first workspace triggers search.
+diff --git a/src/com/android/launcher3/provider/ImportDataTask.java b/src/com/android/launcher3/provider/ImportDataTask.java
+index b83d3c0..a183ffa 100644
+--- a/src/com/android/launcher3/provider/ImportDataTask.java
++++ b/src/com/android/launcher3/provider/ImportDataTask.java
+@@ -132,7 +132,7 @@ public class ImportDataTask {
+         String profileId = Long.toString(UserManagerCompat.getInstance(mContext)
+                 .getSerialNumberForUser(Process.myUserHandle()));
+ 
+-        boolean createEmptyRowOnFirstScreen;
++        boolean createEmptyRowOnFirstScreen = false;//AzaleaPan remove qsb 2018.08.02
+         if (FeatureFlags.QSB_ON_FIRST_SCREEN) {
+             try (Cursor c = mContext.getContentResolver().query(mOtherFavoritesUri, null,
+                     // get items on the first row of the first screen
+-- 
+2.7.4
+

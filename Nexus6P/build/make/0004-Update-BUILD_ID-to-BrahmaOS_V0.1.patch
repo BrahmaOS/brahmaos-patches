@@ -1,7 +1,7 @@
 From 21148fe8625c1271b6d645279dfa84e0f7ea3904 Mon Sep 17 00:00:00 2001
 From: "winton.liu" <admin@brahmaos.io>
 Date: Mon, 9 Jul 2018 09:53:13 +0800
-Subject: [PATCH 4/5] Update BUILD_ID to BrahmaOS_V0.1
+Subject: [PATCH] Update BUILD_ID to BrahmaOS_V0.1
 
 Change-Id: I5e5add7cdd546a5e29d8cef7f0c9260015d75b49
 Signed-off-by: winton.liu <admin@brahmaos.io>

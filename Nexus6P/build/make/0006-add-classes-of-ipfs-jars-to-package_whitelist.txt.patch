@@ -1,7 +1,7 @@
 From 66055ca0d9c5e138b38644e7b810bab96ff711d0 Mon Sep 17 00:00:00 2001
 From: koala <koalo@brahmaos.io>
 Date: Wed, 25 Jul 2018 17:44:57 +0800
-Subject: [PATCH 6/6] add classes of ipfs jars to package_whitelist.txt
+Subject: [PATCH] add classes of ipfs jars to package_whitelist.txt
 
 Change-Id: I9b6fc257a4ae623d8563a4cb431fd918a1b71ac4
 Signed-off-by: koala <koalo@brahmaos.io>

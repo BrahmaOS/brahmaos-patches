@@ -1,0 +1,306 @@
+From 1f32361ecea100b85cf23b3bd1f4b564ffb12a6c Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Fri, 17 Aug 2018 17:07:16 +0800
+Subject: [PATCH] [SetupWizard]:Add functions to get brahmaos account info in
+ UserManager
+
+Change-Id: I690118941029544031a0db80974ca057a55d9a42
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ core/java/android/os/IUserManager.aidl             |   8 ++
+ core/java/android/os/UserManager.java              |  98 ++++++++++++++++
+ .../com/android/server/pm/UserManagerService.java  | 129 +++++++++++++++++++++
+ 3 files changed, 235 insertions(+)
+
+diff --git a/core/java/android/os/IUserManager.aidl b/core/java/android/os/IUserManager.aidl
+index e426356..e8f9098 100644
+--- a/core/java/android/os/IUserManager.aidl
++++ b/core/java/android/os/IUserManager.aidl
+@@ -55,6 +55,14 @@ interface IUserManager {
+     UserInfo getProfileParent(int userHandle);
+     boolean isSameProfileGroup(int userHandle, int otherUserHandle);
+     UserInfo getUserInfo(int userHandle);
++    //[Begin] AzaleaPan add brahma account 20180810
++    String getUserBrahmaAccount(int userHandle);
++    void setUserBrahmaAccount(int userHandle, String account);
++    String getUserDefaultMnemonicHex(int userHandle);
++    void setUserDefaultMnemonicHex(int userHandle, String hexMnemonic);
++    String getUserDefaultWalletAddr(int userHandle);
++    void setUserDefaultWalletAddr(int userHandle, String walletAddr);
++    //[End]
+     String getUserAccount(int userHandle);
+     void setUserAccount(int userHandle, String accountName);
+     long getUserCreationTime(int userHandle);
+diff --git a/core/java/android/os/UserManager.java b/core/java/android/os/UserManager.java
+index 794b3ba..1fbe21e 100644
+--- a/core/java/android/os/UserManager.java
++++ b/core/java/android/os/UserManager.java
+@@ -1831,6 +1831,104 @@ public class UserManager {
+         }
+     }
+ 
++    //[Begin] AzaleaPan add brahma account 20180810
++    /**
++     * @return the user's brahma account
++     * @hide
++     */
++    @RequiresPermission( allOf = {
++            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
++            Manifest.permission.MANAGE_USERS
++    })
++    public @Nullable String getUserBrahmaAccount(@UserIdInt int userHandle) {
++        try {
++            return mService.getUserBrahmaAccount(userHandle);
++        } catch (RemoteException re) {
++            throw re.rethrowFromSystemServer();
++        }
++    }
++
++    /**
++     * Set account name for the given user.
++     * @hide
++     */
++    @RequiresPermission( allOf = {
++            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
++            Manifest.permission.MANAGE_USERS
++    })
++    public void setUserBrahmaAccount(@UserIdInt int userHandle, String account) {
++        try {
++            mService.setUserBrahmaAccount(userHandle, account);
++        } catch (RemoteException re) {
++            throw re.rethrowFromSystemServer();
++        }
++    }
++
++    /**
++     * @return the user's default mnemonic encrypted hex string
++     * @hide
++     */
++    @RequiresPermission( allOf = {
++            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
++            Manifest.permission.MANAGE_USERS
++    })
++    public @Nullable String getUserDefaultMnemonicHex(@UserIdInt int userHandle) {
++        try {
++            return mService.getUserDefaultMnemonicHex(userHandle);
++        } catch (RemoteException re) {
++            throw re.rethrowFromSystemServer();
++        }
++    }
++
++    /**
++     * Set encrypted default mnemonic for the given user.
++     * @hide
++     */
++    @RequiresPermission( allOf = {
++            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
++            Manifest.permission.MANAGE_USERS
++    })
++    public void setUserDefaultMnemonicHex(@UserIdInt int userHandle, String hexMnemonic) {
++        try {
++            mService.setUserDefaultMnemonicHex(userHandle, hexMnemonic);
++        } catch (RemoteException re) {
++            throw re.rethrowFromSystemServer();
++        }
++    }
++
++    /**
++     * @return the user's default wallet address
++     * @hide
++     */
++    @RequiresPermission( allOf = {
++            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
++            Manifest.permission.MANAGE_USERS
++    })
++    public @Nullable String getUserDefaultWalletAddr(@UserIdInt int userHandle) {
++        try {
++            return mService.getUserDefaultWalletAddr(userHandle);
++        } catch (RemoteException re) {
++            throw re.rethrowFromSystemServer();
++        }
++    }
++
++    /**
++     * Set default wallet address for the given user.
++     * @hide
++     */
++    @RequiresPermission( allOf = {
++            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
++            Manifest.permission.MANAGE_USERS
++    })
++    public void setUserDefaultWalletAddr(@UserIdInt int userHandle, String walletAddr) {
++        try {
++            mService.setUserDefaultWalletAddr(userHandle, walletAddr);
++        } catch (RemoteException re) {
++            throw re.rethrowFromSystemServer();
++        }
++    }
++    //[End]
++
+     /**
+      * Returns information for Primary user.
+      * Requires {@link android.Manifest.permission#MANAGE_USERS} permission.
+diff --git a/services/core/java/com/android/server/pm/UserManagerService.java b/services/core/java/com/android/server/pm/UserManagerService.java
+index 48d6cdc..3aa2218 100644
+--- a/services/core/java/com/android/server/pm/UserManagerService.java
++++ b/services/core/java/com/android/server/pm/UserManagerService.java
+@@ -144,6 +144,11 @@ public class UserManagerService extends IUserManager.Stub {
+ 
+     private static final String TAG_NAME = "name";
+     private static final String TAG_ACCOUNT = "account";
++    //[Begin]AzaleaPan add brahma account 20180810
++    private static final String TAG_BRAHMAACCOUNT = "brahmaAccount";
++    private static final String TAG_MNEMONIC = "defaultMnemonic";
++    private static final String TAG_WALLET_ADDR = "defaultWalletAddr";
++    //[End]
+     private static final String ATTR_FLAGS = "flags";
+     private static final String ATTR_ICON_PATH = "icon";
+     private static final String ATTR_ID = "id";
+@@ -263,6 +268,12 @@ public class UserManagerService extends IUserManager.Stub {
+         // Whether to perist the seed account information to be available after a boot
+         boolean persistSeedData;
+ 
++        //[Begin]AzaleaPan add brahma account 20180810
++        String brahmaAccount;
++        String defaultMnemonic;
++        String defaultWalletAddr;
++        //[End]
++
+         void clearSeedAccountData() {
+             seedAccountName = null;
+             seedAccountType = null;
+@@ -555,6 +566,104 @@ public class UserManagerService extends IUserManager.Stub {
+         }
+     }
+ 
++    //[Begin]AzaleaPan add brahma account 20180810
++    @Override
++    public String getUserBrahmaAccount(int userId) {
++        checkManageUserAndAcrossUsersFullPermission("get user brahma account");
++        synchronized (mUsersLock) {
++            return mUsers.get(userId).brahmaAccount;
++        }
++    }
++
++    @Override
++    public String getUserDefaultMnemonicHex(int userId) {
++        checkManageUserAndAcrossUsersFullPermission("get user default mnemonic");
++        synchronized (mUsersLock) {
++            return mUsers.get(userId).defaultMnemonic;
++        }
++    }
++
++    @Override
++    public String getUserDefaultWalletAddr(int userId) {
++        checkManageUserAndAcrossUsersFullPermission("get user default wallet address");
++        synchronized (mUsersLock) {
++            return mUsers.get(userId).defaultWalletAddr;
++        }
++    }
++
++    @Override
++    public void setUserBrahmaAccount(int userId, String account) {
++        checkManageUserAndAcrossUsersFullPermission("set user brahma account");
++        UserData userToUpdate = null;
++        synchronized (mPackagesLock) {
++            synchronized (mUsersLock) {
++                final UserData userData = mUsers.get(userId);
++                if (userData == null) {
++                    Slog.e(LOG_TAG, "User not found for setting user brahma account: u" + userId);
++                    return;
++                }
++                String currentAccount = userData.brahmaAccount;
++                if (!Objects.equal(currentAccount, account)) {
++                    userData.brahmaAccount = account;
++                    userToUpdate = userData;
++                }
++            }
++
++            if (userToUpdate != null) {
++                writeUserLP(userToUpdate);
++            }
++        }
++    }
++
++    @Override
++    public void setUserDefaultMnemonicHex(int userId, String hexMnemonic) {
++        checkManageUserAndAcrossUsersFullPermission("set user default mnemonic string");
++        UserData userToUpdate = null;
++        synchronized (mPackagesLock) {
++            synchronized (mUsersLock) {
++                final UserData userData = mUsers.get(userId);
++                if (userData == null) {
++                    Slog.e(LOG_TAG, "User not found for setting user default mnemonic string: u" + userId);
++                    return;
++                }
++                String currentMnemonic = userData.defaultMnemonic;
++                if (!Objects.equal(currentMnemonic, hexMnemonic)) {
++                    userData.defaultMnemonic = hexMnemonic;
++                    userToUpdate = userData;
++                }
++            }
++
++            if (userToUpdate != null) {
++                writeUserLP(userToUpdate);
++            }
++        }
++    }
++
++    @Override
++    public void setUserDefaultWalletAddr(int userId, String walletAddr) {
++        checkManageUserAndAcrossUsersFullPermission("set user default wallet address");
++        UserData userToUpdate = null;
++        synchronized (mPackagesLock) {
++            synchronized (mUsersLock) {
++                final UserData userData = mUsers.get(userId);
++                if (userData == null) {
++                    Slog.e(LOG_TAG, "User not found for setting user default wallet address: u" + userId);
++                    return;
++                }
++                String currentAddr = userData.defaultWalletAddr;
++                if (!Objects.equal(currentAddr, walletAddr)) {
++                    userData.defaultWalletAddr = walletAddr;
++                    userToUpdate = userData;
++                }
++            }
++
++            if (userToUpdate != null) {
++                writeUserLP(userToUpdate);
++            }
++        }
++    }
++    //[End]
++
+     @Override
+     public UserInfo getPrimaryUser() {
+         checkManageUsersPermission("query users");
+@@ -2090,6 +2199,26 @@ public class UserManagerService extends IUserManager.Stub {
+             serializer.endTag(null, TAG_SEED_ACCOUNT_OPTIONS);
+         }
+ 
++        //[Begin]AzaleaPan add brahma account 20180810
++        if (userData.brahmaAccount != null) {
++            serializer.startTag(null, TAG_BRAHMAACCOUNT);
++            serializer.text(userData.brahmaAccount);
++            serializer.endTag(null, TAG_BRAHMAACCOUNT);
++        }
++
++        if (userData.defaultMnemonic != null) {
++            serializer.startTag(null, TAG_MNEMONIC);
++            serializer.text(userData.defaultMnemonic);
++            serializer.endTag(null, TAG_MNEMONIC);
++        }
++
++        if (userData.defaultWalletAddr != null) {
++            serializer.startTag(null, TAG_WALLET_ADDR);
++            serializer.text(userData.defaultWalletAddr);
++            serializer.endTag(null, TAG_WALLET_ADDR);
++        }
++        //[End]
++
+         serializer.endTag(null, TAG_USER);
+ 
+         serializer.endDocument();
+-- 
+2.7.4
+

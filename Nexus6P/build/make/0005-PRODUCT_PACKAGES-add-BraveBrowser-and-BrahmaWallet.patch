@@ -1,7 +1,7 @@
 From fb8e6aa8f6fc352abf36a9781195db82b74245fb Mon Sep 17 00:00:00 2001
 From: "winton.liu" <admin@brahmaos.io>
 Date: Mon, 9 Jul 2018 10:05:55 +0800
-Subject: [PATCH 5/5] PRODUCT_PACKAGES: add BraveBrowser and BrahmaWallet
+Subject: [PATCH] PRODUCT_PACKAGES: add BraveBrowser and BrahmaWallet
 
 BraveBrowser and BrahmaWallet as system app
 

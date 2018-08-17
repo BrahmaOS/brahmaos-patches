@@ -1,0 +1,28 @@
+From 51c8194c746616f256fcaaa983b513c2c95d9a88 Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Fri, 17 Aug 2018 16:53:29 +0800
+Subject: [PATCH] [SetupWizard]:Add brahmaos account function in setup wizard.
+
+Change-Id: Iccfd7a8f5842af15a248cc7439885817eb95eda2
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ target/product/core.mk | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/target/product/core.mk b/target/product/core.mk
+index 76afa87..6283eaa 100644
+--- a/target/product/core.mk
++++ b/target/product/core.mk
+@@ -61,7 +61,8 @@ PRODUCT_PACKAGES += \
+     ipfs \
+     preloadapp \
+     BraveBrowser \
+-    BrahmaWallet
++    BrahmaWallet \
++    BrahmaSetup
+ 
+ # The set of packages whose code can be loaded by the system server.
+ PRODUCT_SYSTEM_SERVER_APPS += \
+-- 
+2.7.4
+

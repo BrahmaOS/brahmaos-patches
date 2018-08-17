@@ -1,7 +1,7 @@
 From 1184a2aa948d20709d4b3d1cc58ea7074f0d7a1a Mon Sep 17 00:00:00 2001
 From: "winton.liu" <admin@brahmaos.io>
 Date: Fri, 29 Jun 2018 14:14:42 +0800
-Subject: [PATCH 3/5] core.mk: update PRODUCT_PACKAGES
+Subject: [PATCH] core.mk: update PRODUCT_PACKAGES
 
 1.Delete Browser2 and QuickSearchBox
 2.Add preloadapp which contains BrahmaWallet
