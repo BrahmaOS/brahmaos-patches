@@ -1,7 +1,7 @@
 From 2bc40a557fc48d6a2904cf83aec3c8afd962769d Mon Sep 17 00:00:00 2001
 From: "winton.liu" <admin@brahmaos.io>
 Date: Fri, 29 Jun 2018 17:44:22 +0800
-Subject: [PATCH 3/4] PackageManagerService: fix scan /data/app error
+Subject: [PATCH] PackageManagerService: fix scan /data/app error
 
 To ensure /data/app could be installed after flashing image,
 don't use SCAN_REQUIRE_KNOWN flag.

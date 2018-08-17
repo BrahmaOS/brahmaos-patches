@@ -1,7 +1,7 @@
 From 3f1bc637b4f4c301a9f0e0b55ec323244c486b21 Mon Sep 17 00:00:00 2001
 From: koala <koalo@brahmaos.io>
 Date: Wed, 1 Aug 2018 17:27:22 +0800
-Subject: [PATCH 8/8] import ipfs jar to framework
+Subject: [PATCH] import ipfs jar to framework
 
 - import ipfs jar api to frameworkw!
 

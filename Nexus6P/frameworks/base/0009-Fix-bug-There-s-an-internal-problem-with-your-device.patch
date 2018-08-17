@@ -1,0 +1,41 @@
+From 61c6b27c137cd2a00f1f21f7899e3266880f17bd Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Wed, 15 Aug 2018 19:11:46 +0800
+Subject: [PATCH] =?UTF-8?q?Fix=20bug=20=E2=80=9CThere=E2=80=99s=20an=20int?=
+ =?UTF-8?q?ernal=20problem=20with=20your=20device=E2=80=9D?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+BrahmaOS don't compare system and vendor fingerprints, because
+vendor image is not build by BrahmaOS team
+
+Change-Id: I0d70e50582709586974efa80804f0c61d088b0a7
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ core/java/android/os/Build.java | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/core/java/android/os/Build.java b/core/java/android/os/Build.java
+index 0627998..751937e 100644
+--- a/core/java/android/os/Build.java
++++ b/core/java/android/os/Build.java
+@@ -871,11 +871,14 @@ public class Build {
+         }
+ 
+         if (!TextUtils.isEmpty(vendor)) {
++            // BrahmaOS don't compare system and vendor fingerprints, because
++            // vendor image is not build by BrahmaOS team
++            /*
+             if (!Objects.equals(system, vendor)) {
+                 Slog.e(TAG, "Mismatched fingerprints; system reported " + system
+                         + " but vendor reported " + vendor);
+                 return false;
+-            }
++            }*/
+         }
+ 
+         /* TODO: Figure out issue with checks failing
+-- 
+2.7.4
+

@@ -1,7 +1,7 @@
 From c79fd03074302c652ef7ffd62a66d002e1d01056 Mon Sep 17 00:00:00 2001
 From: koala <koalo@brahmaos.io>
 Date: Mon, 9 Jul 2018 11:18:51 +0800
-Subject: [PATCH 4/4] Add IPFSController to Framework:
+Subject: [PATCH] Add IPFSController to Framework:
 
 -add IPFSCManagerService.java
 -add IPFSController.java jni android_IPFS_Controller.cpp

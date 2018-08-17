@@ -1,7 +1,7 @@
 From e1500198d1288a959442e152aa6bd2d293ee09aa Mon Sep 17 00:00:00 2001
 From: koala <koalo@brahmaos.io>
 Date: Tue, 10 Jul 2018 11:54:12 +0800
-Subject: [PATCH 5/5] modify ipfs server aidl file to framework
+Subject: [PATCH] modify ipfs server aidl file to framework
 
 -produce by make update-api
 

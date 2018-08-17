@@ -1,7 +1,7 @@
 From 62d7db8c947c70f47c7839680961b8977632e2a0 Mon Sep 17 00:00:00 2001
 From: "winton.liu" <admin@brahmaos.io>
 Date: Fri, 1 Jun 2018 16:51:34 +0800
-Subject: [PATCH 1/4] NetworkMonitor: fix Wifi "Connected, no Internet"
+Subject: [PATCH] NetworkMonitor: fix Wifi "Connected, no Internet"
 
 For some reason, China networks can't access google network.
 Replace google http service URL with brahamos service URL,
