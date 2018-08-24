@@ -1,0 +1,412 @@
+From 64d2cdf35580170bc5b243d555ca17bdc3390117 Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Fri, 24 Aug 2018 18:16:27 +0800
+Subject: [PATCH] [SetupWizard]:Update Brahmaos Account codes -add save private
+ and public key pair -add save different wallet address
+
+Change-Id: I9f73b5d9f208707821e1db398d07e4de9f49966f
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ core/java/android/os/IUserManager.aidl             |   8 +-
+ core/java/android/os/UserManager.java              |  72 ++++++++-
+ .../com/android/server/pm/UserManagerService.java  | 170 +++++++++++++++++++--
+ 3 files changed, 230 insertions(+), 20 deletions(-)
+
+diff --git a/core/java/android/os/IUserManager.aidl b/core/java/android/os/IUserManager.aidl
+index e8f9098..4aa9183 100644
+--- a/core/java/android/os/IUserManager.aidl
++++ b/core/java/android/os/IUserManager.aidl
+@@ -60,8 +60,12 @@ interface IUserManager {
+     void setUserBrahmaAccount(int userHandle, String account);
+     String getUserDefaultMnemonicHex(int userHandle);
+     void setUserDefaultMnemonicHex(int userHandle, String hexMnemonic);
+-    String getUserDefaultWalletAddr(int userHandle);
+-    void setUserDefaultWalletAddr(int userHandle, String walletAddr);
++    String getUserDefaultPrivateKeyHex(int userHandle);
++    void setUserDefaultPrivateKeyHex(int userHandle, String hexPrivate);
++    String getUserDefaultPublicKey(int userHandle);
++    void setUserDefaultPublicKey(int userHandle, String hexPublic);
++    String getUserDefaultWalletAddr(int userHandle, String path);
++    void setUserDefaultWalletAddr(int userHandle, String walletAddr, String path);
+     //[End]
+     String getUserAccount(int userHandle);
+     void setUserAccount(int userHandle, String accountName);
+diff --git a/core/java/android/os/UserManager.java b/core/java/android/os/UserManager.java
+index 1fbe21e..110619b 100644
+--- a/core/java/android/os/UserManager.java
++++ b/core/java/android/os/UserManager.java
+@@ -1897,6 +1897,70 @@ public class UserManager {
+     }
+ 
+     /**
++     * @return the user's default private key encrypted hex string
++     * @hide
++     */
++    @RequiresPermission( allOf = {
++            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
++            Manifest.permission.MANAGE_USERS
++    })
++    public @Nullable String getUserDefaultPrivateKeyHex(@UserIdInt int userHandle) {
++        try {
++            return mService.getUserDefaultPrivateKeyHex(userHandle);
++        } catch (RemoteException re) {
++            throw re.rethrowFromSystemServer();
++        }
++    }
++
++    /**
++     * Set encrypted private key for the given user.
++     * @hide
++     */
++    @RequiresPermission( allOf = {
++            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
++            Manifest.permission.MANAGE_USERS
++    })
++    public void setUserDefaultPrivateKeyHex(@UserIdInt int userHandle, String hexPrivate) {
++        try {
++            mService.setUserDefaultPrivateKeyHex(userHandle, hexPrivate);
++        } catch (RemoteException re) {
++            throw re.rethrowFromSystemServer();
++        }
++    }
++
++    /**
++     * @return the user's default public key string
++     * @hide
++     */
++    @RequiresPermission( allOf = {
++            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
++            Manifest.permission.MANAGE_USERS
++    })
++    public @Nullable String getUserDefaultPublicKey(@UserIdInt int userHandle) {
++        try {
++            return mService.getUserDefaultPublicKey(userHandle);
++        } catch (RemoteException re) {
++            throw re.rethrowFromSystemServer();
++        }
++    }
++
++    /**
++     * Set public key for the given user.
++     * @hide
++     */
++    @RequiresPermission( allOf = {
++            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
++            Manifest.permission.MANAGE_USERS
++    })
++    public void setUserDefaultPublicKey(@UserIdInt int userHandle, String hexPublic) {
++        try {
++            mService.setUserDefaultPublicKey(userHandle, hexPublic);
++        } catch (RemoteException re) {
++            throw re.rethrowFromSystemServer();
++        }
++    }
++
++    /**
+      * @return the user's default wallet address
+      * @hide
+      */
+@@ -1904,9 +1968,9 @@ public class UserManager {
+             Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+             Manifest.permission.MANAGE_USERS
+     })
+-    public @Nullable String getUserDefaultWalletAddr(@UserIdInt int userHandle) {
++    public @Nullable String getUserDefaultWalletAddr(@UserIdInt int userHandle, String path) {
+         try {
+-            return mService.getUserDefaultWalletAddr(userHandle);
++            return mService.getUserDefaultWalletAddr(userHandle, path);
+         } catch (RemoteException re) {
+             throw re.rethrowFromSystemServer();
+         }
+@@ -1920,9 +1984,9 @@ public class UserManager {
+             Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+             Manifest.permission.MANAGE_USERS
+     })
+-    public void setUserDefaultWalletAddr(@UserIdInt int userHandle, String walletAddr) {
++    public void setUserDefaultWalletAddr(@UserIdInt int userHandle, String walletAddr, String path) {
+         try {
+-            mService.setUserDefaultWalletAddr(userHandle, walletAddr);
++            mService.setUserDefaultWalletAddr(userHandle, walletAddr, path);
+         } catch (RemoteException re) {
+             throw re.rethrowFromSystemServer();
+         }
+diff --git a/services/core/java/com/android/server/pm/UserManagerService.java b/services/core/java/com/android/server/pm/UserManagerService.java
+index 3aa2218..8858c3b 100644
+--- a/services/core/java/com/android/server/pm/UserManagerService.java
++++ b/services/core/java/com/android/server/pm/UserManagerService.java
+@@ -69,6 +69,7 @@ import android.os.UserManager.EnforcingUser;
+ import android.os.UserManagerInternal;
+ import android.os.UserManagerInternal.UserRestrictionsListener;
+ import android.os.storage.StorageManager;
++import android.provider.Settings;
+ import android.security.GateKeeper;
+ import android.service.gatekeeper.IGateKeeperService;
+ import android.system.ErrnoException;
+@@ -120,8 +121,11 @@ import java.io.PrintWriter;
+ import java.nio.charset.StandardCharsets;
+ import java.util.ArrayList;
+ import java.util.Collections;
++import java.util.HashMap;
+ import java.util.LinkedList;
+ import java.util.List;
++import java.util.Map;
++import java.util.Set;
+ 
+ /**
+  * Service for {@link UserManager}.
+@@ -147,7 +151,8 @@ public class UserManagerService extends IUserManager.Stub {
+     //[Begin]AzaleaPan add brahma account 20180810
+     private static final String TAG_BRAHMAACCOUNT = "brahmaAccount";
+     private static final String TAG_MNEMONIC = "defaultMnemonic";
+-    private static final String TAG_WALLET_ADDR = "defaultWalletAddr";
++    private static final String TAG_PRIVATE = "defaultPrivate";
++    private static final String TAG_PUBLIC = "defaultPublic";
+     //[End]
+     private static final String ATTR_FLAGS = "flags";
+     private static final String ATTR_ICON_PATH = "icon";
+@@ -271,7 +276,9 @@ public class UserManagerService extends IUserManager.Stub {
+         //[Begin]AzaleaPan add brahma account 20180810
+         String brahmaAccount;
+         String defaultMnemonic;
+-        String defaultWalletAddr;
++        HashMap<String, String> walletMap = new HashMap<String, String>();//<path, wallet address>
++        String defaultPrivate;
++        String defaultPublic;
+         //[End]
+ 
+         void clearSeedAccountData() {
+@@ -584,14 +591,28 @@ public class UserManagerService extends IUserManager.Stub {
+     }
+ 
+     @Override
+-    public String getUserDefaultWalletAddr(int userId) {
++    public String getUserDefaultWalletAddr(int userId, String path) {
+         checkManageUserAndAcrossUsersFullPermission("get user default wallet address");
+         synchronized (mUsersLock) {
+-            return mUsers.get(userId).defaultWalletAddr;
++            return mUsers.get(userId).walletMap.get(path.replace("/", ""));
+         }
+     }
+ 
+     @Override
++    public String getUserDefaultPrivateKeyHex(int userId) {
++        checkManageUserAndAcrossUsersFullPermission("get user default mnemonic");
++        synchronized (mUsersLock) {
++            return mUsers.get(userId).defaultPrivate;
++        }
++    }
++    @Override
++    public String getUserDefaultPublicKey(int userId) {
++        checkManageUserAndAcrossUsersFullPermission("get user default mnemonic");
++        synchronized (mUsersLock) {
++            return mUsers.get(userId).defaultPublic;
++        }
++    }
++    @Override
+     public void setUserBrahmaAccount(int userId, String account) {
+         checkManageUserAndAcrossUsersFullPermission("set user brahma account");
+         UserData userToUpdate = null;
+@@ -603,9 +624,11 @@ public class UserManagerService extends IUserManager.Stub {
+                     return;
+                 }
+                 String currentAccount = userData.brahmaAccount;
+-                if (!Objects.equal(currentAccount, account)) {
++                if (currentAccount != account) {
+                     userData.brahmaAccount = account;
+                     userToUpdate = userData;
++                } else {//[AzaleaPan]We can only set brahma account once.
++                    Slog.e(LOG_TAG, "!!!Can not CHANGE the user Brahma Account!");
+                 }
+             }
+ 
+@@ -627,9 +650,11 @@ public class UserManagerService extends IUserManager.Stub {
+                     return;
+                 }
+                 String currentMnemonic = userData.defaultMnemonic;
+-                if (!Objects.equal(currentMnemonic, hexMnemonic)) {
++                if (currentMnemonic != hexMnemonic) {
+                     userData.defaultMnemonic = hexMnemonic;
+                     userToUpdate = userData;
++                } else {//[AzaleaPan]We can only set Mnemonic once.
++                    Slog.e(LOG_TAG, "!!!Can not CHANGE the user Mnemonics!");
+                 }
+             }
+ 
+@@ -640,7 +665,59 @@ public class UserManagerService extends IUserManager.Stub {
+     }
+ 
+     @Override
+-    public void setUserDefaultWalletAddr(int userId, String walletAddr) {
++    public void setUserDefaultPrivateKeyHex(int userId, String hexPrivate) {
++        checkManageUserAndAcrossUsersFullPermission("set user default private key string");
++        UserData userToUpdate = null;
++        synchronized (mPackagesLock) {
++            synchronized (mUsersLock) {
++                final UserData userData = mUsers.get(userId);
++                if (userData == null) {
++                    Slog.e(LOG_TAG, "User not found for setting user default private key string: u" + userId);
++                    return;
++                }
++                String currentKey = userData.defaultPrivate;
++                if (currentKey != hexPrivate) {
++                    userData.defaultPrivate = hexPrivate;
++                    userToUpdate = userData;
++                } else {
++                    Slog.e(LOG_TAG, "!!!Can not CHANGE the user Private Key!");
++                }
++            }
++
++            if (userToUpdate != null) {
++                writeUserLP(userToUpdate);
++            }
++        }
++    }
++
++    @Override
++    public void setUserDefaultPublicKey(int userId, String publicStr) {
++        checkManageUserAndAcrossUsersFullPermission("set user default private key string");
++        UserData userToUpdate = null;
++        synchronized (mPackagesLock) {
++            synchronized (mUsersLock) {
++                final UserData userData = mUsers.get(userId);
++                if (userData == null) {
++                    Slog.e(LOG_TAG, "User not found for setting user default private key string: u" + userId);
++                    return;
++                }
++                String currentKey = userData.defaultPublic;
++                if (currentKey != publicStr) {
++                    userData.defaultPublic = publicStr;
++                    userToUpdate = userData;
++                } else {
++                    Slog.e(LOG_TAG, "!!!Can not CHANGE the user Private Key!");
++                }
++            }
++
++            if (userToUpdate != null) {
++                writeUserLP(userToUpdate);
++            }
++        }
++    }
++
++    @Override
++    public void setUserDefaultWalletAddr(int userId, String walletAddr, String path) {
+         checkManageUserAndAcrossUsersFullPermission("set user default wallet address");
+         UserData userToUpdate = null;
+         synchronized (mPackagesLock) {
+@@ -650,9 +727,9 @@ public class UserManagerService extends IUserManager.Stub {
+                     Slog.e(LOG_TAG, "User not found for setting user default wallet address: u" + userId);
+                     return;
+                 }
+-                String currentAddr = userData.defaultWalletAddr;
+-                if (!Objects.equal(currentAddr, walletAddr)) {
+-                    userData.defaultWalletAddr = walletAddr;
++                String currentAddr = userData.walletMap.get(path.replace("/", ""));
++                if (currentAddr != walletAddr) {
++                    userData.walletMap.put(path.replace("/", ""), walletAddr);
+                     userToUpdate = userData;
+                 }
+             }
+@@ -2212,10 +2289,27 @@ public class UserManagerService extends IUserManager.Stub {
+             serializer.endTag(null, TAG_MNEMONIC);
+         }
+ 
+-        if (userData.defaultWalletAddr != null) {
+-            serializer.startTag(null, TAG_WALLET_ADDR);
+-            serializer.text(userData.defaultWalletAddr);
+-            serializer.endTag(null, TAG_WALLET_ADDR);
++        if (userData.defaultPrivate != null) {
++            serializer.startTag(null, TAG_PRIVATE);
++            serializer.text(userData.defaultPrivate);
++            serializer.endTag(null, TAG_PRIVATE);
++        }
++
++        if (userData.defaultPublic != null) {
++            serializer.startTag(null, TAG_PUBLIC);
++            serializer.text(userData.defaultPublic);
++            serializer.endTag(null, TAG_PUBLIC);
++        }
++
++        if (userData.walletMap != null && userData.walletMap.size() > 0) {
++            Set<Map.Entry<String, String>> set = userData.walletMap.entrySet();
++            for (Map.Entry<String, String> me : set) {
++                String path = me.getKey();
++                String address = me.getValue();
++                serializer.startTag(null, path);
++                serializer.text(address);
++                serializer.endTag(null, path);
++            }
+         }
+         //[End]
+ 
+@@ -2326,6 +2420,14 @@ public class UserManagerService extends IUserManager.Stub {
+         Bundle localRestrictions = null;
+         Bundle globalRestrictions = null;
+ 
++        //[Begin]AzaleaPan add brahma account 20180821
++        String brahmaAccount = null;
++        String defaultMnemonic = null;
++        String defaultPrivate = null;
++        String defaultPublic = null;
++        HashMap<String, String> walletMap = new HashMap<String, String>();
++        //[End]
++
+         XmlPullParser parser = Xml.newPullParser();
+         parser.setInput(is, StandardCharsets.UTF_8.name());
+         int type;
+@@ -2399,6 +2501,34 @@ public class UserManagerService extends IUserManager.Stub {
+                     seedAccountOptions = PersistableBundle.restoreFromXml(parser);
+                     persistSeedData = true;
+                 }
++                //[Begin]AzaleaPan add brahma account 20180821
++                else if (TAG_BRAHMAACCOUNT.equals(tag)) {
++                    type = parser.next();
++                    if (type == XmlPullParser.TEXT) {
++                        brahmaAccount = parser.getText();
++                    }
++                } else if (TAG_MNEMONIC.equals(tag)) {
++                    type = parser.next();
++                    if (type == XmlPullParser.TEXT) {
++                        defaultMnemonic = parser.getText();
++                    }
++                } else if (TAG_PRIVATE.equals(tag)) {
++                    type = parser.next();
++                    if (type == XmlPullParser.TEXT) {
++                        defaultPrivate = parser.getText();
++                    }
++                } else if (TAG_PUBLIC.equals(tag)) {
++                    type = parser.next();
++                    if (type == XmlPullParser.TEXT) {
++                        defaultPublic = parser.getText();
++                    }
++                } else if (tag != null && (tag.toUpperCase().startsWith("M44H"))) {
++                    type = parser.next();
++                    if (type == XmlPullParser.TEXT) {
++                        walletMap.put(tag, parser.getText());
++                    }
++                }
++                //[End]
+             }
+         }
+ 
+@@ -2434,6 +2564,18 @@ public class UserManagerService extends IUserManager.Stub {
+                 mDevicePolicyGlobalUserRestrictions.put(id, globalRestrictions);
+             }
+         }
++        //[Begin]AzaleaPan add brahma account 20180821
++        userData.brahmaAccount = brahmaAccount;
++        userData.defaultMnemonic = defaultMnemonic;
++        userData.defaultPrivate = defaultPrivate;
++        userData.defaultPublic = defaultPublic;
++        Set<Map.Entry<String, String>> set = walletMap.entrySet();
++        for (Map.Entry<String, String> me : set) {
++            String path = me.getKey();
++            String address = me.getValue();
++            userData.walletMap.put(path, address);
++        }
++        //[End]
+         return userData;
+     }
+ 
+-- 
+2.7.4
+
