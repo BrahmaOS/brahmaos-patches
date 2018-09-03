@@ -1,7 +1,7 @@
 From 25b88e373ca8b3b2eb4c0fd23de0cf3ce277936c Mon Sep 17 00:00:00 2001
 From: koala <koalo@brahmaos.io>
 Date: Tue, 10 Jul 2018 11:02:10 +0800
-Subject: [PATCH 3/3] Add IPFSControllerManagerService to selinux
+Subject: [PATCH] Add IPFSControllerManagerService to selinux
 
 Change-Id: I44d532009d828a5cd7eedf74d92fe8e811d7c96c
 Signed-off-by: koala <koalo@brahmaos.io>

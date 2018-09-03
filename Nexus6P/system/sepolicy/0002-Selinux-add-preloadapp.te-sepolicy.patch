@@ -1,7 +1,7 @@
 From 0c32d32f535b556b184082565ad5b0d36426868a Mon Sep 17 00:00:00 2001
 From: "winton.liu" <admin@brahmaos.io>
 Date: Fri, 29 Jun 2018 14:30:53 +0800
-Subject: [PATCH 2/2] Selinux: add preloadapp.te sepolicy
+Subject: [PATCH] Selinux: add preloadapp.te sepolicy
 
 add sepolicy for preloadapp
 

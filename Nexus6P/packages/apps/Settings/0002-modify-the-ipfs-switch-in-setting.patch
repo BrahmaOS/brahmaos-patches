@@ -1,7 +1,7 @@
 From aa9860e0126d4e51e149d09906c1c2b90a7e97a5 Mon Sep 17 00:00:00 2001
 From: koala <koalo@brahmaos.io>
 Date: Wed, 1 Aug 2018 17:52:48 +0800
-Subject: [PATCH 2/2] modify  the ipfs switch in setting
+Subject: [PATCH] modify  the ipfs switch in setting
 
 - fix the bug when restart the device,the ipfs status can be
   saved by previou operation

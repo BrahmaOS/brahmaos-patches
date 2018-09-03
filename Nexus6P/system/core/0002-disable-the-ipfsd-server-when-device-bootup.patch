@@ -1,7 +1,7 @@
 From 736469bcc74fe1869cde9d9d3a63ebbdd6496914 Mon Sep 17 00:00:00 2001
 From: koala <koalo@brahmaos.io>
 Date: Wed, 1 Aug 2018 17:14:15 +0800
-Subject: [PATCH 2/2] disable the ipfsd server when device bootup
+Subject: [PATCH] disable the ipfsd server when device bootup
 
 Change-Id: Id9d85433b1c4e0feea9d41cc631baa8973397879
 Signed-off-by: koala <koalo@brahmaos.io>

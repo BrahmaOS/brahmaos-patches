@@ -1,0 +1,88 @@
+From 094a46b6361a2e89c00486c8d03235dcc737e473 Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Mon, 3 Sep 2018 17:25:24 +0800
+Subject: [PATCH] Add releasebrahmaos tool
+
+Usage: releasebrahmaos <distdir> <version>
+
+Change-Id: Iefbae17ddd502ec4139f3ceb51a7269def941538
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ scripts/releasebrahmaos | 65 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
+ create mode 100755 scripts/releasebrahmaos
+
+diff --git a/scripts/releasebrahmaos b/scripts/releasebrahmaos
+new file mode 100755
+index 0000000..6896fff
+--- /dev/null
++++ b/scripts/releasebrahmaos
+@@ -0,0 +1,65 @@
++#! /bin/sh
++#
++# release.sh
++# Copyright (C) 2018 Winton.Liu <admin@brahmaos.io>
++#
++# Distributed under terms of the MIT license.
++#
++
++
++DIST_DIR=$1
++VERSION=$2
++
++#cd ${ANDROID_BUILD_TOP}
++mkdir ${VERSION}
++
++sha256value(){
++	cd ${VERSION}
++	for file in `ls`;do
++		sha256sum ${file} > ${file}.sha256
++	done
++	cd ../
++}
++
++imagefile=`ls ${DIST_DIR}/*-img*`
++if [ -f ${imagefile} ];then
++	basefile=`basename ${imagefile}`
++	brahmaos=`echo ${basefile} | awk -F'-' '{print $4}'`
++	device=`echo ${basefile} | awk -F'-' '{print $1}' | awk -F'_' '{print $2}'`
++	imgdir=${device}-${brahmaos}
++	echo "mkdir -p ${VERSION}/${imgdir}"
++	mkdir -p ${VERSION}/${imgdir}
++	echo "Copy file ${imagefile} to ${VERSION}/${imgdir}"
++	cp ${imagefile} ${VERSION}/${imgdir}
++	echo "#!/bin/bash" > ${VERSION}/${imgdir}/flash-all.sh
++	echo "sudo fastboot update ${basefile}" >> ${VERSION}/${imgdir}/flash-all.sh
++	cat > ${VERSION}/${imgdir}/flash-all.bat << EOF
++@ECHO OFF
++
++PATH=%PATH%;"%SYSTEMROOT%\System32"
++
++EOF
++	chmod a+x ${VERSION}/${imgdir}/flash-all.sh
++	echo "sudo fastboot update ${basefile}" >> ${VERSION}/${imgdir}/flash-all.bat
++
++	cd ${VERSION}
++	zip -q -r ${imgdir}.zip ${imgdir}
++	rm -rf ${imgdir}
++	cd ../
++
++fi
++
++targetfile=`ls ${DIST_DIR}/*-target_files*`
++if [ -f ${targetfile} ];then
++	echo "Copy file ${targetfile} to ${VERSION}"
++	cp ${targetfile} ${VERSION}
++fi
++
++
++otafile=`ls ${DIST_DIR}/*-ota*`
++if [ -f ${otafile} ];then
++	echo "Copy file ${otafile} to ${VERSION}"
++	cp ${otafile} ${VERSION}
++fi
++
++sha256value
+-- 
+2.7.4
+
