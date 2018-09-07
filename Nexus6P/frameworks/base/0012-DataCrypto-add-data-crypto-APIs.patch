@@ -1,0 +1,524 @@
+From e15c85f9765faa43917d9ce07df08a6467974050 Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Tue, 4 Sep 2018 17:52:09 +0800
+Subject: [PATCH] [DataCrypto]: add data crypto APIs
+
+Change-Id: I2f96c0a00b4ce3015c094e0741bc4cc9c14b2349
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ api/current.txt                                    |  11 +
+ api/system-current.txt                             |  11 +
+ api/test-current.txt                               |  11 +
+ core/java/android/os/UserManager.java              |  19 --
+ core/java/android/util/DataCryptoUtils.java        | 250 +++++++++++++++++++++
+ .../com/android/server/pm/UserManagerService.java  |  17 +-
+ 6 files changed, 290 insertions(+), 29 deletions(-)
+ create mode 100644 core/java/android/util/DataCryptoUtils.java
+
+diff --git a/api/current.txt b/api/current.txt
+index 78a7fc2..165cf21 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -43248,6 +43248,17 @@ package android.util {
+     field public static final deprecated boolean RELEASE = true;
+   }
+ 
++  public class DataCryptoUtils {
++    ctor public DataCryptoUtils();
++    method public java.lang.String aes128Decrypt(java.lang.String, java.lang.String);
++    method public java.lang.String aes128Encrypt(java.lang.String, java.lang.String);
++    method public boolean decryptWithPrivateKey(android.content.Context, java.io.File, java.io.File, java.lang.String);
++    method public boolean encryptWithPublicKey(android.content.Context, java.io.File, java.io.File);
++    field public static final java.lang.String BRM_PATH = "M/44H/60H/0H/0/1";
++    field public static final java.lang.String DEFAULT_PATH = "M/2048H/60H/0H/0/0";
++    field public static final java.lang.String ETH_PATH = "M/44H/60H/0H/0/0";
++  }
++
+   public class DebugUtils {
+     method public static boolean isObjectSelected(java.lang.Object);
+   }
+diff --git a/api/system-current.txt b/api/system-current.txt
+index e69d0e3..bf12009 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -46833,6 +46833,17 @@ package android.util {
+     field public static final deprecated boolean RELEASE = true;
+   }
+ 
++  public class DataCryptoUtils {
++    ctor public DataCryptoUtils();
++    method public java.lang.String aes128Decrypt(java.lang.String, java.lang.String);
++    method public java.lang.String aes128Encrypt(java.lang.String, java.lang.String);
++    method public boolean decryptWithPrivateKey(android.content.Context, java.io.File, java.io.File, java.lang.String);
++    method public boolean encryptWithPublicKey(android.content.Context, java.io.File, java.io.File);
++    field public static final java.lang.String BRM_PATH = "M/44H/60H/0H/0/1";
++    field public static final java.lang.String DEFAULT_PATH = "M/2048H/60H/0H/0/0";
++    field public static final java.lang.String ETH_PATH = "M/44H/60H/0H/0/0";
++  }
++
+   public class DebugUtils {
+     method public static boolean isObjectSelected(java.lang.Object);
+   }
+diff --git a/api/test-current.txt b/api/test-current.txt
+index 2181bc1..05e64c5 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -43525,6 +43525,17 @@ package android.util {
+     field public static final deprecated boolean RELEASE = true;
+   }
+ 
++  public class DataCryptoUtils {
++    ctor public DataCryptoUtils();
++    method public java.lang.String aes128Decrypt(java.lang.String, java.lang.String);
++    method public java.lang.String aes128Encrypt(java.lang.String, java.lang.String);
++    method public boolean decryptWithPrivateKey(android.content.Context, java.io.File, java.io.File, java.lang.String);
++    method public boolean encryptWithPublicKey(android.content.Context, java.io.File, java.io.File);
++    field public static final java.lang.String BRM_PATH = "M/44H/60H/0H/0/1";
++    field public static final java.lang.String DEFAULT_PATH = "M/2048H/60H/0H/0/0";
++    field public static final java.lang.String ETH_PATH = "M/44H/60H/0H/0/0";
++  }
++
+   public class DebugUtils {
+     method public static boolean isObjectSelected(java.lang.Object);
+   }
+diff --git a/core/java/android/os/UserManager.java b/core/java/android/os/UserManager.java
+index 110619b..e9f84e4 100644
+--- a/core/java/android/os/UserManager.java
++++ b/core/java/android/os/UserManager.java
+@@ -1836,10 +1836,6 @@ public class UserManager {
+      * @return the user's brahma account
+      * @hide
+      */
+-    @RequiresPermission( allOf = {
+-            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+-            Manifest.permission.MANAGE_USERS
+-    })
+     public @Nullable String getUserBrahmaAccount(@UserIdInt int userHandle) {
+         try {
+             return mService.getUserBrahmaAccount(userHandle);
+@@ -1853,7 +1849,6 @@ public class UserManager {
+      * @hide
+      */
+     @RequiresPermission( allOf = {
+-            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+             Manifest.permission.MANAGE_USERS
+     })
+     public void setUserBrahmaAccount(@UserIdInt int userHandle, String account) {
+@@ -1869,7 +1864,6 @@ public class UserManager {
+      * @hide
+      */
+     @RequiresPermission( allOf = {
+-            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+             Manifest.permission.MANAGE_USERS
+     })
+     public @Nullable String getUserDefaultMnemonicHex(@UserIdInt int userHandle) {
+@@ -1885,7 +1879,6 @@ public class UserManager {
+      * @hide
+      */
+     @RequiresPermission( allOf = {
+-            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+             Manifest.permission.MANAGE_USERS
+     })
+     public void setUserDefaultMnemonicHex(@UserIdInt int userHandle, String hexMnemonic) {
+@@ -1900,10 +1893,6 @@ public class UserManager {
+      * @return the user's default private key encrypted hex string
+      * @hide
+      */
+-    @RequiresPermission( allOf = {
+-            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+-            Manifest.permission.MANAGE_USERS
+-    })
+     public @Nullable String getUserDefaultPrivateKeyHex(@UserIdInt int userHandle) {
+         try {
+             return mService.getUserDefaultPrivateKeyHex(userHandle);
+@@ -1917,7 +1906,6 @@ public class UserManager {
+      * @hide
+      */
+     @RequiresPermission( allOf = {
+-            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+             Manifest.permission.MANAGE_USERS
+     })
+     public void setUserDefaultPrivateKeyHex(@UserIdInt int userHandle, String hexPrivate) {
+@@ -1932,10 +1920,6 @@ public class UserManager {
+      * @return the user's default public key string
+      * @hide
+      */
+-    @RequiresPermission( allOf = {
+-            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+-            Manifest.permission.MANAGE_USERS
+-    })
+     public @Nullable String getUserDefaultPublicKey(@UserIdInt int userHandle) {
+         try {
+             return mService.getUserDefaultPublicKey(userHandle);
+@@ -1949,7 +1933,6 @@ public class UserManager {
+      * @hide
+      */
+     @RequiresPermission( allOf = {
+-            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+             Manifest.permission.MANAGE_USERS
+     })
+     public void setUserDefaultPublicKey(@UserIdInt int userHandle, String hexPublic) {
+@@ -1965,7 +1948,6 @@ public class UserManager {
+      * @hide
+      */
+     @RequiresPermission( allOf = {
+-            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+             Manifest.permission.MANAGE_USERS
+     })
+     public @Nullable String getUserDefaultWalletAddr(@UserIdInt int userHandle, String path) {
+@@ -1981,7 +1963,6 @@ public class UserManager {
+      * @hide
+      */
+     @RequiresPermission( allOf = {
+-            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+             Manifest.permission.MANAGE_USERS
+     })
+     public void setUserDefaultWalletAddr(@UserIdInt int userHandle, String walletAddr, String path) {
+diff --git a/core/java/android/util/DataCryptoUtils.java b/core/java/android/util/DataCryptoUtils.java
+new file mode 100644
+index 0000000..63cd02c
+--- /dev/null
++++ b/core/java/android/util/DataCryptoUtils.java
+@@ -0,0 +1,250 @@
++package android.util;
++
++import android.content.Context;
++import android.os.UserHandle;
++import android.os.UserManager;
++
++import java.io.File;
++import java.io.FileInputStream;
++import java.io.FileNotFoundException;
++import java.io.FileOutputStream;
++import java.io.IOException;
++import java.math.BigInteger;
++import java.security.InvalidKeyException;
++import java.security.NoSuchAlgorithmException;
++import java.security.Security;
++import java.security.spec.ECFieldFp;
++import java.security.spec.ECPoint;
++import java.security.spec.ECPrivateKeySpec;
++import java.security.spec.EllipticCurve;
++import java.security.spec.KeySpec;
++
++import javax.crypto.Cipher;
++import javax.crypto.CipherInputStream;
++import javax.crypto.CipherOutputStream;
++import javax.crypto.SecretKey;
++import javax.crypto.SecretKeyFactory;
++import javax.crypto.spec.PBEKeySpec;
++import javax.crypto.spec.SecretKeySpec;
++
++import com.android.org.bouncycastle.jce.spec.IESParameterSpec;
++import com.android.org.bouncycastle.jce.provider.BouncyCastleProvider;
++import com.android.org.bouncycastle.jce.spec.ECNamedCurveSpec;
++import com.android.org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
++import com.android.org.bouncycastle.math.ec.custom.sec.SecP256K1FieldElement;
++import com.android.org.bouncycastle.math.ec.custom.sec.SecP256K1Point;
++import com.android.org.bouncycastle.crypto.params.ECDomainParameters;
++import com.android.org.bouncycastle.crypto.params.ECPublicKeyParameters;
++import com.android.org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
++import com.android.org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
++
++public class DataCryptoUtils {
++    private static final String TAG = "DataCryptoUtils";
++    public static final String ETH_PATH = "M/44H/60H/0H/0/0";
++    public static final String BRM_PATH = "M/44H/60H/0H/0/1";
++    public static final String DEFAULT_PATH = "M/2048H/60H/0H/0/0";
++
++    private UserManager mUserManager;
++
++    public DataCryptoUtils () {
++    }
++
++    public boolean encryptWithPublicKey(Context context, File fileSrc, File fileCipher) {
++        mUserManager = (UserManager) context.getSystemService(Context.USER_SERVICE);
++        boolean result =  true;
++        try {
++            BigInteger pointGPre = new BigInteger("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798", 16);
++            BigInteger pointGPost = new BigInteger("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8", 16);
++            BigInteger factorN = new BigInteger("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16);
++            BigInteger fieldP = new BigInteger("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", 16);
++
++            Security.addProvider(new BouncyCastleProvider());
++            Cipher cipher = Cipher.getInstance("ECIES", "BC");
++            IESParameterSpec iesParams = new IESParameterSpec(null, null, 64);
++
++            //----------------------------
++            // Encrypt with public key
++            //----------------------------
++
++            // public key for test
++            String publicKeyValue = mUserManager.getUserDefaultPublicKey(UserHandle.myUserId());
++            String prePublicKeyStr = publicKeyValue.substring(0, 64);
++            String postPublicKeyStr = publicKeyValue.substring(64);
++
++            EllipticCurve ellipticCurve = new EllipticCurve(new ECFieldFp(fieldP), new BigInteger("0"), new BigInteger("7"));
++            ECPoint pointG = new ECPoint(pointGPre, pointGPost);
++            ECNamedCurveSpec namedCurveSpec = new ECNamedCurveSpec("secp256k1", ellipticCurve, pointG, factorN);
++
++            // public key
++            SecP256K1Curve secP256K1Curve = new SecP256K1Curve();
++            SecP256K1Point secP256K1Point = new SecP256K1Point(secP256K1Curve,
++                    new SecP256K1FieldElement(new BigInteger(prePublicKeyStr, 16)),
++                    new SecP256K1FieldElement(new BigInteger(postPublicKeyStr, 16)));
++            SecP256K1Point secP256K1PointG = new SecP256K1Point(secP256K1Curve, new SecP256K1FieldElement(pointGPre), new SecP256K1FieldElement(pointGPost));
++            ECDomainParameters domainParameters = new ECDomainParameters(secP256K1Curve, secP256K1PointG, factorN);
++            ECPublicKeyParameters publicKeyParameters = new ECPublicKeyParameters(secP256K1Point, domainParameters);
++            BCECPublicKey publicKeySelf = new BCECPublicKey("ECDSA", publicKeyParameters, namedCurveSpec, BouncyCastleProvider.CONFIGURATION);
++
++
++            cipher.init(Cipher.ENCRYPT_MODE, publicKeySelf, iesParams);
++            byte[] block = new byte[64];
++            FileInputStream fis = new FileInputStream(fileSrc);
++            FileOutputStream fos = new FileOutputStream(fileCipher);
++            CipherOutputStream cos = new CipherOutputStream(fos, cipher);
++
++            try {
++                int i;
++                while ((i = fis.read(block)) != -1) {
++                    cos.write(block, 0, i);
++                }
++            } catch (Exception ioe) {
++                result = false;
++                Log.d(TAG, "" + ioe.toString());
++            } finally {
++                cos.close();
++                fos.close();
++                fis.close();
++            }
++        } catch (Exception e) {
++            result = false;
++            Log.d(TAG, "encryptWithPublicKey fail! " + e.toString());
++        }
++        return result;
++    }
++
++    public boolean decryptWithPrivateKey(Context context, File fileCipher, File fileDst, String password) {
++        mUserManager = (UserManager) context.getSystemService(Context.USER_SERVICE);
++        boolean result =  true;
++        try {
++            BigInteger pointGPre = new BigInteger("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798", 16);
++            BigInteger pointGPost = new BigInteger("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8", 16);
++            BigInteger factorN = new BigInteger("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16);
++            BigInteger fieldP = new BigInteger("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", 16);
++
++            Security.addProvider(new BouncyCastleProvider());
++            Cipher cipher = Cipher.getInstance("ECIES", "BC");
++            IESParameterSpec iesParams = new IESParameterSpec(null, null, 64);
++
++            EllipticCurve ellipticCurve = new EllipticCurve(new ECFieldFp(fieldP), new BigInteger("0"), new BigInteger("7"));
++            ECPoint pointG = new ECPoint(pointGPre, pointGPost);
++            ECNamedCurveSpec namedCurveSpec = new ECNamedCurveSpec("secp256k1", ellipticCurve, pointG, factorN);
++
++            String privateKey = aes128Decrypt(mUserManager.getUserDefaultPrivateKeyHex(UserHandle.myUserId()), password);
++            BigInteger privateKeyValue = new BigInteger(privateKey, 16);
++
++            ECPrivateKeySpec privateKeySpec = new ECPrivateKeySpec(privateKeyValue, namedCurveSpec);
++            BCECPrivateKey privateKeySelf = new BCECPrivateKey("ECDSA", privateKeySpec, BouncyCastleProvider.CONFIGURATION);
++
++            // begin decrypt
++            cipher.init(Cipher.DECRYPT_MODE, privateKeySelf, iesParams);
++            FileInputStream fis = new FileInputStream(fileCipher);
++            CipherInputStream cis = new CipherInputStream(fis, cipher);
++            FileOutputStream fos = new FileOutputStream(fileDst);
++            int i;
++            byte[] block = new byte[64];
++
++            try {
++                while ((i = cis.read(block)) != -1) {
++                    fos.write(block, 0, i);
++                }
++            } catch (Exception ioe) {
++                result = false;
++                Log.d(TAG, "" + ioe.toString());
++            } finally {
++                cis.close();
++                fos.close();
++                fis.close();
++            }
++        } catch (Exception e) {
++            result = false;
++        }
++        return result;
++    }
++
++
++    /**
++     * AES 128 Encrypt
++     *
++     * @param content the clear text which want to be encrypted.
++     * @param password the secret key
++     *
++     * @return the encrypted hex string
++     */
++    public String aes128Encrypt(String content, String password) {
++        try {
++            Cipher cipher = Cipher.getInstance("AES");
++            cipher.init(Cipher.ENCRYPT_MODE, genKey(password));
++            byte[] result = cipher.doFinal(content.getBytes());
++            return parseByte2HexStr(result);
++        } catch (Exception e) {
++            e.printStackTrace();
++        }
++        return null;
++
++    }
++
++    /**
++     * AES 128 Decrypt
++     *
++     * @param content the cipher text which want to be decrypted.
++     * @param password the secret key
++     *
++     * @return the clear text hex string
++     */
++    public String aes128Decrypt(String content, String password) {
++        try {
++            byte[] decryptFrom = parseHexStr2Byte(content);
++            Cipher cipher = Cipher.getInstance("AES");
++            cipher.init(Cipher.DECRYPT_MODE, genKey(password));
++            byte[] result = cipher.doFinal(decryptFrom);
++            return new String(result);
++        } catch (Exception e) {
++            Log.d(TAG, "" + e.toString());
++        }
++        return null;
++    }
++
++    /**
++     * get SecretKeySpec according to the password
++     * @return
++     */
++    private SecretKeySpec genKey(String password){
++        byte[] salt = new String("12345678").getBytes();
++        int iterationCount = 1024;
++        int keyStrength = 128;
++        try {
++            SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
++            KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, iterationCount, keyStrength);
++            SecretKey tmp = factory.generateSecret(spec);
++            SecretKeySpec key = new SecretKeySpec(tmp.getEncoded(), "AES");
++            return key;
++        } catch (Exception e) {
++            e.printStackTrace();
++        }
++        return null;
++    }
++
++    private String parseByte2HexStr(byte buf[]) {
++        StringBuffer sb = new StringBuffer();
++        for (int i = 0; i < buf.length; i++) {
++            String hex = Integer.toHexString(buf[i] & 0xFF);
++            if (hex.length() == 1) {
++                hex = '0' + hex;
++            }
++            sb.append(hex.toUpperCase());
++        }
++        return sb.toString();
++    }
++
++    private byte[] parseHexStr2Byte(String hexStr) {
++        if (hexStr == null || hexStr.length() < 1)
++            return null;
++        byte[] result = new byte[hexStr.length() / 2];
++        for (int i = 0; i < hexStr.length() / 2; i++) {
++            int high = Integer.parseInt(hexStr.substring(i * 2, i * 2 + 1), 16);
++            int low = Integer.parseInt(hexStr.substring(i * 2 + 1, i * 2 + 2),16);
++            result[i] = (byte) (high * 16 + low);
++        }
++        return result;
++    }
++}
+diff --git a/services/core/java/com/android/server/pm/UserManagerService.java b/services/core/java/com/android/server/pm/UserManagerService.java
+index 8858c3b..9138f26 100644
+--- a/services/core/java/com/android/server/pm/UserManagerService.java
++++ b/services/core/java/com/android/server/pm/UserManagerService.java
+@@ -576,7 +576,6 @@ public class UserManagerService extends IUserManager.Stub {
+     //[Begin]AzaleaPan add brahma account 20180810
+     @Override
+     public String getUserBrahmaAccount(int userId) {
+-        checkManageUserAndAcrossUsersFullPermission("get user brahma account");
+         synchronized (mUsersLock) {
+             return mUsers.get(userId).brahmaAccount;
+         }
+@@ -584,7 +583,7 @@ public class UserManagerService extends IUserManager.Stub {
+ 
+     @Override
+     public String getUserDefaultMnemonicHex(int userId) {
+-        checkManageUserAndAcrossUsersFullPermission("get user default mnemonic");
++        checkManageOrCreateUsersPermission("get user default mnemonic");
+         synchronized (mUsersLock) {
+             return mUsers.get(userId).defaultMnemonic;
+         }
+@@ -592,7 +591,7 @@ public class UserManagerService extends IUserManager.Stub {
+ 
+     @Override
+     public String getUserDefaultWalletAddr(int userId, String path) {
+-        checkManageUserAndAcrossUsersFullPermission("get user default wallet address");
++        checkManageOrCreateUsersPermission("get user default wallet address");
+         synchronized (mUsersLock) {
+             return mUsers.get(userId).walletMap.get(path.replace("/", ""));
+         }
+@@ -600,21 +599,19 @@ public class UserManagerService extends IUserManager.Stub {
+ 
+     @Override
+     public String getUserDefaultPrivateKeyHex(int userId) {
+-        checkManageUserAndAcrossUsersFullPermission("get user default mnemonic");
+         synchronized (mUsersLock) {
+             return mUsers.get(userId).defaultPrivate;
+         }
+     }
+     @Override
+     public String getUserDefaultPublicKey(int userId) {
+-        checkManageUserAndAcrossUsersFullPermission("get user default mnemonic");
+         synchronized (mUsersLock) {
+             return mUsers.get(userId).defaultPublic;
+         }
+     }
+     @Override
+     public void setUserBrahmaAccount(int userId, String account) {
+-        checkManageUserAndAcrossUsersFullPermission("set user brahma account");
++        checkManageOrCreateUsersPermission("set user brahma account");
+         UserData userToUpdate = null;
+         synchronized (mPackagesLock) {
+             synchronized (mUsersLock) {
+@@ -640,7 +637,7 @@ public class UserManagerService extends IUserManager.Stub {
+ 
+     @Override
+     public void setUserDefaultMnemonicHex(int userId, String hexMnemonic) {
+-        checkManageUserAndAcrossUsersFullPermission("set user default mnemonic string");
++        checkManageOrCreateUsersPermission("set user default mnemonic string");
+         UserData userToUpdate = null;
+         synchronized (mPackagesLock) {
+             synchronized (mUsersLock) {
+@@ -666,7 +663,7 @@ public class UserManagerService extends IUserManager.Stub {
+ 
+     @Override
+     public void setUserDefaultPrivateKeyHex(int userId, String hexPrivate) {
+-        checkManageUserAndAcrossUsersFullPermission("set user default private key string");
++        checkManageOrCreateUsersPermission("set user default private key string");
+         UserData userToUpdate = null;
+         synchronized (mPackagesLock) {
+             synchronized (mUsersLock) {
+@@ -692,7 +689,7 @@ public class UserManagerService extends IUserManager.Stub {
+ 
+     @Override
+     public void setUserDefaultPublicKey(int userId, String publicStr) {
+-        checkManageUserAndAcrossUsersFullPermission("set user default private key string");
++        checkManageOrCreateUsersPermission("set user default private key string");
+         UserData userToUpdate = null;
+         synchronized (mPackagesLock) {
+             synchronized (mUsersLock) {
+@@ -718,7 +715,7 @@ public class UserManagerService extends IUserManager.Stub {
+ 
+     @Override
+     public void setUserDefaultWalletAddr(int userId, String walletAddr, String path) {
+-        checkManageUserAndAcrossUsersFullPermission("set user default wallet address");
++        checkManageOrCreateUsersPermission("set user default wallet address");
+         UserData userToUpdate = null;
+         synchronized (mPackagesLock) {
+             synchronized (mUsersLock) {
+-- 
+2.7.4
+
