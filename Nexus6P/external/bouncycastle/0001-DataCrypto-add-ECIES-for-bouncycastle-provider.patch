@@ -1,0 +1,4027 @@
+From 279cea5e82cd9926076df4bd3151d228d567c680 Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Tue, 4 Sep 2018 17:57:20 +0800
+Subject: [PATCH] [DataCrypto]: add "ECIES" for bouncycastle provider
+
+Change-Id: I75cae1026b3e964198eca2ca4922c9f6eafa404b
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ .../crypto/DigestDerivationFunction.java           |  13 +
+ .../org/bouncycastle/crypto/EphemeralKeyPair.java  |  23 +
+ .../org/bouncycastle/crypto/KeyEncapsulation.java  |  22 +
+ .../java/org/bouncycastle/crypto/KeyEncoder.java   |   8 +
+ .../java/org/bouncycastle/crypto/KeyParser.java    |  12 +
+ .../bouncycastle/crypto/digests/KeccakDigest.java  | 549 +++++++++++++++++++++
+ .../bouncycastle/crypto/digests/SHA3Digest.java    |  75 +++
+ .../bouncycastle/crypto/digests/SHA512tDigest.java | 227 +++++++++
+ .../org/bouncycastle/crypto/engines/IESEngine.java | 460 +++++++++++++++++
+ .../crypto/generators/BaseKDFBytesGenerator.java   | 143 ++++++
+ .../crypto/generators/DHKeyPairGenerator.java      |  42 ++
+ .../generators/EphemeralKeyPairGenerator.java      |  26 +
+ .../crypto/generators/KDF2BytesGenerator.java      |  24 +
+ .../crypto/kems/ECIESKeyEncapsulation.java         | 254 ++++++++++
+ .../bouncycastle/crypto/params/IESParameters.java  |  44 ++
+ .../crypto/params/IESWithCipherParameters.java     |  30 ++
+ .../crypto/params/ISO18033KDFParameters.java       |  23 +
+ .../crypto/parsers/DHIESPublicKeyParser.java       |  32 ++
+ .../crypto/parsers/ECIESPublicKeyParser.java       |  54 ++
+ .../bouncycastle/crypto/util/DigestFactory.java    |  77 +++
+ .../jcajce/provider/asymmetric/EC.java             |   4 +-
+ .../jcajce/provider/asymmetric/IES.java            |  23 +
+ .../jcajce/provider/asymmetric/dh/IESCipher.java   | 546 ++++++++++++++++++++
+ .../jcajce/provider/asymmetric/ec/IESCipher.java   | 544 ++++++++++++++++++++
+ .../asymmetric/ies/AlgorithmParametersSpi.java     | 184 +++++++
+ .../jcajce/provider/asymmetric/util/IESUtil.java   |  38 ++
+ .../org/bouncycastle/jce/interfaces/IESKey.java    |  22 +
+ .../jce/provider/BouncyCastleProvider.java         |   7 +-
+ .../java/org/bouncycastle/jce/spec/IEKeySpec.java  |  70 +++
+ .../bouncycastle/jce/spec/IESParameterSpec.java    | 158 ++++++
+ .../bouncycastle/util/MemoableResetException.java  |  22 +
+ 31 files changed, 3748 insertions(+), 8 deletions(-)
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/DigestDerivationFunction.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/EphemeralKeyPair.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/KeyEncapsulation.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/KeyEncoder.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/KeyParser.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/digests/KeccakDigest.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/digests/SHA3Digest.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/digests/SHA512tDigest.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/engines/IESEngine.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/generators/BaseKDFBytesGenerator.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/generators/DHKeyPairGenerator.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/generators/EphemeralKeyPairGenerator.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/generators/KDF2BytesGenerator.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/kems/ECIESKeyEncapsulation.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/params/IESParameters.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/params/IESWithCipherParameters.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/params/ISO18033KDFParameters.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/parsers/DHIESPublicKeyParser.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/parsers/ECIESPublicKeyParser.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/crypto/util/DigestFactory.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/IES.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/dh/IESCipher.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/ec/IESCipher.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/ies/AlgorithmParametersSpi.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/util/IESUtil.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/jce/interfaces/IESKey.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/jce/spec/IEKeySpec.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/jce/spec/IESParameterSpec.java
+ create mode 100644 bcprov/src/main/java/org/bouncycastle/util/MemoableResetException.java
+
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/DigestDerivationFunction.java b/bcprov/src/main/java/org/bouncycastle/crypto/DigestDerivationFunction.java
+new file mode 100644
+index 0000000..180382d
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/DigestDerivationFunction.java
+@@ -0,0 +1,13 @@
++package org.bouncycastle.crypto;
++
++/**
++ * base interface for general purpose Digest based byte derivation functions.
++ */
++public interface DigestDerivationFunction
++    extends DerivationFunction
++{
++    /**
++     * return the message digest used as the basis for the function
++     */
++    public Digest getDigest();
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/EphemeralKeyPair.java b/bcprov/src/main/java/org/bouncycastle/crypto/EphemeralKeyPair.java
+new file mode 100644
+index 0000000..f16812f
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/EphemeralKeyPair.java
+@@ -0,0 +1,23 @@
++package org.bouncycastle.crypto;
++
++public class EphemeralKeyPair
++{
++    private AsymmetricCipherKeyPair keyPair;
++    private KeyEncoder publicKeyEncoder;
++
++    public EphemeralKeyPair(AsymmetricCipherKeyPair keyPair, KeyEncoder publicKeyEncoder)
++    {
++        this.keyPair = keyPair;
++        this.publicKeyEncoder = publicKeyEncoder;
++    }
++
++    public AsymmetricCipherKeyPair getKeyPair()
++    {
++        return keyPair;
++    }
++
++    public byte[] getEncodedPublicKey()
++    {
++        return publicKeyEncoder.getEncoded(keyPair.getPublic());
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/KeyEncapsulation.java b/bcprov/src/main/java/org/bouncycastle/crypto/KeyEncapsulation.java
+new file mode 100644
+index 0000000..1674457
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/KeyEncapsulation.java
+@@ -0,0 +1,22 @@
++package org.bouncycastle.crypto;
++
++/**
++ * The basic interface for key encapsulation mechanisms.
++ */
++public interface KeyEncapsulation
++{
++    /**
++     * Initialise the key encapsulation mechanism.
++     */
++    public void init(CipherParameters param);
++
++    /**
++     * Encapsulate a randomly generated session key.    
++     */
++    public CipherParameters encrypt(byte[] out, int outOff, int keyLen);
++    
++    /**
++     * Decapsulate an encapsulated session key.
++     */
++    public CipherParameters decrypt(byte[] in, int inOff, int inLen, int keyLen);
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/KeyEncoder.java b/bcprov/src/main/java/org/bouncycastle/crypto/KeyEncoder.java
+new file mode 100644
+index 0000000..92ded9c
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/KeyEncoder.java
+@@ -0,0 +1,8 @@
++package org.bouncycastle.crypto;
++
++import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
++
++public interface KeyEncoder
++{
++    byte[] getEncoded(AsymmetricKeyParameter keyParameter);
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/KeyParser.java b/bcprov/src/main/java/org/bouncycastle/crypto/KeyParser.java
+new file mode 100644
+index 0000000..60ce29d
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/KeyParser.java
+@@ -0,0 +1,12 @@
++package org.bouncycastle.crypto;
++
++import java.io.IOException;
++import java.io.InputStream;
++
++import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
++
++public interface KeyParser
++{
++    AsymmetricKeyParameter readKey(InputStream stream)
++        throws IOException;
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/digests/KeccakDigest.java b/bcprov/src/main/java/org/bouncycastle/crypto/digests/KeccakDigest.java
+new file mode 100644
+index 0000000..4a6be46
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/digests/KeccakDigest.java
+@@ -0,0 +1,549 @@
++package org.bouncycastle.crypto.digests;
++
++import org.bouncycastle.crypto.ExtendedDigest;
++import org.bouncycastle.util.Arrays;
++
++/**
++ * implementation of Keccak based on following KeccakNISTInterface.c from http://keccak.noekeon.org/
++ * <p>
++ * Following the naming conventions used in the C source code to enable easy review of the implementation.
++ */
++public class KeccakDigest
++    implements ExtendedDigest
++{
++    private static long[] KeccakRoundConstants = keccakInitializeRoundConstants();
++
++    private static int[] KeccakRhoOffsets = keccakInitializeRhoOffsets();
++
++    private static long[] keccakInitializeRoundConstants()
++    {
++        long[] keccakRoundConstants = new long[24];
++        byte[] LFSRstate = new byte[1];
++
++        LFSRstate[0] = 0x01;
++        int i, j, bitPosition;
++
++        for (i = 0; i < 24; i++)
++        {
++            keccakRoundConstants[i] = 0;
++            for (j = 0; j < 7; j++)
++            {
++                bitPosition = (1 << j) - 1;
++                if (LFSR86540(LFSRstate))
++                {
++                    keccakRoundConstants[i] ^= 1L << bitPosition;
++                }
++            }
++        }
++
++        return keccakRoundConstants;
++    }
++
++    private static boolean LFSR86540(byte[] LFSR)
++    {
++        boolean result = (((LFSR[0]) & 0x01) != 0);
++        if (((LFSR[0]) & 0x80) != 0)
++        {
++            LFSR[0] = (byte)(((LFSR[0]) << 1) ^ 0x71);
++        }
++        else
++        {
++            LFSR[0] <<= 1;
++        }
++
++        return result;
++    }
++
++    private static int[] keccakInitializeRhoOffsets()
++    {
++        int[] keccakRhoOffsets = new int[25];
++        int x, y, t, newX, newY;
++
++        keccakRhoOffsets[(((0) % 5) + 5 * ((0) % 5))] = 0;
++        x = 1;
++        y = 0;
++        for (t = 0; t < 24; t++)
++        {
++            keccakRhoOffsets[(((x) % 5) + 5 * ((y) % 5))] = ((t + 1) * (t + 2) / 2) % 64;
++            newX = (0 * x + 1 * y) % 5;
++            newY = (2 * x + 3 * y) % 5;
++            x = newX;
++            y = newY;
++        }
++
++        return keccakRhoOffsets;
++    }
++
++    protected byte[] state = new byte[(1600 / 8)];
++    protected byte[] dataQueue = new byte[(1536 / 8)];
++    protected int rate;
++    protected int bitsInQueue;
++    protected int fixedOutputLength;
++    protected boolean squeezing;
++    protected int bitsAvailableForSqueezing;
++    protected byte[] chunk;
++    protected byte[] oneByte;
++
++    private void clearDataQueueSection(int off, int len)
++    {
++        for (int i = off; i != off + len; i++)
++        {
++            dataQueue[i] = 0;
++        }
++    }
++
++    public KeccakDigest()
++    {
++        this(288);
++    }
++
++    public KeccakDigest(int bitLength)
++    {
++        init(bitLength);
++    }
++
++    public KeccakDigest(KeccakDigest source) {
++        System.arraycopy(source.state, 0, this.state, 0, source.state.length);
++        System.arraycopy(source.dataQueue, 0, this.dataQueue, 0, source.dataQueue.length);
++        this.rate = source.rate;
++        this.bitsInQueue = source.bitsInQueue;
++        this.fixedOutputLength = source.fixedOutputLength;
++        this.squeezing = source.squeezing;
++        this.bitsAvailableForSqueezing = source.bitsAvailableForSqueezing;
++        this.chunk = Arrays.clone(source.chunk);
++        this.oneByte = Arrays.clone(source.oneByte);
++    }
++
++    public String getAlgorithmName()
++    {
++        return "Keccak-" + fixedOutputLength;
++    }
++
++    public int getDigestSize()
++    {
++        return fixedOutputLength / 8;
++    }
++
++    public void update(byte in)
++    {
++        oneByte[0] = in;
++
++        absorb(oneByte, 0, 8L);
++    }
++
++    public void update(byte[] in, int inOff, int len)
++    {
++        absorb(in, inOff, len * 8L);
++    }
++
++    public int doFinal(byte[] out, int outOff)
++    {
++        squeeze(out, outOff, fixedOutputLength);
++
++        reset();
++
++        return getDigestSize();
++    }
++
++    /*
++     * TODO Possible API change to support partial-byte suffixes.
++     */
++    protected int doFinal(byte[] out, int outOff, byte partialByte, int partialBits)
++    {
++        if (partialBits > 0)
++        {
++            oneByte[0] = partialByte;
++            absorb(oneByte, 0, partialBits);
++        }
++
++        squeeze(out, outOff, fixedOutputLength);
++
++        reset();
++
++        return getDigestSize();
++    }
++
++    public void reset()
++    {
++        init(fixedOutputLength);
++    }
++
++    /**
++     * Return the size of block that the compression function is applied to in bytes.
++     *
++     * @return internal byte length of a block.
++     */
++    public int getByteLength()
++    {
++        return rate / 8;
++    }
++
++    private void init(int bitLength)
++    {
++        switch (bitLength)
++        {
++        case 288:
++            initSponge(1024, 576);
++            break;
++        case 128:
++            initSponge(1344, 256);
++            break;
++        case 224:
++            initSponge(1152, 448);
++            break;
++        case 256:
++            initSponge(1088, 512);
++            break;
++        case 384:
++            initSponge(832, 768);
++            break;
++        case 512:
++            initSponge(576, 1024);
++            break;
++        default:
++            throw new IllegalArgumentException("bitLength must be one of 128, 224, 256, 288, 384, or 512.");
++        }
++    }
++
++    private void initSponge(int rate, int capacity)
++    {
++        if (rate + capacity != 1600)
++        {
++            throw new IllegalStateException("rate + capacity != 1600");
++        }
++        if ((rate <= 0) || (rate >= 1600) || ((rate % 64) != 0))
++        {
++            throw new IllegalStateException("invalid rate value");
++        }
++
++        this.rate = rate;
++        // this is never read, need to check to see why we want to save it
++        //  this.capacity = capacity;
++        Arrays.fill(this.state, (byte)0);
++        Arrays.fill(this.dataQueue, (byte)0);
++        this.bitsInQueue = 0;
++        this.squeezing = false;
++        this.bitsAvailableForSqueezing = 0;
++        this.fixedOutputLength = capacity / 2;
++        this.chunk = new byte[rate / 8];
++        this.oneByte = new byte[1];
++    }
++
++    private void absorbQueue()
++    {
++        KeccakAbsorb(state, dataQueue, rate / 8);
++
++        bitsInQueue = 0;
++    }
++
++    protected void absorb(byte[] data, int off, long databitlen)
++    {
++        long i, j, wholeBlocks;
++
++        if ((bitsInQueue % 8) != 0)
++        {
++            throw new IllegalStateException("attempt to absorb with odd length queue");
++        }
++        if (squeezing)
++        {
++            throw new IllegalStateException("attempt to absorb while squeezing");
++        }
++
++        i = 0;
++        while (i < databitlen)
++        {
++            if ((bitsInQueue == 0) && (databitlen >= rate) && (i <= (databitlen - rate)))
++            {
++                wholeBlocks = (databitlen - i) / rate;
++
++                for (j = 0; j < wholeBlocks; j++)
++                {
++                    System.arraycopy(data, (int)(off + (i / 8) + (j * chunk.length)), chunk, 0, chunk.length);
++
++//                            displayIntermediateValues.displayBytes(1, "Block to be absorbed", curData, rate / 8);
++
++                    KeccakAbsorb(state, chunk, chunk.length);
++                }
++
++                i += wholeBlocks * rate;
++            }
++            else
++            {
++                int partialBlock = (int)(databitlen - i);
++                if (partialBlock + bitsInQueue > rate)
++                {
++                    partialBlock = rate - bitsInQueue;
++                }
++                int partialByte = partialBlock % 8;
++                partialBlock -= partialByte;
++                System.arraycopy(data, off + (int)(i / 8), dataQueue, bitsInQueue / 8, partialBlock / 8);
++
++                bitsInQueue += partialBlock;
++                i += partialBlock;
++                if (bitsInQueue == rate)
++                {
++                    absorbQueue();
++                }
++                if (partialByte > 0)
++                {
++                    int mask = (1 << partialByte) - 1;
++                    dataQueue[bitsInQueue / 8] = (byte)(data[off + ((int)(i / 8))] & mask);
++                    bitsInQueue += partialByte;
++                    i += partialByte;
++                }
++            }
++        }
++    }
++
++    private void padAndSwitchToSqueezingPhase()
++    {
++        if (bitsInQueue + 1 == rate)
++        {
++            dataQueue[bitsInQueue / 8] |= 1 << (bitsInQueue % 8);
++            absorbQueue();
++            clearDataQueueSection(0, rate / 8);
++        }
++        else
++        {
++            clearDataQueueSection((bitsInQueue + 7) / 8, rate / 8 - (bitsInQueue + 7) / 8);
++            dataQueue[bitsInQueue / 8] |= 1 << (bitsInQueue % 8);
++        }
++        dataQueue[(rate - 1) / 8] |= 1 << ((rate - 1) % 8);
++        absorbQueue();
++
++
++//            displayIntermediateValues.displayText(1, "--- Switching to squeezing phase ---");
++
++
++        if (rate == 1024)
++        {
++            KeccakExtract1024bits(state, dataQueue);
++            bitsAvailableForSqueezing = 1024;
++        }
++        else
++
++        {
++            KeccakExtract(state, dataQueue, rate / 64);
++            bitsAvailableForSqueezing = rate;
++        }
++
++//            displayIntermediateValues.displayBytes(1, "Block available for squeezing", dataQueue, bitsAvailableForSqueezing / 8);
++
++        squeezing = true;
++    }
++
++    protected void squeeze(byte[] output, int offset, long outputLength)
++    {
++        long i;
++        int partialBlock;
++
++        if (!squeezing)
++        {
++            padAndSwitchToSqueezingPhase();
++        }
++        if ((outputLength % 8) != 0)
++        {
++            throw new IllegalStateException("outputLength not a multiple of 8");
++        }
++
++        i = 0;
++        while (i < outputLength)
++        {
++            if (bitsAvailableForSqueezing == 0)
++            {
++                keccakPermutation(state);
++
++                if (rate == 1024)
++                {
++                    KeccakExtract1024bits(state, dataQueue);
++                    bitsAvailableForSqueezing = 1024;
++                }
++                else
++
++                {
++                    KeccakExtract(state, dataQueue, rate / 64);
++                    bitsAvailableForSqueezing = rate;
++                }
++
++//                    displayIntermediateValues.displayBytes(1, "Block available for squeezing", dataQueue, bitsAvailableForSqueezing / 8);
++
++            }
++            partialBlock = bitsAvailableForSqueezing;
++            if ((long)partialBlock > outputLength - i)
++            {
++                partialBlock = (int)(outputLength - i);
++            }
++
++            System.arraycopy(dataQueue, (rate - bitsAvailableForSqueezing) / 8, output, offset + (int)(i / 8), partialBlock / 8);
++            bitsAvailableForSqueezing -= partialBlock;
++            i += partialBlock;
++        }
++    }
++
++    private void fromBytesToWords(long[] stateAsWords, byte[] state)
++    {
++        for (int i = 0; i < (1600 / 64); i++)
++        {
++            stateAsWords[i] = 0;
++            int index = i * (64 / 8);
++            for (int j = 0; j < (64 / 8); j++)
++            {
++                stateAsWords[i] |= ((long)state[index + j] & 0xff) << ((8 * j));
++            }
++        }
++    }
++
++    private void fromWordsToBytes(byte[] state, long[] stateAsWords)
++    {
++        for (int i = 0; i < (1600 / 64); i++)
++        {
++            int index = i * (64 / 8);
++            for (int j = 0; j < (64 / 8); j++)
++            {
++                state[index + j] = (byte)((stateAsWords[i] >>> ((8 * j))) & 0xFF);
++            }
++        }
++    }
++
++    private void keccakPermutation(byte[] state)
++    {
++        long[] longState = new long[state.length / 8];
++
++        fromBytesToWords(longState, state);
++
++//        displayIntermediateValues.displayStateAsBytes(1, "Input of permutation", longState);
++
++        keccakPermutationOnWords(longState);
++
++//        displayIntermediateValues.displayStateAsBytes(1, "State after permutation", longState);
++
++        fromWordsToBytes(state, longState);
++    }
++
++    private void keccakPermutationAfterXor(byte[] state, byte[] data, int dataLengthInBytes)
++    {
++        int i;
++
++        for (i = 0; i < dataLengthInBytes; i++)
++        {
++            state[i] ^= data[i];
++        }
++
++        keccakPermutation(state);
++    }
++
++    private void keccakPermutationOnWords(long[] state)
++    {
++        int i;
++
++//        displayIntermediateValues.displayStateAs64bitWords(3, "Same, with lanes as 64-bit words", state);
++
++        for (i = 0; i < 24; i++)
++        {
++//            displayIntermediateValues.displayRoundNumber(3, i);
++
++            theta(state);
++//            displayIntermediateValues.displayStateAs64bitWords(3, "After theta", state);
++
++            rho(state);
++//            displayIntermediateValues.displayStateAs64bitWords(3, "After rho", state);
++
++            pi(state);
++//            displayIntermediateValues.displayStateAs64bitWords(3, "After pi", state);
++
++            chi(state);
++//            displayIntermediateValues.displayStateAs64bitWords(3, "After chi", state);
++
++            iota(state, i);
++//            displayIntermediateValues.displayStateAs64bitWords(3, "After iota", state);
++        }
++    }
++
++    long[] C = new long[5];
++
++    private void theta(long[] A)
++    {
++        for (int x = 0; x < 5; x++)
++        {
++            C[x] = 0;
++            for (int y = 0; y < 5; y++)
++            {
++                C[x] ^= A[x + 5 * y];
++            }
++        }
++        for (int x = 0; x < 5; x++)
++        {
++            long dX = ((((C[(x + 1) % 5]) << 1) ^ ((C[(x + 1) % 5]) >>> (64 - 1)))) ^ C[(x + 4) % 5];
++            for (int y = 0; y < 5; y++)
++            {
++                A[x + 5 * y] ^= dX;
++            }
++        }
++    }
++
++    private void rho(long[] A)
++    {
++        for (int x = 0; x < 5; x++)
++        {
++            for (int y = 0; y < 5; y++)
++            {
++                int index = x + 5 * y;
++                A[index] = ((KeccakRhoOffsets[index] != 0) ? (((A[index]) << KeccakRhoOffsets[index]) ^ ((A[index]) >>> (64 - KeccakRhoOffsets[index]))) : A[index]);
++            }
++        }
++    }
++
++    long[] tempA = new long[25];
++
++    private void pi(long[] A)
++    {
++        System.arraycopy(A, 0, tempA, 0, tempA.length);
++
++        for (int x = 0; x < 5; x++)
++        {
++            for (int y = 0; y < 5; y++)
++            {
++                A[y + 5 * ((2 * x + 3 * y) % 5)] = tempA[x + 5 * y];
++            }
++        }
++    }
++
++    long[] chiC = new long[5];
++
++    private void chi(long[] A)
++    {
++        for (int y = 0; y < 5; y++)
++        {
++            for (int x = 0; x < 5; x++)
++            {
++                chiC[x] = A[x + 5 * y] ^ ((~A[(((x + 1) % 5) + 5 * y)]) & A[(((x + 2) % 5) + 5 * y)]);
++            }
++            for (int x = 0; x < 5; x++)
++            {
++                A[x + 5 * y] = chiC[x];
++            }
++        }
++    }
++
++    private void iota(long[] A, int indexRound)
++    {
++        A[(((0) % 5) + 5 * ((0) % 5))] ^= KeccakRoundConstants[indexRound];
++    }
++
++    private void KeccakAbsorb(byte[] byteState, byte[] data, int dataInBytes)
++    {
++        keccakPermutationAfterXor(byteState, data, dataInBytes);
++    }
++
++
++    private void KeccakExtract1024bits(byte[] byteState, byte[] data)
++    {
++        System.arraycopy(byteState, 0, data, 0, 128);
++    }
++
++
++    private void KeccakExtract(byte[] byteState, byte[] data, int laneCount)
++    {
++        System.arraycopy(byteState, 0, data, 0, laneCount * 8);
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/digests/SHA3Digest.java b/bcprov/src/main/java/org/bouncycastle/crypto/digests/SHA3Digest.java
+new file mode 100644
+index 0000000..676d5ed
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/digests/SHA3Digest.java
+@@ -0,0 +1,75 @@
++package org.bouncycastle.crypto.digests;
++
++
++/**
++ * implementation of SHA-3 based on following KeccakNISTInterface.c from http://keccak.noekeon.org/
++ * <p>
++ * Following the naming conventions used in the C source code to enable easy review of the implementation.
++ */
++public class SHA3Digest
++    extends KeccakDigest
++{
++    private static int checkBitLength(int bitLength)
++    {
++        switch (bitLength)
++        {
++        case 224:
++        case 256:
++        case 384:
++        case 512:
++            return bitLength;
++        default:
++            throw new IllegalArgumentException("'bitLength' " + bitLength + " not supported for SHA-3");
++        }
++    }
++
++    public SHA3Digest()
++    {
++        this(256);
++    }
++
++    public SHA3Digest(int bitLength)
++    {
++        super(checkBitLength(bitLength));
++    }
++
++    public SHA3Digest(SHA3Digest source) {
++        super(source);
++    }
++
++    public String getAlgorithmName()
++    {
++        return "SHA3-" + fixedOutputLength;
++    }
++
++    public int doFinal(byte[] out, int outOff)
++    {
++        absorb(new byte[]{ 0x02 }, 0, 2);
++        
++        return super.doFinal(out,  outOff);
++    }
++
++    /*
++     * TODO Possible API change to support partial-byte suffixes.
++     */
++    protected int doFinal(byte[] out, int outOff, byte partialByte, int partialBits)
++    {
++        if (partialBits < 0 || partialBits > 7)
++        {
++            throw new IllegalArgumentException("'partialBits' must be in the range [0,7]");
++        }
++
++        int finalInput = (partialByte & ((1 << partialBits) - 1)) | (0x02 << partialBits);
++        int finalBits = partialBits + 2;
++
++        if (finalBits >= 8)
++        {
++            oneByte[0] = (byte)finalInput;
++            absorb(oneByte, 0, 8);
++            finalBits -= 8;
++            finalInput >>>= 8;
++        }
++
++        return super.doFinal(out, outOff, (byte)finalInput, finalBits);
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/digests/SHA512tDigest.java b/bcprov/src/main/java/org/bouncycastle/crypto/digests/SHA512tDigest.java
+new file mode 100644
+index 0000000..d5848b1
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/digests/SHA512tDigest.java
+@@ -0,0 +1,227 @@
++package org.bouncycastle.crypto.digests;
++
++import org.bouncycastle.util.Memoable;
++import org.bouncycastle.util.MemoableResetException;
++import org.bouncycastle.util.Pack;
++
++/**
++ * FIPS 180-4 implementation of SHA-512/t
++ */
++public class SHA512tDigest
++    extends LongDigest
++{
++    private int digestLength;      // non-final due to old flow analyser.
++
++    private long  H1t, H2t, H3t, H4t, H5t, H6t, H7t, H8t;
++
++    /**
++     * Standard constructor
++     */
++    public SHA512tDigest(int bitLength)
++    {
++        if (bitLength >= 512)
++        {
++            throw new IllegalArgumentException("bitLength cannot be >= 512");
++        }
++
++        if (bitLength % 8 != 0)
++        {
++            throw new IllegalArgumentException("bitLength needs to be a multiple of 8");
++        }
++
++        if (bitLength == 384)
++        {
++            throw new IllegalArgumentException("bitLength cannot be 384 use SHA384 instead");
++        }
++
++        this.digestLength = bitLength / 8;
++
++        tIvGenerate(digestLength * 8);
++
++        reset();
++    }
++
++    /**
++     * Copy constructor.  This will copy the state of the provided
++     * message digest.
++     */
++    public SHA512tDigest(SHA512tDigest t)
++    {
++        super(t);
++
++        this.digestLength = t.digestLength;
++
++        reset(t);
++    }
++
++    public SHA512tDigest(byte[] encodedState)
++    {
++        this(readDigestLength(encodedState));
++        restoreState(encodedState);
++    }
++
++    private static int readDigestLength(byte[] encodedState)
++    {
++        return Pack.bigEndianToInt(encodedState, encodedState.length - 4);
++    }
++
++    public String getAlgorithmName()
++    {
++        return "SHA-512/" + Integer.toString(digestLength * 8);
++    }
++
++    public int getDigestSize()
++    {
++        return digestLength;
++    }
++
++    public int doFinal(
++        byte[]  out,
++        int     outOff)
++    {
++        finish();
++
++        longToBigEndian(H1, out, outOff, digestLength);
++        longToBigEndian(H2, out, outOff + 8, digestLength - 8);
++        longToBigEndian(H3, out, outOff + 16, digestLength - 16);
++        longToBigEndian(H4, out, outOff + 24, digestLength - 24);
++        longToBigEndian(H5, out, outOff + 32, digestLength - 32);
++        longToBigEndian(H6, out, outOff + 40, digestLength - 40);
++        longToBigEndian(H7, out, outOff + 48, digestLength - 48);
++        longToBigEndian(H8, out, outOff + 56, digestLength - 56);
++
++        reset();
++
++        return digestLength;
++    }
++
++    /**
++     * reset the chaining variables
++     */
++    public void reset()
++    {
++        super.reset();
++
++        /*
++         * initial hash values use the iv generation algorithm for t.
++         */
++        H1 = H1t;
++        H2 = H2t;
++        H3 = H3t;
++        H4 = H4t;
++        H5 = H5t;
++        H6 = H6t;
++        H7 = H7t;
++        H8 = H8t;
++    }
++
++    private void tIvGenerate(int bitLength)
++    {
++        H1 = 0x6a09e667f3bcc908L ^ 0xa5a5a5a5a5a5a5a5L;
++        H2 = 0xbb67ae8584caa73bL ^ 0xa5a5a5a5a5a5a5a5L;
++        H3 = 0x3c6ef372fe94f82bL ^ 0xa5a5a5a5a5a5a5a5L;
++        H4 = 0xa54ff53a5f1d36f1L ^ 0xa5a5a5a5a5a5a5a5L;
++        H5 = 0x510e527fade682d1L ^ 0xa5a5a5a5a5a5a5a5L;
++        H6 = 0x9b05688c2b3e6c1fL ^ 0xa5a5a5a5a5a5a5a5L;
++        H7 = 0x1f83d9abfb41bd6bL ^ 0xa5a5a5a5a5a5a5a5L;
++        H8 = 0x5be0cd19137e2179L ^ 0xa5a5a5a5a5a5a5a5L;
++
++        update((byte)0x53);
++        update((byte)0x48);
++        update((byte)0x41);
++        update((byte)0x2D);
++        update((byte)0x35);
++        update((byte)0x31);
++        update((byte)0x32);
++        update((byte)0x2F);
++
++        if (bitLength > 100)
++        {
++            update((byte)(bitLength / 100 + 0x30));
++            bitLength = bitLength % 100;
++            update((byte)(bitLength / 10 + 0x30));
++            bitLength = bitLength % 10;
++            update((byte)(bitLength + 0x30));
++        }
++        else if (bitLength > 10)
++        {
++            update((byte)(bitLength / 10 + 0x30));
++            bitLength = bitLength % 10;
++            update((byte)(bitLength + 0x30));
++        }
++        else
++        {
++            update((byte)(bitLength + 0x30));
++        }
++
++        finish();
++
++        H1t = H1;
++        H2t = H2;
++        H3t = H3;
++        H4t = H4;
++        H5t = H5;
++        H6t = H6;
++        H7t = H7;
++        H8t = H8;
++    }
++
++    private static void longToBigEndian(long n, byte[] bs, int off, int max)
++    {
++        if (max > 0)
++        {
++            intToBigEndian((int)(n >>> 32), bs, off, max);
++
++            if (max > 4)
++            {
++                intToBigEndian((int)(n & 0xffffffffL), bs, off + 4, max - 4);
++            }
++        }
++    }
++
++    private static void intToBigEndian(int n, byte[] bs, int off, int max)
++    {
++        int num = Math.min(4, max);
++        while (--num >= 0)
++        {
++            int shift = 8 * (3 - num);
++            bs[off + num] = (byte)(n >>> shift);
++        }
++    }
++
++    public Memoable copy()
++    {
++        return new SHA512tDigest(this);
++    }
++
++    public void reset(Memoable other)
++    {
++        SHA512tDigest t = (SHA512tDigest)other;
++
++        if (this.digestLength != t.digestLength)
++        {
++            throw new MemoableResetException("digestLength inappropriate in other");
++        }
++
++        super.copyIn(t);
++
++        this.H1t = t.H1t;
++        this.H2t = t.H2t;
++        this.H3t = t.H3t;
++        this.H4t = t.H4t;
++        this.H5t = t.H5t;
++        this.H6t = t.H6t;
++        this.H7t = t.H7t;
++        this.H8t = t.H8t;
++    }
++
++    public byte[] getEncodedState()
++    {
++        final int baseSize = getEncodedStateSize();
++        byte[] encoded = new byte[baseSize + 4];
++        populateState(encoded);
++        Pack.intToBigEndian(digestLength * 8, encoded, baseSize);
++        return encoded;
++    }
++
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/engines/IESEngine.java b/bcprov/src/main/java/org/bouncycastle/crypto/engines/IESEngine.java
+new file mode 100644
+index 0000000..740379b
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/engines/IESEngine.java
+@@ -0,0 +1,460 @@
++package org.bouncycastle.crypto.engines;
++
++import java.io.ByteArrayInputStream;
++import java.io.IOException;
++import java.math.BigInteger;
++
++import org.bouncycastle.crypto.BasicAgreement;
++import org.bouncycastle.crypto.BufferedBlockCipher;
++import org.bouncycastle.crypto.CipherParameters;
++import org.bouncycastle.crypto.DerivationFunction;
++import org.bouncycastle.crypto.EphemeralKeyPair;
++import org.bouncycastle.crypto.InvalidCipherTextException;
++import org.bouncycastle.crypto.KeyParser;
++import org.bouncycastle.crypto.Mac;
++import org.bouncycastle.crypto.generators.EphemeralKeyPairGenerator;
++import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
++import org.bouncycastle.crypto.params.IESParameters;
++import org.bouncycastle.crypto.params.IESWithCipherParameters;
++import org.bouncycastle.crypto.params.KDFParameters;
++import org.bouncycastle.crypto.params.KeyParameter;
++import org.bouncycastle.crypto.params.ParametersWithIV;
++import org.bouncycastle.util.Arrays;
++import org.bouncycastle.util.BigIntegers;
++import org.bouncycastle.util.Pack;
++
++/**
++ * Support class for constructing integrated encryption ciphers
++ * for doing basic message exchanges on top of key agreement ciphers.
++ * Follows the description given in IEEE Std 1363a.
++ */
++public class IESEngine
++{
++    BasicAgreement agree;
++    DerivationFunction kdf;
++    Mac mac;
++    BufferedBlockCipher cipher;
++    byte[] macBuf;
++
++    boolean forEncryption;
++    CipherParameters privParam, pubParam;
++    IESParameters param;
++
++    byte[] V;
++    private EphemeralKeyPairGenerator keyPairGenerator;
++    private KeyParser keyParser;
++    private byte[] IV;
++
++    /**
++     * set up for use with stream mode, where the key derivation function
++     * is used to provide a stream of bytes to xor with the message.
++     *
++     * @param agree the key agreement used as the basis for the encryption
++     * @param kdf   the key derivation function used for byte generation
++     * @param mac   the message authentication code generator for the message
++     */
++    public IESEngine(
++        BasicAgreement agree,
++        DerivationFunction kdf,
++        Mac mac)
++    {
++        this.agree = agree;
++        this.kdf = kdf;
++        this.mac = mac;
++        this.macBuf = new byte[mac.getMacSize()];
++        this.cipher = null;
++    }
++
++
++    /**
++     * Set up for use in conjunction with a block cipher to handle the
++     * message.It is <b>strongly</b> recommended that the cipher is not in ECB mode.
++     *
++     * @param agree  the key agreement used as the basis for the encryption
++     * @param kdf    the key derivation function used for byte generation
++     * @param mac    the message authentication code generator for the message
++     * @param cipher the cipher to used for encrypting the message
++     */
++    public IESEngine(
++        BasicAgreement agree,
++        DerivationFunction kdf,
++        Mac mac,
++        BufferedBlockCipher cipher)
++    {
++        this.agree = agree;
++        this.kdf = kdf;
++        this.mac = mac;
++        this.macBuf = new byte[mac.getMacSize()];
++        this.cipher = cipher;
++    }
++
++    /**
++     * Initialise the encryptor.
++     *
++     * @param forEncryption whether or not this is encryption/decryption.
++     * @param privParam     our private key parameters
++     * @param pubParam      the recipient's/sender's public key parameters
++     * @param params        encoding and derivation parameters, may be wrapped to include an IV for an underlying block cipher.
++     */
++    public void init(
++        boolean forEncryption,
++        CipherParameters privParam,
++        CipherParameters pubParam,
++        CipherParameters params)
++    {
++        this.forEncryption = forEncryption;
++        this.privParam = privParam;
++        this.pubParam = pubParam;
++        this.V = new byte[0];
++
++        extractParams(params);
++    }
++
++    /**
++     * Initialise the decryptor.
++     *
++     * @param publicKey      the recipient's/sender's public key parameters
++     * @param params         encoding and derivation parameters, may be wrapped to include an IV for an underlying block cipher.
++     * @param ephemeralKeyPairGenerator             the ephemeral key pair generator to use.
++     */
++    public void init(AsymmetricKeyParameter publicKey, CipherParameters params, EphemeralKeyPairGenerator ephemeralKeyPairGenerator)
++    {
++        this.forEncryption = true;
++        this.pubParam = publicKey;
++        this.keyPairGenerator = ephemeralKeyPairGenerator;
++
++        extractParams(params);
++    }
++
++    /**
++     * Initialise the encryptor.
++     *
++     * @param privateKey      the recipient's private key.
++     * @param params          encoding and derivation parameters, may be wrapped to include an IV for an underlying block cipher.
++     * @param publicKeyParser the parser for reading the ephemeral public key.
++     */
++    public void init(AsymmetricKeyParameter privateKey, CipherParameters params, KeyParser publicKeyParser)
++    {
++        this.forEncryption = false;
++        this.privParam = privateKey;
++        this.keyParser = publicKeyParser;
++
++        extractParams(params);
++    }
++
++    private void extractParams(CipherParameters params)
++    {
++        if (params instanceof ParametersWithIV)
++        {
++            this.IV = ((ParametersWithIV)params).getIV();
++            this.param = (IESParameters)((ParametersWithIV)params).getParameters();
++        }
++        else
++        {
++            this.IV = null;
++            this.param = (IESParameters)params;
++        }
++    }
++
++    public BufferedBlockCipher getCipher()
++    {
++        return cipher;
++    }
++
++    public Mac getMac()
++    {
++        return mac;
++    }
++
++    private byte[] encryptBlock(
++        byte[] in,
++        int inOff,
++        int inLen)
++        throws InvalidCipherTextException
++    {
++        byte[] C = null, K = null, K1 = null, K2 = null;
++        int len;
++
++        if (cipher == null)
++        {
++            // Streaming mode.
++            K1 = new byte[inLen];
++            K2 = new byte[param.getMacKeySize() / 8];
++            K = new byte[K1.length + K2.length];
++
++            kdf.generateBytes(K, 0, K.length);
++
++            if (V.length != 0)
++            {
++                System.arraycopy(K, 0, K2, 0, K2.length);
++                System.arraycopy(K, K2.length, K1, 0, K1.length);
++            }
++            else
++            {
++                System.arraycopy(K, 0, K1, 0, K1.length);
++                System.arraycopy(K, inLen, K2, 0, K2.length);
++            }
++
++            C = new byte[inLen];
++
++            for (int i = 0; i != inLen; i++)
++            {
++                C[i] = (byte)(in[inOff + i] ^ K1[i]);
++            }
++            len = inLen;
++        }
++        else
++        {
++            // Block cipher mode.
++            K1 = new byte[((IESWithCipherParameters)param).getCipherKeySize() / 8];
++            K2 = new byte[param.getMacKeySize() / 8];
++            K = new byte[K1.length + K2.length];
++
++            kdf.generateBytes(K, 0, K.length);
++            System.arraycopy(K, 0, K1, 0, K1.length);
++            System.arraycopy(K, K1.length, K2, 0, K2.length);
++
++            // If iv provided use it to initialise the cipher
++            if (IV != null)
++            {
++                cipher.init(true, new ParametersWithIV(new KeyParameter(K1), IV));
++            }
++            else
++            {
++                cipher.init(true, new KeyParameter(K1));    
++            }
++            
++            C = new byte[cipher.getOutputSize(inLen)];
++            len = cipher.processBytes(in, inOff, inLen, C, 0);
++            len += cipher.doFinal(C, len);
++        }
++
++
++        // Convert the length of the encoding vector into a byte array.
++        byte[] P2 = param.getEncodingV();
++        byte[] L2 = null;
++        if (V.length != 0)
++        {
++            L2 = getLengthTag(P2);
++        }
++
++
++        // Apply the MAC.
++        byte[] T = new byte[mac.getMacSize()];
++
++        mac.init(new KeyParameter(K2));
++        mac.update(C, 0, C.length);
++        if (P2 != null)
++        {
++            mac.update(P2, 0, P2.length);
++        }
++        if (V.length != 0)
++        {
++            mac.update(L2, 0, L2.length);
++        }
++        mac.doFinal(T, 0);
++
++
++        // Output the triple (V,C,T).
++        byte[] Output = new byte[V.length + len + T.length];
++        System.arraycopy(V, 0, Output, 0, V.length);
++        System.arraycopy(C, 0, Output, V.length, len);
++        System.arraycopy(T, 0, Output, V.length + len, T.length);
++        return Output;
++    }
++
++    private byte[] decryptBlock(
++        byte[] in_enc,
++        int inOff,
++        int inLen)
++        throws InvalidCipherTextException
++    {
++        byte[] M, K, K1, K2;
++        int len = 0;
++
++        // Ensure that the length of the input is greater than the MAC in bytes
++        if (inLen < V.length + mac.getMacSize())
++        {
++            throw new InvalidCipherTextException("Length of input must be greater than the MAC and V combined");
++        }
++
++        // note order is important: set up keys, do simple encryptions, check mac, do final encryption.
++        if (cipher == null)
++        {
++            // Streaming mode.
++            K1 = new byte[inLen - V.length - mac.getMacSize()];
++            K2 = new byte[param.getMacKeySize() / 8];
++            K = new byte[K1.length + K2.length];
++
++            kdf.generateBytes(K, 0, K.length);
++
++            if (V.length != 0)
++            {
++                System.arraycopy(K, 0, K2, 0, K2.length);
++                System.arraycopy(K, K2.length, K1, 0, K1.length);
++            }
++            else
++            {
++                System.arraycopy(K, 0, K1, 0, K1.length);
++                System.arraycopy(K, K1.length, K2, 0, K2.length);
++            }
++
++            // process the message
++            M = new byte[K1.length];
++
++            for (int i = 0; i != K1.length; i++)
++            {
++                M[i] = (byte)(in_enc[inOff + V.length + i] ^ K1[i]);
++            }
++        }
++        else
++        {
++            // Block cipher mode.        
++            K1 = new byte[((IESWithCipherParameters)param).getCipherKeySize() / 8];
++            K2 = new byte[param.getMacKeySize() / 8];
++            K = new byte[K1.length + K2.length];
++
++            kdf.generateBytes(K, 0, K.length);
++            System.arraycopy(K, 0, K1, 0, K1.length);
++            System.arraycopy(K, K1.length, K2, 0, K2.length);
++
++            // If IV provide use it to initialize the cipher
++            if (IV != null)
++            {
++                cipher.init(false, new ParametersWithIV(new KeyParameter(K1), IV));
++            }
++            else
++            {
++                cipher.init(false, new KeyParameter(K1));
++            }
++
++            M = new byte[cipher.getOutputSize(inLen - V.length - mac.getMacSize())];
++
++            // do initial processing
++            len = cipher.processBytes(in_enc, inOff + V.length, inLen - V.length - mac.getMacSize(), M, 0);
++        }
++
++        // Convert the length of the encoding vector into a byte array.
++        byte[] P2 = param.getEncodingV();
++        byte[] L2 = null;
++        if (V.length != 0)
++        {
++            L2 = getLengthTag(P2);
++        }
++
++        // Verify the MAC.
++        int end = inOff + inLen;
++        byte[] T1 = Arrays.copyOfRange(in_enc, end - mac.getMacSize(), end);
++
++        byte[] T2 = new byte[T1.length];
++        mac.init(new KeyParameter(K2));
++        mac.update(in_enc, inOff + V.length, inLen - V.length - T2.length);
++
++        if (P2 != null)
++        {
++            mac.update(P2, 0, P2.length);
++        }
++        if (V.length != 0)
++        {
++            mac.update(L2, 0, L2.length);
++        }
++        mac.doFinal(T2, 0);
++
++        if (!Arrays.constantTimeAreEqual(T1, T2))
++        {
++            throw new InvalidCipherTextException("invalid MAC");
++        }
++
++        if (cipher == null)
++        {
++            return M;
++        }
++        else
++        {
++            len += cipher.doFinal(M, len);
++
++            return Arrays.copyOfRange(M, 0, len);
++        }
++    }
++
++
++    public byte[] processBlock(
++        byte[] in,
++        int inOff,
++        int inLen)
++        throws InvalidCipherTextException
++    {
++        if (forEncryption)
++        {
++            if (keyPairGenerator != null)
++            {
++                EphemeralKeyPair ephKeyPair = keyPairGenerator.generate();
++
++                this.privParam = ephKeyPair.getKeyPair().getPrivate();
++                this.V = ephKeyPair.getEncodedPublicKey();
++            }
++        }
++        else
++        {
++            if (keyParser != null)
++            {
++                ByteArrayInputStream bIn = new ByteArrayInputStream(in, inOff, inLen);
++
++                try
++                {
++                    this.pubParam = keyParser.readKey(bIn);
++                }
++                catch (IOException e)
++                {
++                    throw new InvalidCipherTextException("unable to recover ephemeral public key: " + e.getMessage(), e);
++                }
++                catch (IllegalArgumentException e)
++                {
++                    throw new InvalidCipherTextException("unable to recover ephemeral public key: " + e.getMessage(), e);
++                }
++
++                int encLength = (inLen - bIn.available());
++                this.V = Arrays.copyOfRange(in, inOff, inOff + encLength);
++            }
++        }
++
++        // Compute the common value and convert to byte array. 
++        agree.init(privParam);
++        BigInteger z = agree.calculateAgreement(pubParam);
++        byte[] Z = BigIntegers.asUnsignedByteArray(agree.getFieldSize(), z);
++
++        // Create input to KDF.  
++        if (V.length != 0)
++        {
++            byte[] VZ = Arrays.concatenate(V, Z);
++            Arrays.fill(Z, (byte)0);
++            Z = VZ;
++        }
++
++        try
++        {
++            // Initialise the KDF.
++            KDFParameters kdfParam = new KDFParameters(Z, param.getDerivationV());
++            kdf.init(kdfParam);
++
++            return forEncryption
++                ? encryptBlock(in, inOff, inLen)
++                : decryptBlock(in, inOff, inLen);
++        }
++        finally
++        {
++            Arrays.fill(Z, (byte)0);
++        }
++    }
++
++    // as described in Shroup's paper and P1363a
++    protected byte[] getLengthTag(byte[] p2)
++    {
++        byte[] L2 = new byte[8];
++        if (p2 != null)
++        {
++            Pack.longToBigEndian(p2.length * 8L, L2, 0);
++        }
++        return L2;
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/generators/BaseKDFBytesGenerator.java b/bcprov/src/main/java/org/bouncycastle/crypto/generators/BaseKDFBytesGenerator.java
+new file mode 100644
+index 0000000..b5a2080
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/generators/BaseKDFBytesGenerator.java
+@@ -0,0 +1,143 @@
++package org.bouncycastle.crypto.generators;
++
++import org.bouncycastle.crypto.DataLengthException;
++import org.bouncycastle.crypto.DerivationParameters;
++import org.bouncycastle.crypto.Digest;
++import org.bouncycastle.crypto.DigestDerivationFunction;
++import org.bouncycastle.crypto.params.ISO18033KDFParameters;
++import org.bouncycastle.crypto.params.KDFParameters;
++import org.bouncycastle.util.Pack;
++
++/**
++ * Basic KDF generator for derived keys and ivs as defined by IEEE P1363a/ISO
++ * 18033 <br>
++ * This implementation is based on ISO 18033/P1363a.
++ */
++public class BaseKDFBytesGenerator
++    implements DigestDerivationFunction
++{
++    private int    counterStart;
++    private Digest digest;
++    private byte[] shared;
++    private byte[] iv;
++
++    /**
++     * Construct a KDF Parameters generator.
++     * <p>
++     * 
++     * @param counterStart
++     *            value of counter.
++     * @param digest
++     *            the digest to be used as the source of derived keys.
++     */
++    protected BaseKDFBytesGenerator(int counterStart, Digest digest)
++    {
++        this.counterStart = counterStart;
++        this.digest = digest;
++    }
++
++    public void init(DerivationParameters param)
++    {
++        if (param instanceof KDFParameters)
++        {
++            KDFParameters p = (KDFParameters)param;
++
++            shared = p.getSharedSecret();
++            iv = p.getIV();
++        }
++        else if (param instanceof ISO18033KDFParameters)
++        {
++            ISO18033KDFParameters p = (ISO18033KDFParameters)param;
++
++            shared = p.getSeed();
++            iv = null;
++        }
++        else
++        {
++            throw new IllegalArgumentException("KDF parameters required for generator");
++        }
++    }
++
++    /**
++     * return the underlying digest.
++     */
++    public Digest getDigest()
++    {
++        return digest;
++    }
++
++    /**
++     * fill len bytes of the output buffer with bytes generated from the
++     * derivation function.
++     * 
++     * @throws IllegalArgumentException
++     *             if the size of the request will cause an overflow.
++     * @throws DataLengthException
++     *             if the out buffer is too small.
++     */
++    public int generateBytes(byte[] out, int outOff, int len) throws DataLengthException,
++            IllegalArgumentException
++    {
++        if ((out.length - len) < outOff)
++        {
++            throw new DataLengthException("output buffer too small");
++        }
++
++        long oBytes = len;
++        int outLen = digest.getDigestSize();
++
++        //
++        // this is at odds with the standard implementation, the
++        // maximum value should be hBits * (2^32 - 1) where hBits
++        // is the digest output size in bits. We can't have an
++        // array with a long index at the moment...
++        //
++        if (oBytes > ((2L << 32) - 1))
++        {
++            throw new IllegalArgumentException("Output length too large");
++        }
++
++        int cThreshold = (int)((oBytes + outLen - 1) / outLen);
++
++        byte[] dig = new byte[digest.getDigestSize()];
++
++        byte[] C = new byte[4];
++        Pack.intToBigEndian(counterStart, C, 0);
++
++        int counterBase = counterStart & ~0xFF;
++
++        for (int i = 0; i < cThreshold; i++)
++        {
++            digest.update(shared, 0, shared.length);
++            digest.update(C, 0, C.length);
++
++            if (iv != null)
++            {
++                digest.update(iv, 0, iv.length);
++            }
++
++            digest.doFinal(dig, 0);
++
++            if (len > outLen)
++            {
++                System.arraycopy(dig, 0, out, outOff, outLen);
++                outOff += outLen;
++                len -= outLen;
++            }
++            else
++            {
++                System.arraycopy(dig, 0, out, outOff, len);
++            }
++
++            if (++C[3] == 0)
++            {
++                counterBase += 0x100;
++                Pack.intToBigEndian(counterBase, C, 0);
++            }
++        }
++
++        digest.reset();
++
++        return (int)oBytes;
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/generators/DHKeyPairGenerator.java b/bcprov/src/main/java/org/bouncycastle/crypto/generators/DHKeyPairGenerator.java
+new file mode 100644
+index 0000000..d07ca80
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/generators/DHKeyPairGenerator.java
+@@ -0,0 +1,42 @@
++package org.bouncycastle.crypto.generators;
++
++import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
++import org.bouncycastle.crypto.AsymmetricCipherKeyPairGenerator;
++import org.bouncycastle.crypto.KeyGenerationParameters;
++import org.bouncycastle.crypto.params.DHKeyGenerationParameters;
++import org.bouncycastle.crypto.params.DHParameters;
++import org.bouncycastle.crypto.params.DHPrivateKeyParameters;
++import org.bouncycastle.crypto.params.DHPublicKeyParameters;
++
++import java.math.BigInteger;
++
++/**
++ * a Diffie-Hellman key pair generator.
++ *
++ * This generates keys consistent for use in the MTI/A0 key agreement protocol
++ * as described in "Handbook of Applied Cryptography", Pages 516-519.
++ */
++public class DHKeyPairGenerator
++    implements AsymmetricCipherKeyPairGenerator
++{
++    private DHKeyGenerationParameters param;
++
++    public void init(
++        KeyGenerationParameters param)
++    {
++        this.param = (DHKeyGenerationParameters)param;
++    }
++
++    public AsymmetricCipherKeyPair generateKeyPair()
++    {
++        DHKeyGeneratorHelper helper = DHKeyGeneratorHelper.INSTANCE;
++        DHParameters dhp = param.getParameters();
++
++        BigInteger x = helper.calculatePrivate(dhp, param.getRandom()); 
++        BigInteger y = helper.calculatePublic(dhp, x);
++
++        return new AsymmetricCipherKeyPair(
++            new DHPublicKeyParameters(y, dhp),
++            new DHPrivateKeyParameters(x, dhp));
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/generators/EphemeralKeyPairGenerator.java b/bcprov/src/main/java/org/bouncycastle/crypto/generators/EphemeralKeyPairGenerator.java
+new file mode 100644
+index 0000000..1004f23
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/generators/EphemeralKeyPairGenerator.java
+@@ -0,0 +1,26 @@
++package org.bouncycastle.crypto.generators;
++
++import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
++import org.bouncycastle.crypto.AsymmetricCipherKeyPairGenerator;
++import org.bouncycastle.crypto.EphemeralKeyPair;
++import org.bouncycastle.crypto.KeyEncoder;
++
++public class EphemeralKeyPairGenerator
++{
++    private AsymmetricCipherKeyPairGenerator gen;
++    private KeyEncoder keyEncoder;
++
++    public EphemeralKeyPairGenerator(AsymmetricCipherKeyPairGenerator gen, KeyEncoder keyEncoder)
++    {
++        this.gen = gen;
++        this.keyEncoder = keyEncoder;
++    }
++
++    public EphemeralKeyPair generate()
++    {
++        AsymmetricCipherKeyPair eph = gen.generateKeyPair();
++
++        // Encode the ephemeral public key
++         return new EphemeralKeyPair(eph, keyEncoder);
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/generators/KDF2BytesGenerator.java b/bcprov/src/main/java/org/bouncycastle/crypto/generators/KDF2BytesGenerator.java
+new file mode 100644
+index 0000000..ac0c64a
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/generators/KDF2BytesGenerator.java
+@@ -0,0 +1,24 @@
++package org.bouncycastle.crypto.generators;
++
++import org.bouncycastle.crypto.Digest;
++
++/**
++ * KDF2 generator for derived keys and ivs as defined by IEEE P1363a/ISO 18033
++ * <br>
++ * This implementation is based on IEEE P1363/ISO 18033.
++ */
++public class KDF2BytesGenerator
++    extends BaseKDFBytesGenerator
++{
++    /**
++     * Construct a KDF2 bytes generator. Generates key material
++     * according to IEEE P1363 or ISO 18033 depending on the initialisation.
++     * <p>
++     * @param digest the digest to be used as the source of derived keys.
++     */
++    public KDF2BytesGenerator(
++        Digest  digest)
++    {
++        super(1, digest);
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/kems/ECIESKeyEncapsulation.java b/bcprov/src/main/java/org/bouncycastle/crypto/kems/ECIESKeyEncapsulation.java
+new file mode 100644
+index 0000000..c0ae2a9
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/kems/ECIESKeyEncapsulation.java
+@@ -0,0 +1,254 @@
++package org.bouncycastle.crypto.kems;
++
++import java.math.BigInteger;
++import java.security.SecureRandom;
++
++import org.bouncycastle.crypto.CipherParameters;
++import org.bouncycastle.crypto.DerivationFunction;
++import org.bouncycastle.crypto.KeyEncapsulation;
++import org.bouncycastle.crypto.params.ECDomainParameters;
++import org.bouncycastle.crypto.params.ECKeyParameters;
++import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
++import org.bouncycastle.crypto.params.ECPublicKeyParameters;
++import org.bouncycastle.crypto.params.KDFParameters;
++import org.bouncycastle.crypto.params.KeyParameter;
++import org.bouncycastle.math.ec.ECCurve;
++import org.bouncycastle.math.ec.ECMultiplier;
++import org.bouncycastle.math.ec.ECPoint;
++import org.bouncycastle.math.ec.FixedPointCombMultiplier;
++import org.bouncycastle.util.Arrays;
++import org.bouncycastle.util.BigIntegers;
++
++/**
++ * The ECIES Key Encapsulation Mechanism (ECIES-KEM) from ISO 18033-2.
++ */
++public class ECIESKeyEncapsulation
++    implements KeyEncapsulation
++{
++    private static final BigInteger ONE = BigInteger.valueOf(1);
++
++    private DerivationFunction kdf;
++    private SecureRandom rnd;
++    private ECKeyParameters key;
++    private boolean CofactorMode;
++    private boolean OldCofactorMode;
++    private boolean SingleHashMode;
++
++    /**
++     * Set up the ECIES-KEM.
++     *
++     * @param kdf the key derivation function to be used.
++     * @param rnd the random source for the session key.
++     */
++    public ECIESKeyEncapsulation(
++        DerivationFunction kdf,
++        SecureRandom rnd)
++    {
++        this.kdf = kdf;
++        this.rnd = rnd;
++        this.CofactorMode = false;
++        this.OldCofactorMode = false;
++        this.SingleHashMode = false;
++    }
++
++    /**
++     * Set up the ECIES-KEM.
++     *
++     * @param kdf             the key derivation function to be used.
++     * @param rnd             the random source for the session key.
++     * @param cofactorMode    if true use the new cofactor ECDH.
++     * @param oldCofactorMode if true use the old cofactor ECDH.
++     * @param singleHashMode  if true use single hash mode.
++     */
++    public ECIESKeyEncapsulation(
++        DerivationFunction kdf,
++        SecureRandom rnd,
++        boolean cofactorMode,
++        boolean oldCofactorMode,
++        boolean singleHashMode)
++    {
++        this.kdf = kdf;
++        this.rnd = rnd;
++
++        // If both cofactorMode and oldCofactorMode are set to true
++        // then the implementation will use the new cofactor ECDH 
++        this.CofactorMode = cofactorMode;
++        this.OldCofactorMode = oldCofactorMode;
++        this.SingleHashMode = singleHashMode;
++    }
++
++    /**
++     * Initialise the ECIES-KEM.
++     *
++     * @param key the recipient's public (for encryption) or private (for decryption) key.
++     */
++    public void init(CipherParameters key)
++        throws IllegalArgumentException
++    {
++        if (!(key instanceof ECKeyParameters))
++        {
++            throw new IllegalArgumentException("EC key required");
++        }
++        else
++        {
++            this.key = (ECKeyParameters)key;
++        }
++    }
++
++    /**
++     * Generate and encapsulate a random session key.
++     *
++     * @param out    the output buffer for the encapsulated key.
++     * @param outOff the offset for the output buffer.
++     * @param keyLen the length of the session key.
++     * @return the random session key.
++     */
++    public CipherParameters encrypt(byte[] out, int outOff, int keyLen)
++        throws IllegalArgumentException
++    {
++        if (!(key instanceof ECPublicKeyParameters))
++        {
++            throw new IllegalArgumentException("Public key required for encryption");
++        }
++
++        ECPublicKeyParameters ecPubKey = (ECPublicKeyParameters)key;
++        ECDomainParameters ecParams = ecPubKey.getParameters();
++        ECCurve curve = ecParams.getCurve();
++        BigInteger n = ecParams.getN();
++        BigInteger h = ecParams.getH();
++
++        // Generate the ephemeral key pair    
++        BigInteger r = BigIntegers.createRandomInRange(ONE, n, rnd);
++
++        // Compute the static-ephemeral key agreement
++        BigInteger rPrime = CofactorMode ? r.multiply(h).mod(n) : r;
++
++        ECMultiplier basePointMultiplier = createBasePointMultiplier();
++
++        ECPoint[] ghTilde = new ECPoint[]{ 
++            basePointMultiplier.multiply(ecParams.getG(), r),
++            ecPubKey.getQ().multiply(rPrime)
++        };
++
++        // NOTE: More efficient than normalizing each individually
++        curve.normalizeAll(ghTilde);
++
++        ECPoint gTilde = ghTilde[0], hTilde = ghTilde[1];
++
++        // Encode the ephemeral public key
++        byte[] C = gTilde.getEncoded(false);
++        System.arraycopy(C, 0, out, outOff, C.length);
++
++        // Encode the shared secret value
++        byte[] PEH = hTilde.getAffineXCoord().getEncoded();
++
++        return deriveKey(keyLen, C, PEH);
++    }
++
++    /**
++     * Generate and encapsulate a random session key.
++     *
++     * @param out    the output buffer for the encapsulated key.
++     * @param keyLen the length of the session key.
++     * @return the random session key.
++     */
++    public CipherParameters encrypt(byte[] out, int keyLen)
++    {
++        return encrypt(out, 0, keyLen);
++    }
++
++    /**
++     * Decrypt an encapsulated session key.
++     *
++     * @param in     the input buffer for the encapsulated key.
++     * @param inOff  the offset for the input buffer.
++     * @param inLen  the length of the encapsulated key.
++     * @param keyLen the length of the session key.
++     * @return the session key.
++     */
++    public CipherParameters decrypt(byte[] in, int inOff, int inLen, int keyLen)
++        throws IllegalArgumentException
++    {
++        if (!(key instanceof ECPrivateKeyParameters))
++        {
++            throw new IllegalArgumentException("Private key required for encryption");
++        }
++
++        ECPrivateKeyParameters ecPrivKey = (ECPrivateKeyParameters)key;
++        ECDomainParameters ecParams = ecPrivKey.getParameters();
++        ECCurve curve = ecParams.getCurve();
++        BigInteger n = ecParams.getN();
++        BigInteger h = ecParams.getH();
++
++        // Decode the ephemeral public key
++        byte[] C = new byte[inLen];
++        System.arraycopy(in, inOff, C, 0, inLen);
++
++        // NOTE: Decoded points are already normalized (i.e in affine form)
++        ECPoint gTilde = curve.decodePoint(C);
++
++        // Compute the static-ephemeral key agreement
++        ECPoint gHat = gTilde;
++        if ((CofactorMode) || (OldCofactorMode))
++        {
++            gHat = gHat.multiply(h);
++        }
++
++        BigInteger xHat = ecPrivKey.getD();
++        if (CofactorMode)
++        {
++            xHat = xHat.multiply(h.modInverse(n)).mod(n);
++        }
++
++        ECPoint hTilde = gHat.multiply(xHat).normalize();
++
++        // Encode the shared secret value
++        byte[] PEH = hTilde.getAffineXCoord().getEncoded();
++
++        return deriveKey(keyLen, C, PEH);
++    }
++
++    /**
++     * Decrypt an encapsulated session key.
++     *
++     * @param in     the input buffer for the encapsulated key.
++     * @param keyLen the length of the session key.
++     * @return the session key.
++     */
++    public CipherParameters decrypt(byte[] in, int keyLen)
++    {
++        return decrypt(in, 0, in.length, keyLen);
++    }
++
++    protected ECMultiplier createBasePointMultiplier()
++    {
++        return new FixedPointCombMultiplier();
++    }
++
++    protected KeyParameter deriveKey(int keyLen, byte[] C, byte[] PEH)
++    {
++        byte[] kdfInput = PEH;
++        if (!SingleHashMode)
++        {
++            kdfInput = Arrays.concatenate(C, PEH);
++            Arrays.fill(PEH, (byte)0);
++        }
++
++        try
++        {
++            // Initialise the KDF
++            kdf.init(new KDFParameters(kdfInput, null));
++    
++            // Generate the secret key
++            byte[] K = new byte[keyLen];
++            kdf.generateBytes(K, 0, K.length);
++
++            // Return the ciphertext
++            return new KeyParameter(K);
++        }
++        finally
++        {
++            Arrays.fill(kdfInput, (byte)0);
++        }
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/params/IESParameters.java b/bcprov/src/main/java/org/bouncycastle/crypto/params/IESParameters.java
+new file mode 100644
+index 0000000..0600b34
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/params/IESParameters.java
+@@ -0,0 +1,44 @@
++package org.bouncycastle.crypto.params;
++
++import org.bouncycastle.crypto.CipherParameters;
++
++/**
++ * parameters for using an integrated cipher in stream mode.
++ */
++public class IESParameters
++    implements CipherParameters
++{
++    private byte[]  derivation;
++    private byte[]  encoding;
++    private int     macKeySize;
++
++    /**
++     * @param derivation the derivation parameter for the KDF function.
++     * @param encoding the encoding parameter for the KDF function.
++     * @param macKeySize the size of the MAC key (in bits).
++     */
++    public IESParameters(
++        byte[]  derivation,
++        byte[]  encoding,
++        int     macKeySize)
++    {
++        this.derivation = derivation;
++        this.encoding = encoding;
++        this.macKeySize = macKeySize;
++    }
++
++    public byte[] getDerivationV()
++    {
++        return derivation;
++    }
++
++    public byte[] getEncodingV()
++    {
++        return encoding;
++    }
++
++    public int getMacKeySize()
++    {
++        return macKeySize;
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/params/IESWithCipherParameters.java b/bcprov/src/main/java/org/bouncycastle/crypto/params/IESWithCipherParameters.java
+new file mode 100644
+index 0000000..ef61b2c
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/params/IESWithCipherParameters.java
+@@ -0,0 +1,30 @@
++package org.bouncycastle.crypto.params;
++
++
++public class IESWithCipherParameters
++    extends IESParameters
++{
++    private int cipherKeySize;
++
++    /**
++     * @param derivation the derivation parameter for the KDF function.
++     * @param encoding the encoding parameter for the KDF function.
++     * @param macKeySize the size of the MAC key (in bits).
++     * @param cipherKeySize the size of the associated Cipher key (in bits).
++     */
++    public IESWithCipherParameters(
++        byte[]  derivation,
++        byte[]  encoding,
++        int     macKeySize,
++        int     cipherKeySize)
++    {
++        super(derivation, encoding, macKeySize);
++
++        this.cipherKeySize = cipherKeySize;
++    }
++
++    public int getCipherKeySize()
++    {
++        return cipherKeySize;
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/params/ISO18033KDFParameters.java b/bcprov/src/main/java/org/bouncycastle/crypto/params/ISO18033KDFParameters.java
+new file mode 100644
+index 0000000..8dffe2e
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/params/ISO18033KDFParameters.java
+@@ -0,0 +1,23 @@
++package org.bouncycastle.crypto.params;
++
++import org.bouncycastle.crypto.DerivationParameters;
++
++/**
++ * parameters for Key derivation functions for ISO-18033
++ */
++public class ISO18033KDFParameters
++    implements DerivationParameters
++{
++    byte[]  seed;
++
++    public ISO18033KDFParameters(
++        byte[]  seed)
++    {
++        this.seed = seed;
++    }
++
++    public byte[] getSeed()
++    {
++        return seed;
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/parsers/DHIESPublicKeyParser.java b/bcprov/src/main/java/org/bouncycastle/crypto/parsers/DHIESPublicKeyParser.java
+new file mode 100644
+index 0000000..54cdee0
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/parsers/DHIESPublicKeyParser.java
+@@ -0,0 +1,32 @@
++package org.bouncycastle.crypto.parsers;
++
++import java.io.IOException;
++import java.io.InputStream;
++import java.math.BigInteger;
++
++import org.bouncycastle.crypto.KeyParser;
++import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
++import org.bouncycastle.crypto.params.DHParameters;
++import org.bouncycastle.crypto.params.DHPublicKeyParameters;
++import org.bouncycastle.util.io.Streams;
++
++public class DHIESPublicKeyParser
++    implements KeyParser
++{
++    private DHParameters dhParams;
++
++    public DHIESPublicKeyParser(DHParameters dhParams)
++    {
++        this.dhParams = dhParams;
++    }
++
++    public AsymmetricKeyParameter readKey(InputStream stream)
++        throws IOException
++    {
++        byte[] V = new byte[(dhParams.getP().bitLength() + 7) / 8];
++
++        Streams.readFully(stream, V, 0, V.length);
++
++        return new DHPublicKeyParameters(new BigInteger(1, V), dhParams);
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/parsers/ECIESPublicKeyParser.java b/bcprov/src/main/java/org/bouncycastle/crypto/parsers/ECIESPublicKeyParser.java
+new file mode 100644
+index 0000000..b6b6e85
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/parsers/ECIESPublicKeyParser.java
+@@ -0,0 +1,54 @@
++package org.bouncycastle.crypto.parsers;
++
++import java.io.IOException;
++import java.io.InputStream;
++
++import org.bouncycastle.crypto.KeyParser;
++import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
++import org.bouncycastle.crypto.params.ECDomainParameters;
++import org.bouncycastle.crypto.params.ECPublicKeyParameters;
++import org.bouncycastle.util.io.Streams;
++
++public class ECIESPublicKeyParser
++    implements KeyParser
++{
++    private ECDomainParameters ecParams;
++
++    public ECIESPublicKeyParser(ECDomainParameters ecParams)
++    {
++        this.ecParams = ecParams;
++    }
++
++    public AsymmetricKeyParameter readKey(InputStream stream)
++        throws IOException
++    {
++        byte[] V;
++        int    first = stream.read();
++
++        // Decode the public ephemeral key
++        switch (first)
++        {
++        case 0x00: // infinity
++            throw new IOException("Sender's public key invalid.");
++
++        case 0x02: // compressed
++        case 0x03: // Byte length calculated as in ECPoint.getEncoded();
++            V = new byte[1 + (ecParams.getCurve().getFieldSize()+7)/8];
++            break;
++
++        case 0x04: // uncompressed or
++        case 0x06: // hybrid
++        case 0x07: // Byte length calculated as in ECPoint.getEncoded();
++            V = new byte[1 + 2*((ecParams.getCurve().getFieldSize()+7)/8)];
++            break;
++
++        default:
++            throw new IOException("Sender's public key has invalid point encoding 0x" + Integer.toString(first, 16));
++        }
++
++        V[0] = (byte)first;
++        Streams.readFully(stream, V, 1, V.length - 1);
++
++        return new ECPublicKeyParameters(ecParams.getCurve().decodePoint(V), ecParams);
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/crypto/util/DigestFactory.java b/bcprov/src/main/java/org/bouncycastle/crypto/util/DigestFactory.java
+new file mode 100644
+index 0000000..c19c351
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/crypto/util/DigestFactory.java
+@@ -0,0 +1,77 @@
++package org.bouncycastle.crypto.util;
++
++import org.bouncycastle.crypto.Digest;
++import org.bouncycastle.crypto.digests.MD5Digest;
++import org.bouncycastle.crypto.digests.SHA1Digest;
++import org.bouncycastle.crypto.digests.SHA224Digest;
++import org.bouncycastle.crypto.digests.SHA256Digest;
++import org.bouncycastle.crypto.digests.SHA384Digest;
++import org.bouncycastle.crypto.digests.SHA3Digest;
++import org.bouncycastle.crypto.digests.SHA512Digest;
++import org.bouncycastle.crypto.digests.SHA512tDigest;
++
++/**
++ * Basic factory class for message digests.
++ */
++public final class DigestFactory
++{
++    public static Digest createMD5()
++    {
++        return new MD5Digest();
++    }
++
++    public static Digest createSHA1()
++    {
++        return new SHA1Digest();
++    }
++
++    public static Digest createSHA224()
++    {
++        return new SHA224Digest();
++    }
++
++    public static Digest createSHA256()
++    {
++        return new SHA256Digest();
++    }
++
++    public static Digest createSHA384()
++    {
++        return new SHA384Digest();
++    }
++
++    public static Digest createSHA512()
++    {
++        return new SHA512Digest();
++    }
++
++    public static Digest createSHA512_224()
++    {
++        return new SHA512tDigest(224);
++    }
++
++    public static Digest createSHA512_256()
++    {
++        return new SHA512tDigest(256);
++    }
++
++    public static Digest createSHA3_224()
++    {
++        return new SHA3Digest(224);
++    }
++
++    public static Digest createSHA3_256()
++    {
++        return new SHA3Digest(256);
++    }
++
++    public static Digest createSHA3_384()
++    {
++        return new SHA3Digest(384);
++    }
++
++    public static Digest createSHA3_512()
++    {
++        return new SHA3Digest(512);
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/EC.java b/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/EC.java
+index 1c49da9..8b6045c 100644
+--- a/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/EC.java
++++ b/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/EC.java
+@@ -170,9 +170,9 @@ public class EC
+             // provider.addAlgorithm("KeyPairGenerator.ECDH", PREFIX + "KeyPairGeneratorSpi$ECDH");
+             // provider.addAlgorithm("KeyPairGenerator.ECDHWITHSHA1KDF", PREFIX + "KeyPairGeneratorSpi$ECDH");
+             // provider.addAlgorithm("KeyPairGenerator.ECDHC", PREFIX + "KeyPairGeneratorSpi$ECDHC");
+-            // provider.addAlgorithm("KeyPairGenerator.ECIES", PREFIX + "KeyPairGeneratorSpi$ECDH");
++             provider.addAlgorithm("KeyPairGenerator.ECIES", PREFIX + "KeyPairGeneratorSpi$ECDH");
+             //
+-            // provider.addAlgorithm("Cipher.ECIES", PREFIX + "IESCipher$ECIES");
++             provider.addAlgorithm("Cipher.ECIES", PREFIX + "IESCipher$ECIES");
+             //
+             // provider.addAlgorithm("Cipher.ECIESwithAES-CBC", PREFIX + "IESCipher$ECIESwithAESCBC");
+             // provider.addAlgorithm("Cipher.ECIESWITHAES-CBC", PREFIX + "IESCipher$ECIESwithAESCBC");
+diff --git a/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/IES.java b/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/IES.java
+new file mode 100644
+index 0000000..dfe1644
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/IES.java
+@@ -0,0 +1,23 @@
++package org.bouncycastle.jcajce.provider.asymmetric;
++
++import org.bouncycastle.jcajce.provider.config.ConfigurableProvider;
++import org.bouncycastle.jcajce.provider.util.AsymmetricAlgorithmProvider;
++
++public class IES
++{
++    private static final String PREFIX = "org.bouncycastle.jcajce.provider.asymmetric" + ".ies.";
++
++    public static class Mappings
++        extends AsymmetricAlgorithmProvider
++    {
++        public Mappings()
++        {
++        }
++
++        public void configure(ConfigurableProvider provider)
++        {
++            provider.addAlgorithm("AlgorithmParameters.IES", PREFIX + "AlgorithmParametersSpi");
++            provider.addAlgorithm("AlgorithmParameters.ECIES", PREFIX + "AlgorithmParametersSpi");
++        }
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/dh/IESCipher.java b/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/dh/IESCipher.java
+new file mode 100644
+index 0000000..02f7fe4
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/dh/IESCipher.java
+@@ -0,0 +1,546 @@
++package org.bouncycastle.jcajce.provider.asymmetric.dh;
++
++import java.io.ByteArrayOutputStream;
++import java.security.AlgorithmParameters;
++import java.security.InvalidAlgorithmParameterException;
++import java.security.InvalidKeyException;
++import java.security.Key;
++import java.security.NoSuchAlgorithmException;
++import java.security.PrivateKey;
++import java.security.PublicKey;
++import java.security.SecureRandom;
++import java.security.spec.AlgorithmParameterSpec;
++
++import javax.crypto.BadPaddingException;
++import javax.crypto.Cipher;
++import javax.crypto.CipherSpi;
++import javax.crypto.IllegalBlockSizeException;
++import javax.crypto.NoSuchPaddingException;
++import javax.crypto.ShortBufferException;
++import javax.crypto.interfaces.DHKey;
++import javax.crypto.interfaces.DHPrivateKey;
++import javax.crypto.interfaces.DHPublicKey;
++
++import org.bouncycastle.crypto.CipherParameters;
++import org.bouncycastle.crypto.InvalidCipherTextException;
++import org.bouncycastle.crypto.KeyEncoder;
++import org.bouncycastle.crypto.agreement.DHBasicAgreement;
++import org.bouncycastle.crypto.engines.AESEngine;
++import org.bouncycastle.crypto.engines.DESedeEngine;
++import org.bouncycastle.crypto.engines.IESEngine;
++import org.bouncycastle.crypto.generators.DHKeyPairGenerator;
++import org.bouncycastle.crypto.generators.EphemeralKeyPairGenerator;
++import org.bouncycastle.crypto.generators.KDF2BytesGenerator;
++import org.bouncycastle.crypto.macs.HMac;
++import org.bouncycastle.crypto.modes.CBCBlockCipher;
++import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
++import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
++import org.bouncycastle.crypto.params.DHKeyGenerationParameters;
++import org.bouncycastle.crypto.params.DHKeyParameters;
++import org.bouncycastle.crypto.params.DHParameters;
++import org.bouncycastle.crypto.params.DHPublicKeyParameters;
++import org.bouncycastle.crypto.params.IESWithCipherParameters;
++import org.bouncycastle.crypto.params.ParametersWithIV;
++import org.bouncycastle.crypto.parsers.DHIESPublicKeyParser;
++import org.bouncycastle.crypto.util.DigestFactory;
++import org.bouncycastle.jcajce.provider.asymmetric.util.DHUtil;
++import org.bouncycastle.jcajce.provider.asymmetric.util.IESUtil;
++import org.bouncycastle.jcajce.provider.util.BadBlockException;
++import org.bouncycastle.jcajce.util.BCJcaJceHelper;
++import org.bouncycastle.jcajce.util.JcaJceHelper;
++import org.bouncycastle.jce.interfaces.IESKey;
++import org.bouncycastle.jce.spec.IESParameterSpec;
++import org.bouncycastle.util.BigIntegers;
++import org.bouncycastle.util.Strings;
++
++
++public class IESCipher
++    extends CipherSpi
++{
++    private final JcaJceHelper helper = new BCJcaJceHelper();
++    private final int ivLength;
++
++    private IESEngine engine;
++    private int state = -1;
++    private ByteArrayOutputStream buffer = new ByteArrayOutputStream();
++    private AlgorithmParameters engineParam = null;
++    private IESParameterSpec engineSpec = null;
++    private AsymmetricKeyParameter key;
++    private SecureRandom random;
++    private boolean dhaesMode = false;
++    private AsymmetricKeyParameter otherKeyParameter = null;
++
++    public IESCipher(IESEngine engine)
++    {
++        this.engine = engine;
++        this.ivLength = 0;
++    }
++
++    public IESCipher(IESEngine engine, int ivLength)
++    {
++        this.engine = engine;
++        this.ivLength = ivLength;
++    }
++
++    public int engineGetBlockSize()
++    {
++        if (engine.getCipher() != null)
++        {
++            return engine.getCipher().getBlockSize();
++        }
++        else
++        {
++            return 0;
++        }
++    }
++
++
++    public int engineGetKeySize(Key key)
++    {
++        if (key instanceof DHKey)
++        {
++            return ((DHKey)key).getParams().getP().bitLength();
++        }
++        else
++        {
++            throw new IllegalArgumentException("not a DH key");
++        }
++    }
++
++
++    public byte[] engineGetIV()
++    {
++        if (engineSpec != null)
++        {
++            return engineSpec.getNonce();
++        }
++        return null;
++    }
++
++    public AlgorithmParameters engineGetParameters()
++    {
++        if (engineParam == null && engineSpec != null)
++        {
++            try
++            {
++                engineParam = helper.createAlgorithmParameters("IES");
++                engineParam.init(engineSpec);
++            }
++            catch (Exception e)
++            {
++                throw new RuntimeException(e.toString());
++            }
++        }
++
++        return engineParam;
++    }
++
++
++    public void engineSetMode(String mode)
++        throws NoSuchAlgorithmException
++    {
++        String modeName = Strings.toUpperCase(mode);
++
++        if (modeName.equals("NONE"))
++        {
++            dhaesMode = false;
++        }
++        else if (modeName.equals("DHAES"))
++        {
++            dhaesMode = true;
++        }
++        else
++        {
++            throw new IllegalArgumentException("can't support mode " + mode);
++        }
++    }
++
++    public int engineGetOutputSize(int inputLen)
++    {
++        int len1, len2, len3;
++
++        if (key == null)
++        {
++            throw new IllegalStateException("cipher not initialised");
++        }
++
++        len1 = engine.getMac().getMacSize();
++
++        if (otherKeyParameter == null)
++        {
++            len2 = 1 + 2 * (((DHKeyParameters)key).getParameters().getP().bitLength() + 7) / 8;
++        }
++        else
++        {
++            len2 = 0;
++        }
++
++        if (engine.getCipher() == null)
++        {
++            len3 = inputLen;
++        }
++        else if (state == Cipher.ENCRYPT_MODE || state == Cipher.WRAP_MODE)
++        {
++            len3 = engine.getCipher().getOutputSize(inputLen);
++        }
++        else if (state == Cipher.DECRYPT_MODE || state == Cipher.UNWRAP_MODE)
++        {
++            len3 = engine.getCipher().getOutputSize(inputLen - len1 - len2);
++        }
++        else
++        {
++            throw new IllegalStateException("cipher not initialised");
++        }
++
++        if (state == Cipher.ENCRYPT_MODE || state == Cipher.WRAP_MODE)
++        {
++            return buffer.size() + len1 + len2 + len3;
++        }
++        else if (state == Cipher.DECRYPT_MODE || state == Cipher.UNWRAP_MODE)
++        {
++            return buffer.size() - len1 - len2 + len3;
++        }
++        else
++        {
++            throw new IllegalStateException("IESCipher not initialised");
++        }
++
++    }
++
++    public void engineSetPadding(String padding)
++        throws NoSuchPaddingException
++    {
++        String paddingName = Strings.toUpperCase(padding);
++
++        // TDOD: make this meaningful...
++        if (paddingName.equals("NOPADDING"))
++        {
++
++        }
++        else if (paddingName.equals("PKCS5PADDING") || paddingName.equals("PKCS7PADDING"))
++        {
++
++        }
++        else
++        {
++            throw new NoSuchPaddingException("padding not available with IESCipher");
++        }
++    }
++
++    // Initialisation methods
++
++    public void engineInit(
++        int opmode,
++        Key key,
++        AlgorithmParameters params,
++        SecureRandom random)
++        throws InvalidKeyException, InvalidAlgorithmParameterException
++    {
++        AlgorithmParameterSpec paramSpec = null;
++
++        if (params != null)
++        {
++            try
++            {
++                paramSpec = params.getParameterSpec(IESParameterSpec.class);
++            }
++            catch (Exception e)
++            {
++                throw new InvalidAlgorithmParameterException("cannot recognise parameters: " + e.toString());
++            }
++        }
++
++        engineParam = params;
++        engineInit(opmode, key, paramSpec, random);
++    }
++
++
++    public void engineInit(
++        int opmode,
++        Key key,
++        AlgorithmParameterSpec engineSpec,
++        SecureRandom random)
++        throws InvalidAlgorithmParameterException, InvalidKeyException
++    {
++        // Use default parameters (including cipher key size) if none are specified
++        if (engineSpec == null)
++        {
++            byte[] nonce = null;
++            if (ivLength != 0 && opmode == Cipher.ENCRYPT_MODE)
++            {
++                nonce = new byte[ivLength];
++                random.nextBytes(nonce);
++            }
++            this.engineSpec = IESUtil.guessParameterSpec(engine.getCipher(), nonce);
++        }
++        else if (engineSpec instanceof IESParameterSpec)
++        {
++            this.engineSpec = (IESParameterSpec)engineSpec;
++        }
++        else
++        {
++            throw new InvalidAlgorithmParameterException("must be passed IES parameters");
++        }
++
++        byte[] nonce = this.engineSpec.getNonce();
++
++        if (ivLength != 0 && (nonce == null || nonce.length != ivLength))
++        {
++            throw new InvalidAlgorithmParameterException("NONCE in IES Parameters needs to be " + ivLength + " bytes long");
++        }
++
++        // Parse the recipient's key
++        if (opmode == Cipher.ENCRYPT_MODE || opmode == Cipher.WRAP_MODE)
++        {
++            if (key instanceof DHPublicKey)
++            {
++                this.key = DHUtil.generatePublicKeyParameter((PublicKey)key);
++            }
++            else if (key instanceof IESKey)
++            {
++                IESKey ieKey = (IESKey)key;
++
++                this.key = DHUtil.generatePublicKeyParameter(ieKey.getPublic());
++                this.otherKeyParameter = DHUtil.generatePrivateKeyParameter(ieKey.getPrivate());
++            }
++            else
++            {
++                throw new InvalidKeyException("must be passed recipient's public DH key for encryption");
++            }
++        }
++        else if (opmode == Cipher.DECRYPT_MODE || opmode == Cipher.UNWRAP_MODE)
++        {
++            if (key instanceof DHPrivateKey)
++            {
++                this.key = DHUtil.generatePrivateKeyParameter((PrivateKey)key);
++            }
++            else if (key instanceof IESKey)
++            {
++                IESKey ieKey = (IESKey)key;
++
++                this.otherKeyParameter = DHUtil.generatePublicKeyParameter(ieKey.getPublic());
++                this.key = DHUtil.generatePrivateKeyParameter(ieKey.getPrivate());
++            }
++            else
++            {
++                throw new InvalidKeyException("must be passed recipient's private DH key for decryption");
++            }
++        }
++        else
++        {
++            throw new InvalidKeyException("must be passed EC key");
++        }
++
++        this.random = random;
++        this.state = opmode;
++        buffer.reset();
++
++    }
++
++
++    public void engineInit(
++        int opmode,
++        Key key,
++        SecureRandom random)
++        throws InvalidKeyException
++    {
++        try
++        {
++            engineInit(opmode, key, (AlgorithmParameterSpec)null, random);
++        }
++        catch (InvalidAlgorithmParameterException e)
++        {
++            throw new IllegalArgumentException("cannot handle supplied parameter spec: " + e.getMessage());
++        }
++
++    }
++
++
++    // Update methods - buffer the input
++
++    public byte[] engineUpdate(
++        byte[] input,
++        int inputOffset,
++        int inputLen)
++    {
++        buffer.write(input, inputOffset, inputLen);
++        return null;
++    }
++
++
++    public int engineUpdate(
++        byte[] input,
++        int inputOffset,
++        int inputLen,
++        byte[] output,
++        int outputOffset)
++    {
++        buffer.write(input, inputOffset, inputLen);
++        return 0;
++    }
++
++
++    // Finalisation methods
++
++    public byte[] engineDoFinal(
++        byte[] input,
++        int inputOffset,
++        int inputLen)
++        throws IllegalBlockSizeException, BadPaddingException
++    {
++        if (inputLen != 0)
++        {
++            buffer.write(input, inputOffset, inputLen);
++        }
++
++        byte[] in = buffer.toByteArray();
++        buffer.reset();
++
++        // Convert parameters for use in IESEngine
++        CipherParameters params = new IESWithCipherParameters(engineSpec.getDerivationV(),
++            engineSpec.getEncodingV(),
++            engineSpec.getMacKeySize(),
++            engineSpec.getCipherKeySize());
++
++        if (engineSpec.getNonce() != null)
++        {
++            params = new ParametersWithIV(params, engineSpec.getNonce());
++        }
++
++        DHParameters dhParams = ((DHKeyParameters)key).getParameters();
++
++        byte[] V;
++        if (otherKeyParameter != null)
++        {
++            try
++            {
++                if (state == Cipher.ENCRYPT_MODE || state == Cipher.WRAP_MODE)
++                {
++                    engine.init(true, otherKeyParameter, key, params);
++                }
++                else
++                {
++                    engine.init(false, key, otherKeyParameter, params);
++                }
++                return engine.processBlock(in, 0, in.length);
++            }
++            catch (Exception e)
++            {
++                throw new BadBlockException("unable to process block", e);
++            }
++        }
++
++        if (state == Cipher.ENCRYPT_MODE || state == Cipher.WRAP_MODE)
++        {
++            // Generate the ephemeral key pair
++            DHKeyPairGenerator gen = new DHKeyPairGenerator();
++            gen.init(new DHKeyGenerationParameters(random, dhParams));
++
++            EphemeralKeyPairGenerator kGen = new EphemeralKeyPairGenerator(gen, new KeyEncoder()
++            {
++                public byte[] getEncoded(AsymmetricKeyParameter keyParameter)
++                {
++                    byte[] Vloc = new byte[(((DHKeyParameters)keyParameter).getParameters().getP().bitLength() + 7) / 8];
++                    byte[] Vtmp = BigIntegers.asUnsignedByteArray(((DHPublicKeyParameters)keyParameter).getY());
++
++                    if (Vtmp.length > Vloc.length)
++                    {
++                        throw new IllegalArgumentException("Senders's public key longer than expected.");
++                    }
++                    else
++                    {
++                        System.arraycopy(Vtmp, 0, Vloc, Vloc.length - Vtmp.length, Vtmp.length);
++                    }
++
++                    return Vloc;
++                }
++            });
++
++            // Encrypt the buffer
++            try
++            {
++                engine.init(key, params, kGen);
++
++                return engine.processBlock(in, 0, in.length);
++            }
++            catch (Exception e)
++            {
++                throw new BadBlockException("unable to process block", e);
++            }
++        }
++        else if (state == Cipher.DECRYPT_MODE || state == Cipher.UNWRAP_MODE)
++        {
++            // Decrypt the buffer
++            try
++            {
++                engine.init(key, params, new DHIESPublicKeyParser(((DHKeyParameters)key).getParameters()));
++
++                return engine.processBlock(in, 0, in.length);
++            }
++            catch (InvalidCipherTextException e)
++            {
++                throw new BadBlockException("unable to process block", e);
++            }
++        }
++        else
++        {
++            throw new IllegalStateException("IESCipher not initialised");
++        }
++
++    }
++
++
++    public int engineDoFinal(
++        byte[] input,
++        int inputOffset,
++        int inputLength,
++        byte[] output,
++        int outputOffset)
++        throws ShortBufferException, IllegalBlockSizeException, BadPaddingException
++    {
++
++        byte[] buf = engineDoFinal(input, inputOffset, inputLength);
++        System.arraycopy(buf, 0, output, outputOffset, buf.length);
++        return buf.length;
++
++    }
++
++    /**
++     * Classes that inherit from us
++     */
++
++    static public class IES
++        extends IESCipher
++    {
++        public IES()
++        {
++            super(new IESEngine(new DHBasicAgreement(),
++                new KDF2BytesGenerator(DigestFactory.createSHA1()),
++                new HMac(DigestFactory.createSHA1())));
++        }
++    }
++
++    static public class IESwithDESedeCBC
++        extends IESCipher
++    {
++        public IESwithDESedeCBC()
++        {
++            super(new IESEngine(new DHBasicAgreement(),
++                new KDF2BytesGenerator(DigestFactory.createSHA1()),
++                new HMac(DigestFactory.createSHA1()),
++                new PaddedBufferedBlockCipher(new CBCBlockCipher(new DESedeEngine()))), 8);
++        }
++    }
++
++    static public class IESwithAESCBC
++        extends IESCipher
++    {
++        public IESwithAESCBC()
++        {
++            super(new IESEngine(new DHBasicAgreement(),
++                new KDF2BytesGenerator(DigestFactory.createSHA1()),
++                new HMac(DigestFactory.createSHA1()),
++                new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()))), 16);
++        }
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/ec/IESCipher.java b/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/ec/IESCipher.java
+new file mode 100644
+index 0000000..6fdebc7
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/ec/IESCipher.java
+@@ -0,0 +1,544 @@
++package org.bouncycastle.jcajce.provider.asymmetric.ec;
++
++import java.io.ByteArrayOutputStream;
++import java.security.AlgorithmParameters;
++import java.security.InvalidAlgorithmParameterException;
++import java.security.InvalidKeyException;
++import java.security.Key;
++import java.security.NoSuchAlgorithmException;
++import java.security.PrivateKey;
++import java.security.PublicKey;
++import java.security.SecureRandom;
++import java.security.spec.AlgorithmParameterSpec;
++
++import javax.crypto.BadPaddingException;
++import javax.crypto.Cipher;
++import javax.crypto.CipherSpi;
++import javax.crypto.IllegalBlockSizeException;
++import javax.crypto.NoSuchPaddingException;
++import javax.crypto.ShortBufferException;
++
++import org.bouncycastle.crypto.BlockCipher;
++import org.bouncycastle.crypto.CipherParameters;
++import org.bouncycastle.crypto.InvalidCipherTextException;
++import org.bouncycastle.crypto.KeyEncoder;
++import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
++import org.bouncycastle.crypto.engines.AESEngine;
++import org.bouncycastle.crypto.engines.DESedeEngine;
++import org.bouncycastle.crypto.engines.IESEngine;
++import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
++import org.bouncycastle.crypto.generators.EphemeralKeyPairGenerator;
++import org.bouncycastle.crypto.generators.KDF2BytesGenerator;
++import org.bouncycastle.crypto.macs.HMac;
++import org.bouncycastle.crypto.modes.CBCBlockCipher;
++import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
++import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
++import org.bouncycastle.crypto.params.ECDomainParameters;
++import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
++import org.bouncycastle.crypto.params.ECKeyParameters;
++import org.bouncycastle.crypto.params.ECPublicKeyParameters;
++import org.bouncycastle.crypto.params.IESWithCipherParameters;
++import org.bouncycastle.crypto.params.ParametersWithIV;
++import org.bouncycastle.crypto.parsers.ECIESPublicKeyParser;
++import org.bouncycastle.crypto.util.DigestFactory;
++import org.bouncycastle.jcajce.provider.asymmetric.util.ECUtil;
++import org.bouncycastle.jcajce.provider.asymmetric.util.IESUtil;
++import org.bouncycastle.jcajce.provider.util.BadBlockException;
++import org.bouncycastle.jcajce.util.BCJcaJceHelper;
++import org.bouncycastle.jcajce.util.JcaJceHelper;
++import org.bouncycastle.jce.interfaces.ECKey;
++import org.bouncycastle.jce.interfaces.IESKey;
++import org.bouncycastle.jce.spec.IESParameterSpec;
++import org.bouncycastle.util.Strings;
++
++
++public class IESCipher
++    extends CipherSpi
++{
++    private final JcaJceHelper helper = new BCJcaJceHelper();
++
++    private int ivLength;
++    private IESEngine engine;
++    private int state = -1;
++    private ByteArrayOutputStream buffer = new ByteArrayOutputStream();
++    private AlgorithmParameters engineParam = null;
++    private IESParameterSpec engineSpec = null;
++    private AsymmetricKeyParameter key;
++    private SecureRandom random;
++    private boolean dhaesMode = false;
++    private AsymmetricKeyParameter otherKeyParameter = null;
++
++    public IESCipher(IESEngine engine)
++    {
++        this.engine = engine;
++        this.ivLength = 0;
++    }
++
++    public IESCipher(IESEngine engine, int ivLength)
++    {
++        this.engine = engine;
++        this.ivLength = ivLength;
++    }
++
++    public int engineGetBlockSize()
++    {
++        if (engine.getCipher() != null)
++        {
++            return engine.getCipher().getBlockSize();
++        }
++        else
++        {
++            return 0;
++        }
++    }
++
++
++    public int engineGetKeySize(Key key)
++    {
++        if (key instanceof ECKey)
++        {
++            return ((ECKey)key).getParameters().getCurve().getFieldSize();
++        }
++        else
++        {
++            throw new IllegalArgumentException("not an EC key");
++        }
++    }
++
++
++    public byte[] engineGetIV()
++    {
++        if (engineSpec != null)
++        {
++            return engineSpec.getNonce();
++        }
++        return null;
++    }
++
++    public AlgorithmParameters engineGetParameters()
++    {
++        if (engineParam == null && engineSpec != null)
++        {
++            try
++            {
++                engineParam = helper.createAlgorithmParameters("IES");
++                engineParam.init(engineSpec);
++            }
++            catch (Exception e)
++            {
++                throw new RuntimeException(e.toString());
++            }
++        }
++
++        return engineParam;
++    }
++
++
++    public void engineSetMode(String mode)
++        throws NoSuchAlgorithmException
++    {
++        String modeName = Strings.toUpperCase(mode);
++
++        if (modeName.equals("NONE"))
++        {
++            dhaesMode = false;
++        }
++        else if (modeName.equals("DHAES"))
++        {
++            dhaesMode = true;
++        }
++        else
++        {
++            throw new IllegalArgumentException("can't support mode " + mode);
++        }
++    }
++
++
++    public int engineGetOutputSize(int inputLen)
++    {
++        int len1, len2, len3;
++
++        if (key == null)
++        {
++            throw new IllegalStateException("cipher not initialised");
++        }
++
++        len1 = engine.getMac().getMacSize();
++
++        if (otherKeyParameter == null)
++        {
++            len2 = 2 * (((ECKeyParameters)key).getParameters().getCurve().getFieldSize() + 7) / 8;
++        }
++        else
++        {
++            len2 = 0;
++        }
++
++        if (engine.getCipher() == null)
++        {
++            len3 = inputLen;
++        }
++        else if (state == Cipher.ENCRYPT_MODE || state == Cipher.WRAP_MODE)
++        {
++            len3 = engine.getCipher().getOutputSize(inputLen);
++        }
++        else if (state == Cipher.DECRYPT_MODE || state == Cipher.UNWRAP_MODE)
++        {
++            len3 = engine.getCipher().getOutputSize(inputLen - len1 - len2);
++        }
++        else
++        {
++            throw new IllegalStateException("cipher not initialised");
++        }
++
++        if (state == Cipher.ENCRYPT_MODE || state == Cipher.WRAP_MODE)
++        {
++            return buffer.size() + len1 + 1 + len2 + len3;
++        }
++        else if (state == Cipher.DECRYPT_MODE || state == Cipher.UNWRAP_MODE)
++        {
++            return buffer.size() - len1 - len2 + len3;
++        }
++        else
++        {
++            throw new IllegalStateException("cipher not initialised");
++        }
++
++    }
++
++    public void engineSetPadding(String padding)
++        throws NoSuchPaddingException
++    {
++        String paddingName = Strings.toUpperCase(padding);
++
++        // TDOD: make this meaningful...
++        if (paddingName.equals("NOPADDING"))
++        {
++
++        }
++        else if (paddingName.equals("PKCS5PADDING") || paddingName.equals("PKCS7PADDING"))
++        {
++
++        }
++        else
++        {
++            throw new NoSuchPaddingException("padding not available with IESCipher");
++        }
++    }
++
++
++    // Initialisation methods
++
++    public void engineInit(
++        int opmode,
++        Key key,
++        AlgorithmParameters params,
++        SecureRandom random)
++        throws InvalidKeyException, InvalidAlgorithmParameterException
++    {
++        AlgorithmParameterSpec paramSpec = null;
++
++        if (params != null)
++        {
++            try
++            {
++                paramSpec = params.getParameterSpec(IESParameterSpec.class);
++            }
++            catch (Exception e)
++            {
++                throw new InvalidAlgorithmParameterException("cannot recognise parameters: " + e.toString());
++            }
++        }
++
++        engineParam = params;
++        engineInit(opmode, key, paramSpec, random);
++
++    }
++
++
++    public void engineInit(
++        int opmode,
++        Key key,
++        AlgorithmParameterSpec engineSpec,
++        SecureRandom random)
++        throws InvalidAlgorithmParameterException, InvalidKeyException
++    {
++        otherKeyParameter = null;
++
++        // Use default parameters (including cipher key size) if none are specified
++        if (engineSpec == null)
++        {
++            byte[] nonce = null;
++            if (ivLength != 0 && opmode == Cipher.ENCRYPT_MODE)
++            {
++                nonce = new byte[ivLength];
++                random.nextBytes(nonce);
++            }
++            this.engineSpec = IESUtil.guessParameterSpec(engine.getCipher(), nonce);
++        }
++        else if (engineSpec instanceof IESParameterSpec)
++        {
++            this.engineSpec = (IESParameterSpec)engineSpec;
++        }
++        else
++        {
++            throw new InvalidAlgorithmParameterException("must be passed IES parameters");
++        }
++
++        byte[] nonce = this.engineSpec.getNonce();
++
++        if (ivLength != 0 && (nonce == null || nonce.length != ivLength))
++        {
++            throw new InvalidAlgorithmParameterException("NONCE in IES Parameters needs to be " + ivLength + " bytes long");
++        }
++
++        // Parse the recipient's key
++        if (opmode == Cipher.ENCRYPT_MODE || opmode == Cipher.WRAP_MODE)
++        {
++            if (key instanceof PublicKey)
++            {
++                this.key = ECUtils.generatePublicKeyParameter((PublicKey)key);
++            }
++            else if (key instanceof IESKey)
++            {
++                IESKey ieKey = (IESKey)key;
++
++                this.key = ECUtils.generatePublicKeyParameter(ieKey.getPublic());
++                this.otherKeyParameter = ECUtil.generatePrivateKeyParameter(ieKey.getPrivate());
++            }
++            else
++            {
++                throw new InvalidKeyException("must be passed recipient's public EC key for encryption");
++            }
++        }
++        else if (opmode == Cipher.DECRYPT_MODE || opmode == Cipher.UNWRAP_MODE)
++        {
++            if (key instanceof PrivateKey)
++            {
++                this.key = ECUtil.generatePrivateKeyParameter((PrivateKey)key);
++            }
++            else if (key instanceof IESKey)
++            {
++                IESKey ieKey = (IESKey)key;
++
++                this.otherKeyParameter = ECUtils.generatePublicKeyParameter(ieKey.getPublic());
++                this.key = ECUtil.generatePrivateKeyParameter(ieKey.getPrivate());
++            }
++            else
++            {
++                throw new InvalidKeyException("must be passed recipient's private EC key for decryption");
++            }
++        }
++        else
++        {
++            throw new InvalidKeyException("must be passed EC key");
++        }
++
++
++        this.random = random;
++        this.state = opmode;
++        buffer.reset();
++
++    }
++
++
++    public void engineInit(
++        int opmode,
++        Key key,
++        SecureRandom random)
++        throws InvalidKeyException
++    {
++        try
++        {
++            engineInit(opmode, key, (AlgorithmParameterSpec)null, random);
++        }
++        catch (InvalidAlgorithmParameterException e)
++        {
++            throw new IllegalArgumentException("cannot handle supplied parameter spec: " + e.getMessage());
++        }
++
++    }
++
++
++    // Update methods - buffer the input
++
++    public byte[] engineUpdate(
++        byte[] input,
++        int inputOffset,
++        int inputLen)
++    {
++        buffer.write(input, inputOffset, inputLen);
++        return null;
++    }
++
++
++    public int engineUpdate(
++        byte[] input,
++        int inputOffset,
++        int inputLen,
++        byte[] output,
++        int outputOffset)
++    {
++        buffer.write(input, inputOffset, inputLen);
++        return 0;
++    }
++
++
++    // Finalisation methods
++
++    public byte[] engineDoFinal(
++        byte[] input,
++        int inputOffset,
++        int inputLen)
++        throws IllegalBlockSizeException, BadPaddingException
++    {
++        if (inputLen != 0)
++        {
++            buffer.write(input, inputOffset, inputLen);
++        }
++
++        final byte[] in = buffer.toByteArray();
++        buffer.reset();
++
++        // Convert parameters for use in IESEngine
++        CipherParameters params = new IESWithCipherParameters(engineSpec.getDerivationV(),
++            engineSpec.getEncodingV(),
++            engineSpec.getMacKeySize(),
++            engineSpec.getCipherKeySize());
++
++        if (engineSpec.getNonce() != null)
++        {
++            params = new ParametersWithIV(params, engineSpec.getNonce());
++        }
++
++        final ECDomainParameters ecParams = ((ECKeyParameters)key).getParameters();
++
++        final byte[] V;
++
++        if (otherKeyParameter != null)
++        {
++            try
++            {
++                if (state == Cipher.ENCRYPT_MODE || state == Cipher.WRAP_MODE)
++                {
++                    engine.init(true, otherKeyParameter, key, params);
++                }
++                else
++                {
++                    engine.init(false, key, otherKeyParameter, params);
++                }
++                return engine.processBlock(in, 0, in.length);
++            }
++            catch (Exception e)
++            {
++                throw new BadBlockException("unable to process block", e);
++            }
++        }
++
++        if (state == Cipher.ENCRYPT_MODE || state == Cipher.WRAP_MODE)
++        {
++            // Generate the ephemeral key pair
++            ECKeyPairGenerator gen = new ECKeyPairGenerator();
++            gen.init(new ECKeyGenerationParameters(ecParams, random));
++
++            final boolean usePointCompression = engineSpec.getPointCompression();
++            EphemeralKeyPairGenerator kGen = new EphemeralKeyPairGenerator(gen, new KeyEncoder()
++            {
++                public byte[] getEncoded(AsymmetricKeyParameter keyParameter)
++                {
++                    return ((ECPublicKeyParameters)keyParameter).getQ().getEncoded(usePointCompression);
++                }
++            });
++
++            // Encrypt the buffer
++            try
++            {
++                engine.init(key, params, kGen);
++
++                return engine.processBlock(in, 0, in.length);
++            }
++            catch (final Exception e)
++            {
++                throw new BadBlockException("unable to process block", e);
++            }
++        }
++        else if (state == Cipher.DECRYPT_MODE || state == Cipher.UNWRAP_MODE)
++        {
++            // Decrypt the buffer
++            try
++            {
++                engine.init(key, params, new ECIESPublicKeyParser(ecParams));
++
++                return engine.processBlock(in, 0, in.length);
++            }
++            catch (InvalidCipherTextException e)
++            {
++                throw new BadBlockException("unable to process block", e);
++            }
++        }
++        else
++        {
++            throw new IllegalStateException("cipher not initialised");
++        }
++
++    }
++
++    public int engineDoFinal(
++        byte[] input,
++        int inputOffset,
++        int inputLength,
++        byte[] output,
++        int outputOffset)
++        throws ShortBufferException, IllegalBlockSizeException, BadPaddingException
++    {
++
++        byte[] buf = engineDoFinal(input, inputOffset, inputLength);
++        System.arraycopy(buf, 0, output, outputOffset, buf.length);
++        return buf.length;
++    }
++
++    /**
++     * Classes that inherit from us
++     */
++
++    static public class ECIES
++        extends IESCipher
++    {
++        public ECIES()
++        {
++            super(new IESEngine(new ECDHBasicAgreement(),
++                new KDF2BytesGenerator(DigestFactory.createSHA1()),
++                new HMac(DigestFactory.createSHA1())));
++        }
++    }
++
++    static public class ECIESwithCipher
++        extends IESCipher
++    {
++        public ECIESwithCipher(BlockCipher cipher, int ivLength)
++        {
++            super(new IESEngine(new ECDHBasicAgreement(),
++                            new KDF2BytesGenerator(DigestFactory.createSHA1()),
++                            new HMac(DigestFactory.createSHA1()),
++                            new PaddedBufferedBlockCipher(cipher)), ivLength);
++        }
++    }
++
++    static public class ECIESwithDESedeCBC
++        extends ECIESwithCipher
++    {
++        public ECIESwithDESedeCBC()
++        {
++            super(new CBCBlockCipher(new DESedeEngine()), 8);
++        }
++    }
++
++    static public class ECIESwithAESCBC
++        extends ECIESwithCipher
++    {
++        public ECIESwithAESCBC()
++        {
++            super(new CBCBlockCipher(new AESEngine()), 16);
++        }
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/ies/AlgorithmParametersSpi.java b/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/ies/AlgorithmParametersSpi.java
+new file mode 100644
+index 0000000..d6406a7
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/ies/AlgorithmParametersSpi.java
+@@ -0,0 +1,184 @@
++package org.bouncycastle.jcajce.provider.asymmetric.ies;
++
++import java.io.IOException;
++import java.security.spec.AlgorithmParameterSpec;
++import java.security.spec.InvalidParameterSpecException;
++
++import org.bouncycastle.asn1.ASN1EncodableVector;
++import org.bouncycastle.asn1.ASN1Encoding;
++import org.bouncycastle.asn1.ASN1Integer;
++import org.bouncycastle.asn1.ASN1OctetString;
++import org.bouncycastle.asn1.ASN1Primitive;
++import org.bouncycastle.asn1.ASN1Sequence;
++import org.bouncycastle.asn1.ASN1TaggedObject;
++import org.bouncycastle.asn1.DEROctetString;
++import org.bouncycastle.asn1.DERSequence;
++import org.bouncycastle.asn1.DERTaggedObject;
++import org.bouncycastle.jce.spec.IESParameterSpec;
++
++public class AlgorithmParametersSpi
++    extends java.security.AlgorithmParametersSpi
++{
++    protected boolean isASN1FormatString(String format)
++    {
++        return format == null || format.equals("ASN.1");
++    }
++
++    protected AlgorithmParameterSpec engineGetParameterSpec(
++        Class paramSpec)
++        throws InvalidParameterSpecException
++    {
++        if (paramSpec == null)
++        {
++            throw new NullPointerException("argument to getParameterSpec must not be null");
++        }
++
++        return localEngineGetParameterSpec(paramSpec);
++    }
++
++    IESParameterSpec currentSpec;
++
++    /**
++     * in the absence of a standard way of doing it this will do for
++     * now...
++     */
++    protected byte[] engineGetEncoded()
++    {
++        try
++        {
++            ASN1EncodableVector v = new ASN1EncodableVector();
++
++            if (currentSpec.getDerivationV() != null)
++            {
++                v.add(new DERTaggedObject(false, 0, new DEROctetString(currentSpec.getDerivationV())));
++            }
++            if (currentSpec.getEncodingV() != null)
++            {
++                v.add(new DERTaggedObject(false, 1, new DEROctetString(currentSpec.getEncodingV())));
++            }
++            v.add(new ASN1Integer(currentSpec.getMacKeySize()));
++            if (currentSpec.getNonce() != null)
++            {
++                ASN1EncodableVector cV = new ASN1EncodableVector();
++
++                cV.add(new ASN1Integer(currentSpec.getCipherKeySize()));
++                cV.add(new ASN1Integer(currentSpec.getNonce()));
++
++                v.add(new DERSequence(cV));
++            }
++            return new DERSequence(v).getEncoded(ASN1Encoding.DER);
++        }
++        catch (IOException e)
++        {
++            throw new RuntimeException("Error encoding IESParameters");
++        }
++    }
++
++    protected byte[] engineGetEncoded(
++        String format)
++    {
++        if (isASN1FormatString(format) || format.equalsIgnoreCase("X.509"))
++        {
++            return engineGetEncoded();
++        }
++
++        return null;
++    }
++
++    protected AlgorithmParameterSpec localEngineGetParameterSpec(
++        Class paramSpec)
++        throws InvalidParameterSpecException
++    {
++        if (paramSpec == IESParameterSpec.class || paramSpec == AlgorithmParameterSpec.class)
++        {
++            return currentSpec;
++        }
++
++        throw new InvalidParameterSpecException("unknown parameter spec passed to ElGamal parameters object.");
++    }
++
++    protected void engineInit(
++        AlgorithmParameterSpec paramSpec)
++        throws InvalidParameterSpecException
++    {
++        if (!(paramSpec instanceof IESParameterSpec))
++        {
++            throw new InvalidParameterSpecException("IESParameterSpec required to initialise a IES algorithm parameters object");
++        }
++
++        this.currentSpec = (IESParameterSpec)paramSpec;
++    }
++
++    protected void engineInit(
++        byte[] params)
++        throws IOException
++    {
++        try
++        {
++            ASN1Sequence s = (ASN1Sequence)ASN1Primitive.fromByteArray(params);
++
++            if (s.size() == 1)
++            {
++                this.currentSpec = new IESParameterSpec(null, null, ASN1Integer.getInstance(s.getObjectAt(0)).getValue().intValue());
++            }
++            else if (s.size() == 2)
++            {
++                ASN1TaggedObject tagged = ASN1TaggedObject.getInstance(s.getObjectAt(0));
++
++                if (tagged.getTagNo() == 0)
++                {
++                    this.currentSpec = new IESParameterSpec(ASN1OctetString.getInstance(tagged, false).getOctets(), null, ASN1Integer.getInstance(s.getObjectAt(1)).getValue().intValue());
++                }
++                else
++                {
++                    this.currentSpec = new IESParameterSpec(null, ASN1OctetString.getInstance(tagged, false).getOctets(), ASN1Integer.getInstance(s.getObjectAt(1)).getValue().intValue());
++                }
++            }
++            else if (s.size() == 3)
++            {
++                ASN1TaggedObject tagged1 = ASN1TaggedObject.getInstance(s.getObjectAt(0));
++                ASN1TaggedObject tagged2 = ASN1TaggedObject.getInstance(s.getObjectAt(1));
++
++                this.currentSpec = new IESParameterSpec(ASN1OctetString.getInstance(tagged1, false).getOctets(), ASN1OctetString.getInstance(tagged2, false).getOctets(), ASN1Integer.getInstance(s.getObjectAt(2)).getValue().intValue());
++            }
++            else if (s.size() == 4)
++            {
++                ASN1TaggedObject tagged1 = ASN1TaggedObject.getInstance(s.getObjectAt(0));
++                ASN1TaggedObject tagged2 = ASN1TaggedObject.getInstance(s.getObjectAt(1));
++                ASN1Sequence     cipherDet = ASN1Sequence.getInstance(s.getObjectAt(3));
++
++                this.currentSpec = new IESParameterSpec(ASN1OctetString.getInstance(tagged1, false).getOctets(), ASN1OctetString.getInstance(tagged2, false).getOctets(), ASN1Integer.getInstance(s.getObjectAt(2)).getValue().intValue(),
++                    ASN1Integer.getInstance(cipherDet.getObjectAt(0)).getValue().intValue(),
++                    ASN1OctetString.getInstance(cipherDet.getObjectAt(1)).getOctets());
++            }
++        }
++        catch (ClassCastException e)
++        {
++            throw new IOException("Not a valid IES Parameter encoding.");
++        }
++        catch (ArrayIndexOutOfBoundsException e)
++        {
++            throw new IOException("Not a valid IES Parameter encoding.");
++        }
++    }
++
++    protected void engineInit(
++        byte[] params,
++        String format)
++        throws IOException
++    {
++        if (isASN1FormatString(format) || format.equalsIgnoreCase("X.509"))
++        {
++            engineInit(params);
++        }
++        else
++        {
++            throw new IOException("Unknown parameter format " + format);
++        }
++    }
++
++    protected String engineToString()
++    {
++        return "IES Parameters";
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/util/IESUtil.java b/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/util/IESUtil.java
+new file mode 100644
+index 0000000..63373b2
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/util/IESUtil.java
+@@ -0,0 +1,38 @@
++package org.bouncycastle.jcajce.provider.asymmetric.util;
++
++import org.bouncycastle.crypto.BlockCipher;
++import org.bouncycastle.crypto.BufferedBlockCipher;
++import org.bouncycastle.jce.spec.IESParameterSpec;
++
++public class IESUtil
++{
++    public static IESParameterSpec guessParameterSpec(BufferedBlockCipher iesBlockCipher, byte[] nonce)
++    {
++        if (iesBlockCipher == null)
++        {
++            return new IESParameterSpec(null, null, 128);
++        }
++        else
++        {
++            BlockCipher underlyingCipher = iesBlockCipher.getUnderlyingCipher();
++
++            if (underlyingCipher.getAlgorithmName().equals("DES") ||
++                underlyingCipher.getAlgorithmName().equals("RC2") ||
++                underlyingCipher.getAlgorithmName().equals("RC5-32") ||
++                underlyingCipher.getAlgorithmName().equals("RC5-64"))
++            {
++                return new IESParameterSpec(null, null, 64, 64, nonce);
++            }
++            else if (underlyingCipher.getAlgorithmName().equals("SKIPJACK"))
++            {
++                return new IESParameterSpec(null, null, 80, 80, nonce);
++            }
++            else if (underlyingCipher.getAlgorithmName().equals("GOST28147"))
++            {
++                return new IESParameterSpec(null, null, 256, 256, nonce);
++            }
++
++            return new IESParameterSpec(null, null, 128, 128, nonce);
++        }
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/jce/interfaces/IESKey.java b/bcprov/src/main/java/org/bouncycastle/jce/interfaces/IESKey.java
+new file mode 100644
+index 0000000..f1d7901
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/jce/interfaces/IESKey.java
+@@ -0,0 +1,22 @@
++package org.bouncycastle.jce.interfaces;
++
++import java.security.Key;
++import java.security.PrivateKey;
++import java.security.PublicKey;
++
++/**
++ * key pair for use with an integrated encryptor
++ */
++public interface IESKey
++    extends Key
++{
++    /**
++     * return the intended recipient's/sender's public key.
++     */
++    public PublicKey getPublic();
++
++    /**
++     * return the local private key.
++     */
++    public PrivateKey getPrivate();
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/jce/provider/BouncyCastleProvider.java b/bcprov/src/main/java/org/bouncycastle/jce/provider/BouncyCastleProvider.java
+index 5cb5d52..0b8e01b 100644
+--- a/bcprov/src/main/java/org/bouncycastle/jce/provider/BouncyCastleProvider.java
++++ b/bcprov/src/main/java/org/bouncycastle/jce/provider/BouncyCastleProvider.java
+@@ -94,12 +94,7 @@ public final class BouncyCastleProvider extends Provider
+     // later ones configure it.
+     private static final String[] ASYMMETRIC_GENERIC =
+     {
+-        // BEGIN android-removed
+-        // "X509", "IES"
+-        // END android-removed
+-        // BEGIN android-added
+-        "X509"
+-        // END android-added
++        "X509", "IES"
+     };
+ 
+     private static final String[] ASYMMETRIC_CIPHERS =
+diff --git a/bcprov/src/main/java/org/bouncycastle/jce/spec/IEKeySpec.java b/bcprov/src/main/java/org/bouncycastle/jce/spec/IEKeySpec.java
+new file mode 100644
+index 0000000..9859a22
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/jce/spec/IEKeySpec.java
+@@ -0,0 +1,70 @@
++package org.bouncycastle.jce.spec;
++
++import java.security.PrivateKey;
++import java.security.PublicKey;
++import java.security.spec.KeySpec;
++
++import org.bouncycastle.jce.interfaces.IESKey;
++
++/**
++ * key pair for use with an integrated encryptor - together
++ * they provide what's required to generate the message.
++ */
++public class IEKeySpec
++    implements KeySpec, IESKey
++{
++    private PublicKey   pubKey;
++    private PrivateKey  privKey;
++
++    /**
++     * @param privKey our private key.
++     * @param pubKey the public key of the sender/recipient.
++     */
++    public IEKeySpec(
++        PrivateKey  privKey,
++        PublicKey   pubKey)
++    {
++        this.privKey = privKey;
++        this.pubKey = pubKey;
++    }
++
++    /**
++     * return the intended recipient's/sender's public key.
++     */
++    public PublicKey getPublic()
++    {
++        return pubKey;
++    }
++
++    /**
++     * return the local private key.
++     */
++    public PrivateKey getPrivate()
++    {
++        return privKey;
++    }
++
++    /**
++     * return "IES"
++     */
++    public String getAlgorithm()
++    {
++        return "IES";
++    }
++
++    /**
++     * return null
++     */
++    public String getFormat()
++    {
++        return null;
++    }
++
++    /**
++     * returns null
++     */
++    public byte[] getEncoded()
++    {
++        return null;
++    }
++}
+diff --git a/bcprov/src/main/java/org/bouncycastle/jce/spec/IESParameterSpec.java b/bcprov/src/main/java/org/bouncycastle/jce/spec/IESParameterSpec.java
+new file mode 100644
+index 0000000..cc29c10
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/jce/spec/IESParameterSpec.java
+@@ -0,0 +1,158 @@
++package org.bouncycastle.jce.spec;
++
++import java.security.spec.AlgorithmParameterSpec;
++
++import org.bouncycastle.util.Arrays;
++
++/**
++ * Parameter spec for an integrated encryptor, as in IEEE P1363a
++ */
++public class IESParameterSpec
++    implements AlgorithmParameterSpec
++{
++    private byte[] derivation;
++    private byte[] encoding;
++    private int macKeySize;
++    private int cipherKeySize;
++    private byte[] nonce;
++    private boolean usePointCompression;
++
++
++    /**
++     * Set the IES engine parameters.
++     *
++     * @param derivation the optional derivation vector for the KDF.
++     * @param encoding   the optional encoding vector for the KDF.
++     * @param macKeySize the key size (in bits) for the MAC.
++     */
++    public IESParameterSpec(
++        byte[] derivation,
++        byte[] encoding,
++        int macKeySize)
++    {
++        this(derivation, encoding, macKeySize, -1, null, false);
++    }
++
++    /**
++     * Set the IES engine parameters.
++     *
++     * @param derivation    the optional derivation vector for the KDF.
++     * @param encoding      the optional encoding vector for the KDF.
++     * @param macKeySize    the key size (in bits) for the MAC.
++     * @param cipherKeySize the key size (in bits) for the block cipher.
++     * @param nonce         an IV to use initialising the block cipher.
++     */
++    public IESParameterSpec(
++        byte[] derivation,
++        byte[] encoding,
++        int macKeySize,
++        int cipherKeySize,
++        byte[] nonce)
++    {
++        this(derivation, encoding, macKeySize, cipherKeySize, nonce, false);
++    }
++
++    /**
++     * Set the IES engine parameters.
++     *
++     * @param derivation    the optional derivation vector for the KDF.
++     * @param encoding      the optional encoding vector for the KDF.
++     * @param macKeySize    the key size (in bits) for the MAC.
++     * @param cipherKeySize the key size (in bits) for the block cipher.
++     * @param nonce         an IV to use initialising the block cipher.
++     * @param usePointCompression whether to use EC point compression or not (false by default)
++     */
++    public IESParameterSpec(
++        byte[] derivation,
++        byte[] encoding,
++        int macKeySize,
++        int cipherKeySize,
++        byte[] nonce,
++        boolean usePointCompression)
++    {
++        if (derivation != null)
++        {
++            this.derivation = new byte[derivation.length];
++            System.arraycopy(derivation, 0, this.derivation, 0, derivation.length);
++        }
++        else
++        {
++            this.derivation = null;
++        }
++
++        if (encoding != null)
++        {
++            this.encoding = new byte[encoding.length];
++            System.arraycopy(encoding, 0, this.encoding, 0, encoding.length);
++        }
++        else
++        {
++            this.encoding = null;
++        }
++
++        this.macKeySize = macKeySize;
++        this.cipherKeySize = cipherKeySize;
++        this.nonce = Arrays.clone(nonce);
++        this.usePointCompression = usePointCompression;
++    }
++
++    /**
++     * return the derivation vector.
++     */
++    public byte[] getDerivationV()
++    {
++        return Arrays.clone(derivation);
++    }
++
++    /**
++     * return the encoding vector.
++     */
++    public byte[] getEncodingV()
++    {
++        return Arrays.clone(encoding);
++    }
++
++    /**
++     * return the key size in bits for the MAC used with the message
++     */
++    public int getMacKeySize()
++    {
++        return macKeySize;
++    }
++
++    /**
++     * return the key size in bits for the block cipher used with the message
++     */
++    public int getCipherKeySize()
++    {
++        return cipherKeySize;
++    }
++
++    /**
++     * Return the nonce (IV) value to be associated with message.
++     *
++     * @return block cipher IV for message.
++     */
++    public byte[] getNonce()
++    {
++        return Arrays.clone(nonce);
++    }
++
++    /**
++     * Set the 'point compression' flag.
++     */
++    public void setPointCompression(boolean usePointCompression)
++    {
++        this.usePointCompression = usePointCompression;
++    }
++
++    /**
++     * Return the 'point compression' flag.
++     *
++     * @return the point compression flag
++     */
++    public boolean getPointCompression()
++    {
++        return usePointCompression;
++    }
++}
+\ No newline at end of file
+diff --git a/bcprov/src/main/java/org/bouncycastle/util/MemoableResetException.java b/bcprov/src/main/java/org/bouncycastle/util/MemoableResetException.java
+new file mode 100644
+index 0000000..6552bd4
+--- /dev/null
++++ b/bcprov/src/main/java/org/bouncycastle/util/MemoableResetException.java
+@@ -0,0 +1,22 @@
++package org.bouncycastle.util;
++
++/**
++ * Exception to be thrown on a failure to reset an object implementing Memoable.
++ * <p>
++ * The exception extends ClassCastException to enable users to have a single handling case,
++ * only introducing specific handling of this one if required.
++ * </p>
++ */
++public class MemoableResetException
++    extends ClassCastException
++{
++    /**
++     * Basic Constructor.
++     *
++     * @param msg message to be associated with this exception.
++     */
++    public MemoableResetException(String msg)
++    {
++        super(msg);
++    }
++}
+-- 
+2.7.4
+
