@@ -1,0 +1,29 @@
+From 335540d471ac746246d7e8a19d400fee6c8d838f Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Tue, 18 Sep 2018 15:15:39 +0800
+Subject: [PATCH] default_workspace: add GoodWeather Widget for default
+
+add GoodWeather Widget in Desktop
+
+Change-Id: I21b02d74e0f12dd49cd004c17271d3912e9b7b9c
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ res/xml/default_workspace_5x5.xml | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/res/xml/default_workspace_5x5.xml b/res/xml/default_workspace_5x5.xml
+index 30ca6dc..9c0d749 100644
+--- a/res/xml/default_workspace_5x5.xml
++++ b/res/xml/default_workspace_5x5.xml
+@@ -43,6 +43,8 @@
+ 
+     <favorite screen="0" x="1" y="3" packageName="org.telegram.messenger" className="org.telegram.ui.LaunchActivity"/>
+ 
++    <appwidget screen="0" x="0" y="0" spanX='5' spanY="1" packageName="org.asdtm.goodweather" className="org.asdtm.goodweather.widget.LessWidgetProvider"/>
++
+     <resolve
+         launcher:screen="0"
+         launcher:x="4"
+-- 
+2.7.4
+
