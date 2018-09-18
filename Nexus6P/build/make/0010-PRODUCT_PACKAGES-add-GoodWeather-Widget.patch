@@ -1,0 +1,30 @@
+From 39f9a20e7c840563b443cc23bcab220c38ec6fad Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Tue, 18 Sep 2018 15:17:02 +0800
+Subject: [PATCH] PRODUCT_PACKAGES: add GoodWeather Widget
+
+build GoodWeather Widget for default
+
+Change-Id: Ieee4915c09a5ec7e4050e6934f8d6bfb1675b6e8
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ target/product/core.mk | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/target/product/core.mk b/target/product/core.mk
+index 6283eaa..56b3261 100644
+--- a/target/product/core.mk
++++ b/target/product/core.mk
+@@ -62,7 +62,8 @@ PRODUCT_PACKAGES += \
+     preloadapp \
+     BraveBrowser \
+     BrahmaWallet \
+-    BrahmaSetup
++    BrahmaSetup \
++    GoodWeather
+ 
+ # The set of packages whose code can be loaded by the system server.
+ PRODUCT_SYSTEM_SERVER_APPS += \
+-- 
+2.7.4
+
