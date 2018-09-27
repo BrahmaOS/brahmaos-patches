@@ -5,7 +5,8 @@ Target="Nexus6P"
 ANDROID_PATCHES="${ANDROID_DIR}/brahmaos-patches/${Target}"
 Brahmagithub="https://github.com/BrahmaOS/"
 BrahmaPrefix="brahmaos"
-Packages='external/ipfs packages/apps/PrebuiltApps'
+Packages='external/ipfs packages/apps/PrebuiltApps packages/apps/BrahmaSetup packages/apps/GoodWeather 
+packages/apps/Update external/brahmaos-depends'
 
 patchdirs=""
 
