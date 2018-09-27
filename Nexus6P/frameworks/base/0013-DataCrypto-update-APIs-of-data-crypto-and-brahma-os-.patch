@@ -1,0 +1,607 @@
+From 5a2ee7ff2b69b72a61f171fa512a43ecb3a1b8be Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Tue, 18 Sep 2018 17:14:03 +0800
+Subject: [PATCH] [DataCrypto]: update APIs of data crypto and brahma os
+ account
+
+Change-Id: I75c1977ae7a437473cbe12df1e08e2cd5d5397ae
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ api/current.txt                                    |  17 +-
+ api/system-current.txt                             |  17 +-
+ api/test-current.txt                               |  17 +-
+ core/java/android/os/UserManager.java              |   4 +-
+ core/java/android/util/BrahmaConstants.java        |  22 ++
+ core/java/android/util/DataCryptoUtils.java        | 319 ++++++++++++++-------
+ .../com/android/server/pm/UserManagerService.java  |  10 +-
+ 7 files changed, 279 insertions(+), 127 deletions(-)
+ create mode 100644 core/java/android/util/BrahmaConstants.java
+
+diff --git a/api/current.txt b/api/current.txt
+index 165cf21..dce91c7 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -43240,6 +43240,14 @@ package android.util {
+     ctor public Base64OutputStream(java.io.OutputStream, int);
+   }
+ 
++  public class BrahmaConstants {
++    ctor public BrahmaConstants();
++    method public static boolean isMnemonicPathValid(java.lang.String);
++    field public static final java.lang.String BRM_MNEMONIC_PATH = "M/44H/60H/0H/0/1";
++    field public static final java.lang.String DEFAULT_MNEMONIC_PATH = "M/2048H/60H/0H/0/0";
++    field public static final java.lang.String ETH_MNEMONIC_PATH = "M/44H/60H/0H/0/0";
++  }
++
+   public final deprecated class Config {
+     field public static final deprecated boolean DEBUG = false;
+     field public static final deprecated boolean LOGD = true;
+@@ -43252,11 +43260,10 @@ package android.util {
+     ctor public DataCryptoUtils();
+     method public java.lang.String aes128Decrypt(java.lang.String, java.lang.String);
+     method public java.lang.String aes128Encrypt(java.lang.String, java.lang.String);
+-    method public boolean decryptWithPrivateKey(android.content.Context, java.io.File, java.io.File, java.lang.String);
+-    method public boolean encryptWithPublicKey(android.content.Context, java.io.File, java.io.File);
+-    field public static final java.lang.String BRM_PATH = "M/44H/60H/0H/0/1";
+-    field public static final java.lang.String DEFAULT_PATH = "M/2048H/60H/0H/0/0";
+-    field public static final java.lang.String ETH_PATH = "M/44H/60H/0H/0/0";
++    field public static final int RESULT_CRYPTO_FAIL = 1; // 0x1
++    field public static final int RESULT_CRYPTO_SUCCESS = 0; // 0x0
++    field public static final int RESULT_FILE_ERROR = 3; // 0x3
++    field public static final int RESULT_PASSWORD_ERROR = 2; // 0x2
+   }
+ 
+   public class DebugUtils {
+diff --git a/api/system-current.txt b/api/system-current.txt
+index bf12009..c5295de 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -46825,6 +46825,14 @@ package android.util {
+     ctor public Base64OutputStream(java.io.OutputStream, int);
+   }
+ 
++  public class BrahmaConstants {
++    ctor public BrahmaConstants();
++    method public static boolean isMnemonicPathValid(java.lang.String);
++    field public static final java.lang.String BRM_MNEMONIC_PATH = "M/44H/60H/0H/0/1";
++    field public static final java.lang.String DEFAULT_MNEMONIC_PATH = "M/2048H/60H/0H/0/0";
++    field public static final java.lang.String ETH_MNEMONIC_PATH = "M/44H/60H/0H/0/0";
++  }
++
+   public final deprecated class Config {
+     field public static final deprecated boolean DEBUG = false;
+     field public static final deprecated boolean LOGD = true;
+@@ -46837,11 +46845,10 @@ package android.util {
+     ctor public DataCryptoUtils();
+     method public java.lang.String aes128Decrypt(java.lang.String, java.lang.String);
+     method public java.lang.String aes128Encrypt(java.lang.String, java.lang.String);
+-    method public boolean decryptWithPrivateKey(android.content.Context, java.io.File, java.io.File, java.lang.String);
+-    method public boolean encryptWithPublicKey(android.content.Context, java.io.File, java.io.File);
+-    field public static final java.lang.String BRM_PATH = "M/44H/60H/0H/0/1";
+-    field public static final java.lang.String DEFAULT_PATH = "M/2048H/60H/0H/0/0";
+-    field public static final java.lang.String ETH_PATH = "M/44H/60H/0H/0/0";
++    field public static final int RESULT_CRYPTO_FAIL = 1; // 0x1
++    field public static final int RESULT_CRYPTO_SUCCESS = 0; // 0x0
++    field public static final int RESULT_FILE_ERROR = 3; // 0x3
++    field public static final int RESULT_PASSWORD_ERROR = 2; // 0x2
+   }
+ 
+   public class DebugUtils {
+diff --git a/api/test-current.txt b/api/test-current.txt
+index 05e64c5..5b86563 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -43517,6 +43517,14 @@ package android.util {
+     ctor public Base64OutputStream(java.io.OutputStream, int);
+   }
+ 
++  public class BrahmaConstants {
++    ctor public BrahmaConstants();
++    method public static boolean isMnemonicPathValid(java.lang.String);
++    field public static final java.lang.String BRM_MNEMONIC_PATH = "M/44H/60H/0H/0/1";
++    field public static final java.lang.String DEFAULT_MNEMONIC_PATH = "M/2048H/60H/0H/0/0";
++    field public static final java.lang.String ETH_MNEMONIC_PATH = "M/44H/60H/0H/0/0";
++  }
++
+   public final deprecated class Config {
+     field public static final deprecated boolean DEBUG = false;
+     field public static final deprecated boolean LOGD = true;
+@@ -43529,11 +43537,10 @@ package android.util {
+     ctor public DataCryptoUtils();
+     method public java.lang.String aes128Decrypt(java.lang.String, java.lang.String);
+     method public java.lang.String aes128Encrypt(java.lang.String, java.lang.String);
+-    method public boolean decryptWithPrivateKey(android.content.Context, java.io.File, java.io.File, java.lang.String);
+-    method public boolean encryptWithPublicKey(android.content.Context, java.io.File, java.io.File);
+-    field public static final java.lang.String BRM_PATH = "M/44H/60H/0H/0/1";
+-    field public static final java.lang.String DEFAULT_PATH = "M/2048H/60H/0H/0/0";
+-    field public static final java.lang.String ETH_PATH = "M/44H/60H/0H/0/0";
++    field public static final int RESULT_CRYPTO_FAIL = 1; // 0x1
++    field public static final int RESULT_CRYPTO_SUCCESS = 0; // 0x0
++    field public static final int RESULT_FILE_ERROR = 3; // 0x3
++    field public static final int RESULT_PASSWORD_ERROR = 2; // 0x2
+   }
+ 
+   public class DebugUtils {
+diff --git a/core/java/android/os/UserManager.java b/core/java/android/os/UserManager.java
+index e9f84e4..bee41ba 100644
+--- a/core/java/android/os/UserManager.java
++++ b/core/java/android/os/UserManager.java
+@@ -1944,7 +1944,9 @@ public class UserManager {
+     }
+ 
+     /**
+-     * @return the user's default wallet address
++     * @return the user's default wallet address,
++     * if null means no default wallet for this path
++     *
+      * @hide
+      */
+     @RequiresPermission( allOf = {
+diff --git a/core/java/android/util/BrahmaConstants.java b/core/java/android/util/BrahmaConstants.java
+new file mode 100644
+index 0000000..c7e3419
+--- /dev/null
++++ b/core/java/android/util/BrahmaConstants.java
+@@ -0,0 +1,22 @@
++package android.util;
++
++import java.util.ArrayList;
++import java.util.Arrays;
++
++public class BrahmaConstants {
++
++    /** Used to generating private key for the different key path by mnemonics**/
++    public static final String ETH_MNEMONIC_PATH = "M/44H/60H/0H/0/0";
++    public static final String BRM_MNEMONIC_PATH = "M/44H/60H/0H/0/1";
++    public static final String DEFAULT_MNEMONIC_PATH = "M/2048H/60H/0H/0/0";
++    private static String[] mMnemonicPaths = new String[]{
++            ETH_MNEMONIC_PATH, BRM_MNEMONIC_PATH, DEFAULT_MNEMONIC_PATH};
++
++    public static boolean isMnemonicPathValid(String path) {
++        if (Arrays.asList(mMnemonicPaths).contains(path)) {
++            return true;
++        } else {
++            return false;
++        }
++    }
++}
+diff --git a/core/java/android/util/DataCryptoUtils.java b/core/java/android/util/DataCryptoUtils.java
+index 63cd02c..dabab0c 100644
+--- a/core/java/android/util/DataCryptoUtils.java
++++ b/core/java/android/util/DataCryptoUtils.java
+@@ -6,12 +6,8 @@ import android.os.UserManager;
+ 
+ import java.io.File;
+ import java.io.FileInputStream;
+-import java.io.FileNotFoundException;
+ import java.io.FileOutputStream;
+-import java.io.IOException;
+ import java.math.BigInteger;
+-import java.security.InvalidKeyException;
+-import java.security.NoSuchAlgorithmException;
+ import java.security.Security;
+ import java.security.spec.ECFieldFp;
+ import java.security.spec.ECPoint;
+@@ -40,124 +36,238 @@ import com.android.org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
+ 
+ public class DataCryptoUtils {
+     private static final String TAG = "DataCryptoUtils";
+-    public static final String ETH_PATH = "M/44H/60H/0H/0/0";
+-    public static final String BRM_PATH = "M/44H/60H/0H/0/1";
+-    public static final String DEFAULT_PATH = "M/2048H/60H/0H/0/0";
++
++    /** Used to generate SecretKeySpec for AES 128 crypto **/
++    private final byte[] SALT = new byte[]{0x62, 0x72, 0x61, 0x68, 0x6d, 0x61, 0x6f, 0x73};//must be 8 bytes
++    private final int ITERATION_COUNT = 1024;
++    private final int KEY_STRENGTH = 128;
++    private final int DEFAULT_BLOCK_SIZE = 64;
++
++    /**
++     * The results returned by crypto APIs
++     * */
++    public static final int RESULT_CRYPTO_SUCCESS = 0;
++    public static final int RESULT_CRYPTO_FAIL = 1;
++    public static final int RESULT_PASSWORD_ERROR = 2;
++    public static final int RESULT_FILE_ERROR= 3;
++
++    /** Parameters for generating BCECPublicKey for crypto with Brahma OS default key pair **/
++    private final BigInteger POINT_G_PRE =
++            new BigInteger("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798", 16);
++    private final BigInteger POINT_G_POST =
++            new BigInteger("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8", 16);
++    private final BigInteger FACTOR_N =
++            new BigInteger("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16);
++    private final BigInteger FIELD_P =
++            new BigInteger("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", 16);
+ 
+     private UserManager mUserManager;
+ 
+     public DataCryptoUtils () {
+     }
+ 
+-    public boolean encryptWithPublicKey(Context context, File fileSrc, File fileCipher) {
+-        mUserManager = (UserManager) context.getSystemService(Context.USER_SERVICE);
+-        boolean result =  true;
+-        try {
+-            BigInteger pointGPre = new BigInteger("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798", 16);
+-            BigInteger pointGPost = new BigInteger("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8", 16);
+-            BigInteger factorN = new BigInteger("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16);
+-            BigInteger fieldP = new BigInteger("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", 16);
+-
+-            Security.addProvider(new BouncyCastleProvider());
+-            Cipher cipher = Cipher.getInstance("ECIES", "BC");
+-            IESParameterSpec iesParams = new IESParameterSpec(null, null, 64);
+-
+-            //----------------------------
+-            // Encrypt with public key
+-            //----------------------------
+-
+-            // public key for test
+-            String publicKeyValue = mUserManager.getUserDefaultPublicKey(UserHandle.myUserId());
+-            String prePublicKeyStr = publicKeyValue.substring(0, 64);
+-            String postPublicKeyStr = publicKeyValue.substring(64);
+-
+-            EllipticCurve ellipticCurve = new EllipticCurve(new ECFieldFp(fieldP), new BigInteger("0"), new BigInteger("7"));
+-            ECPoint pointG = new ECPoint(pointGPre, pointGPost);
+-            ECNamedCurveSpec namedCurveSpec = new ECNamedCurveSpec("secp256k1", ellipticCurve, pointG, factorN);
+-
+-            // public key
+-            SecP256K1Curve secP256K1Curve = new SecP256K1Curve();
+-            SecP256K1Point secP256K1Point = new SecP256K1Point(secP256K1Curve,
+-                    new SecP256K1FieldElement(new BigInteger(prePublicKeyStr, 16)),
+-                    new SecP256K1FieldElement(new BigInteger(postPublicKeyStr, 16)));
+-            SecP256K1Point secP256K1PointG = new SecP256K1Point(secP256K1Curve, new SecP256K1FieldElement(pointGPre), new SecP256K1FieldElement(pointGPost));
+-            ECDomainParameters domainParameters = new ECDomainParameters(secP256K1Curve, secP256K1PointG, factorN);
+-            ECPublicKeyParameters publicKeyParameters = new ECPublicKeyParameters(secP256K1Point, domainParameters);
+-            BCECPublicKey publicKeySelf = new BCECPublicKey("ECDSA", publicKeyParameters, namedCurveSpec, BouncyCastleProvider.CONFIGURATION);
+-
+-
+-            cipher.init(Cipher.ENCRYPT_MODE, publicKeySelf, iesParams);
+-            byte[] block = new byte[64];
+-            FileInputStream fis = new FileInputStream(fileSrc);
+-            FileOutputStream fos = new FileOutputStream(fileCipher);
+-            CipherOutputStream cos = new CipherOutputStream(fos, cipher);
++    /**
++     * @hide
++     *
++     * Encrypt file with the Brahma OS default public key which is unique for the Brahma OS account
++     *
++     * @param fileSrc the input file with clear-text
++     * @param fileCipher the output file with cipher-text
++     *
++     * @return 0 means success, otherwise see the error code
++     */
++    public int encryptWithDefaultPublicKey(Context context, File fileSrc, File fileCipher,
++                                           int blockSize) {
++        if (!fileSrc.exists()) {
++            return RESULT_FILE_ERROR;
++        }
++        if (blockSize <= 0) {
++            blockSize = DEFAULT_BLOCK_SIZE;
++        }
++        int result = RESULT_CRYPTO_SUCCESS;
++        if (null == mUserManager) {
++            mUserManager = (UserManager) context.getSystemService(Context.USER_SERVICE);
++        }
+ 
++        if (!fileSrc.isDirectory()) {//if file is not a dir, then crypt this file
+             try {
+-                int i;
+-                while ((i = fis.read(block)) != -1) {
+-                    cos.write(block, 0, i);
++                /* get cipher provider*/
++                Security.addProvider(new BouncyCastleProvider());
++                Cipher cipher = Cipher.getInstance("ECIES", BouncyCastleProvider.PROVIDER_NAME);
++                IESParameterSpec iesParams = new IESParameterSpec(null, null, 64);
++
++                /** to generate publicKeyParameters with brahma OS default public key **/
++                String publicKeyValue = mUserManager.getUserDefaultPublicKey(UserHandle.myUserId());
++                String prePublicKeyStr = publicKeyValue.substring(0, 64);
++                String postPublicKeyStr = publicKeyValue.substring(64);
++                SecP256K1Curve secP256K1Curve = new SecP256K1Curve();
++                SecP256K1Point secP256K1Point = new SecP256K1Point(secP256K1Curve,
++                        new SecP256K1FieldElement(new BigInteger(prePublicKeyStr, 16)),
++                        new SecP256K1FieldElement(new BigInteger(postPublicKeyStr, 16)));
++                SecP256K1Point secP256K1PointG = new SecP256K1Point(secP256K1Curve,
++                        new SecP256K1FieldElement(POINT_G_PRE), new SecP256K1FieldElement(POINT_G_POST));
++                ECDomainParameters domainParameters = new ECDomainParameters(secP256K1Curve,
++                        secP256K1PointG, FACTOR_N);
++                ECPublicKeyParameters publicKeyParameters = new ECPublicKeyParameters(secP256K1Point, domainParameters);
++
++                /** to generate namedCurveSpec **/
++                EllipticCurve ellipticCurve = new EllipticCurve(new ECFieldFp(FIELD_P),
++                        new BigInteger("0"), new BigInteger("7"));
++                ECNamedCurveSpec namedCurveSpec = new ECNamedCurveSpec("secp256k1", ellipticCurve,
++                        new ECPoint(POINT_G_PRE, POINT_G_POST), FACTOR_N);
++
++                BCECPublicKey publicKeySelf = new BCECPublicKey("ECDSA", publicKeyParameters,
++                        namedCurveSpec, BouncyCastleProvider.CONFIGURATION);
++
++                //begin encrypt
++                cipher.init(Cipher.ENCRYPT_MODE, publicKeySelf, iesParams);
++
++                byte[] block = new byte[blockSize/*64*/];
++                FileInputStream fis = new FileInputStream(fileSrc);
++                FileOutputStream fos = new FileOutputStream(fileCipher);
++                CipherOutputStream cos = new CipherOutputStream(fos, cipher);
++
++                try {
++                    int i;
++                    while ((i = fis.read(block)) != -1) {
++                        cos.write(block, 0, i);
++                    }
++                } catch (Exception ioe) {
++                    result = RESULT_CRYPTO_FAIL;
++                    Log.d(TAG, "" + ioe.toString());
++                } finally {
++                    cos.close();
++                    fos.close();
++                    fis.close();
+                 }
+-            } catch (Exception ioe) {
+-                result = false;
+-                Log.d(TAG, "" + ioe.toString());
+-            } finally {
+-                cos.close();
+-                fos.close();
+-                fis.close();
++            } catch (Exception e) {
++                result = RESULT_CRYPTO_FAIL;
++                Log.d(TAG, "encryptWithDefaultPublicKey fail! " + e.toString());
++            }
++        } else {//list each sub dir and sub file
++            try {
++                fileCipher.mkdir();
++                String list[] = fileSrc.list();
++                if (null == list || list.length <= 0) {
++                    return result;
++                }
++                for (String tempSrcStr : list) {
++                    File tempSrcFile = new File(fileSrc, tempSrcStr);
++                    File tempCipherFile = new File(fileCipher, tempSrcStr);
++
++                    /** Recursively call encrypt, if any file fail, finish encrypting **/
++                    int tempResult = encryptWithDefaultPublicKey(context, tempSrcFile, tempCipherFile, blockSize);
++                    if (tempResult != 0) {
++                        return tempResult;
++                    }
++                }
++            } catch (SecurityException e) {
++                Log.d(TAG, "list files error: " + e.toString());
++                return RESULT_FILE_ERROR;
+             }
+-        } catch (Exception e) {
+-            result = false;
+-            Log.d(TAG, "encryptWithPublicKey fail! " + e.toString());
+         }
++
+         return result;
+     }
+ 
+-    public boolean decryptWithPrivateKey(Context context, File fileCipher, File fileDst, String password) {
+-        mUserManager = (UserManager) context.getSystemService(Context.USER_SERVICE);
+-        boolean result =  true;
+-        try {
+-            BigInteger pointGPre = new BigInteger("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798", 16);
+-            BigInteger pointGPost = new BigInteger("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8", 16);
+-            BigInteger factorN = new BigInteger("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16);
+-            BigInteger fieldP = new BigInteger("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", 16);
+-
+-            Security.addProvider(new BouncyCastleProvider());
+-            Cipher cipher = Cipher.getInstance("ECIES", "BC");
+-            IESParameterSpec iesParams = new IESParameterSpec(null, null, 64);
++    /**
++     * @hide
++     *
++     * Decrypt file with the Brahma OS default private key which is unique for the Brahma OS account
++     *
++     * @param fileCipher the input file with cipher-text
++     * @param fileDst the output file with decrypted clear-text
++     * @param password the right password of the Brahma OS account
++     *
++     * @return 0 means success, otherwise see the error code
++     */
++    public int decryptWithDefaultPrivateKey(Context context, File fileCipher, File fileDst,
++                                            String password, int blockSize) {
++        if (!fileCipher.exists()) {
++            return RESULT_FILE_ERROR;
++        }
++        if (blockSize <= 0) {
++            blockSize = DEFAULT_BLOCK_SIZE;
++        }
++        int result = RESULT_CRYPTO_SUCCESS;
++        if (null == mUserManager) {
++            mUserManager = (UserManager) context.getSystemService(Context.USER_SERVICE);
++        }
+ 
+-            EllipticCurve ellipticCurve = new EllipticCurve(new ECFieldFp(fieldP), new BigInteger("0"), new BigInteger("7"));
+-            ECPoint pointG = new ECPoint(pointGPre, pointGPost);
+-            ECNamedCurveSpec namedCurveSpec = new ECNamedCurveSpec("secp256k1", ellipticCurve, pointG, factorN);
++        if (!fileCipher.isDirectory()) {//if file is not a dir, then crypt this file
++            try {
++                /* get cipher provider*/
++                Security.addProvider(new BouncyCastleProvider());
++                Cipher cipher = Cipher.getInstance("ECIES", BouncyCastleProvider.PROVIDER_NAME);
++                IESParameterSpec iesParams = new IESParameterSpec(null, null, 64);
+ 
+-            String privateKey = aes128Decrypt(mUserManager.getUserDefaultPrivateKeyHex(UserHandle.myUserId()), password);
+-            BigInteger privateKeyValue = new BigInteger(privateKey, 16);
++                /** to generate namedCurveSpec **/
++                EllipticCurve ellipticCurve = new EllipticCurve(new ECFieldFp(FIELD_P),
++                        new BigInteger("0"), new BigInteger("7"));
++                ECPoint pointG = new ECPoint(POINT_G_PRE, POINT_G_POST);
++                ECNamedCurveSpec namedCurveSpec = new ECNamedCurveSpec("secp256k1", ellipticCurve,
++                        pointG, FACTOR_N);
+ 
+-            ECPrivateKeySpec privateKeySpec = new ECPrivateKeySpec(privateKeyValue, namedCurveSpec);
+-            BCECPrivateKey privateKeySelf = new BCECPrivateKey("ECDSA", privateKeySpec, BouncyCastleProvider.CONFIGURATION);
++                /** get brahma OS default private key **/
++                String privateKey = aes128Decrypt(mUserManager.getUserDefaultPrivateKeyHex(UserHandle.myUserId()), password);
++                if (null == privateKey) {
++                    Log.d(TAG, "decryptWithDefaultPrivateKey fail! The password is wrong!");
++                    return RESULT_PASSWORD_ERROR;
++                }
+ 
+-            // begin decrypt
+-            cipher.init(Cipher.DECRYPT_MODE, privateKeySelf, iesParams);
+-            FileInputStream fis = new FileInputStream(fileCipher);
+-            CipherInputStream cis = new CipherInputStream(fis, cipher);
+-            FileOutputStream fos = new FileOutputStream(fileDst);
+-            int i;
+-            byte[] block = new byte[64];
++                BigInteger privateKeyValue = new BigInteger(privateKey, 16);
++                ECPrivateKeySpec privateKeySpec = new ECPrivateKeySpec(privateKeyValue, namedCurveSpec);
++                BCECPrivateKey privateKeySelf = new BCECPrivateKey("ECDSA", privateKeySpec, BouncyCastleProvider.CONFIGURATION);
+ 
++                // begin decrypt
++                cipher.init(Cipher.DECRYPT_MODE, privateKeySelf, iesParams);
++                FileInputStream fis = new FileInputStream(fileCipher);
++                if (fis.available() <= 0) {
++                    return RESULT_FILE_ERROR;
++                }
++                CipherInputStream cis = new CipherInputStream(fis, cipher);
++                FileOutputStream fos = new FileOutputStream(fileDst);
++                int i;
++                byte[] block = new byte[blockSize/*64*/];
++                try {
++                    while ((i = cis.read(block)) != -1) {
++                        fos.write(block, 0, i);
++                    }
++                } catch (Exception ioe) {
++                    result = RESULT_CRYPTO_FAIL;
++                    Log.d(TAG, "" + ioe.toString());
++                } finally {
++                    cis.close();
++                    fos.close();
++                    fis.close();
++                }
++            } catch (Exception e) {
++                result = RESULT_CRYPTO_FAIL;
++                Log.d(TAG, "decryptWithDefaultPrivateKey fail! " + e.toString());
++            }
++        } else {//list each sub dir and sub file
+             try {
+-                while ((i = cis.read(block)) != -1) {
+-                    fos.write(block, 0, i);
++                fileDst.mkdir();
++                String list[] = fileCipher.list();
++                if (null == list || list.length <= 0) {
++                    return result;
++                }
++                for (String tempCipherStr : list) {
++                    File tempCipherFile = new File(fileCipher, tempCipherStr);
++                    File tempDstFile = new File(fileDst, tempCipherStr);
++
++                    /** Recursively call decrypt, if any file fail, finish encrypting **/
++                    int tempResult = decryptWithDefaultPrivateKey(context, tempCipherFile, tempDstFile, password, blockSize);
++                    if (tempResult != 0) {
++                        return tempResult;
++                    }
+                 }
+-            } catch (Exception ioe) {
+-                result = false;
+-                Log.d(TAG, "" + ioe.toString());
+-            } finally {
+-                cis.close();
+-                fos.close();
+-                fis.close();
++            } catch (SecurityException e) {
++                Log.d(TAG, "list files error: " + e.toString());
++                return RESULT_FILE_ERROR;
+             }
+-        } catch (Exception e) {
+-            result = false;
+         }
++
+         return result;
+     }
+ 
+@@ -168,7 +278,7 @@ public class DataCryptoUtils {
+      * @param content the clear text which want to be encrypted.
+      * @param password the secret key
+      *
+-     * @return the encrypted hex string
++     * @return the encrypted hex string, if null it means encrypt failed
+      */
+     public String aes128Encrypt(String content, String password) {
+         try {
+@@ -189,7 +299,7 @@ public class DataCryptoUtils {
+      * @param content the cipher text which want to be decrypted.
+      * @param password the secret key
+      *
+-     * @return the clear text hex string
++     * @return the clear text hex string, if null it means decrypt failed
+      */
+     public String aes128Decrypt(String content, String password) {
+         try {
+@@ -205,16 +315,13 @@ public class DataCryptoUtils {
+     }
+ 
+     /**
+-     * get SecretKeySpec according to the password
++     * get SecretKeySpec according to the password using "PBKDF2WithHmacSHA1" algorithm
+      * @return
+      */
+     private SecretKeySpec genKey(String password){
+-        byte[] salt = new String("12345678").getBytes();
+-        int iterationCount = 1024;
+-        int keyStrength = 128;
+         try {
+             SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+-            KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, iterationCount, keyStrength);
++            KeySpec spec = new PBEKeySpec(password.toCharArray(), SALT, ITERATION_COUNT, KEY_STRENGTH);
+             SecretKey tmp = factory.generateSecret(spec);
+             SecretKeySpec key = new SecretKeySpec(tmp.getEncoded(), "AES");
+             return key;
+diff --git a/services/core/java/com/android/server/pm/UserManagerService.java b/services/core/java/com/android/server/pm/UserManagerService.java
+index 9138f26..acab3e7 100644
+--- a/services/core/java/com/android/server/pm/UserManagerService.java
++++ b/services/core/java/com/android/server/pm/UserManagerService.java
+@@ -621,7 +621,7 @@ public class UserManagerService extends IUserManager.Stub {
+                     return;
+                 }
+                 String currentAccount = userData.brahmaAccount;
+-                if (currentAccount != account) {
++                if (null == currentAccount || currentAccount.isEmpty()) {
+                     userData.brahmaAccount = account;
+                     userToUpdate = userData;
+                 } else {//[AzaleaPan]We can only set brahma account once.
+@@ -647,7 +647,7 @@ public class UserManagerService extends IUserManager.Stub {
+                     return;
+                 }
+                 String currentMnemonic = userData.defaultMnemonic;
+-                if (currentMnemonic != hexMnemonic) {
++                if (null == currentMnemonic || currentMnemonic.isEmpty()) {
+                     userData.defaultMnemonic = hexMnemonic;
+                     userToUpdate = userData;
+                 } else {//[AzaleaPan]We can only set Mnemonic once.
+@@ -673,7 +673,7 @@ public class UserManagerService extends IUserManager.Stub {
+                     return;
+                 }
+                 String currentKey = userData.defaultPrivate;
+-                if (currentKey != hexPrivate) {
++                if (null == currentKey || currentKey.isEmpty()) {
+                     userData.defaultPrivate = hexPrivate;
+                     userToUpdate = userData;
+                 } else {
+@@ -699,7 +699,7 @@ public class UserManagerService extends IUserManager.Stub {
+                     return;
+                 }
+                 String currentKey = userData.defaultPublic;
+-                if (currentKey != publicStr) {
++                if (null == currentKey || currentKey.isEmpty()) {
+                     userData.defaultPublic = publicStr;
+                     userToUpdate = userData;
+                 } else {
+@@ -725,7 +725,7 @@ public class UserManagerService extends IUserManager.Stub {
+                     return;
+                 }
+                 String currentAddr = userData.walletMap.get(path.replace("/", ""));
+-                if (currentAddr != walletAddr) {
++                if (null == currentAddr || currentAddr.isEmpty()) {
+                     userData.walletMap.put(path.replace("/", ""), walletAddr);
+                     userToUpdate = userData;
+                 }
+-- 
+2.7.4
+
