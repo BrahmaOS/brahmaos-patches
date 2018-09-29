@@ -1,0 +1,55 @@
+From c94a0f1e5fffa3d5b76fa0e8ba45c7a8c9613f77 Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Fri, 28 Sep 2018 15:01:25 +0800
+Subject: [PATCH] Update apis after change BrahmaConstants.java
+
+Change-Id: I7986c3c188b2d9390891e1ceb6b64497ab0be380
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ api/current.txt        | 2 +-
+ api/system-current.txt | 2 +-
+ api/test-current.txt   | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/api/current.txt b/api/current.txt
+index dce91c7..6bea8b1 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -43242,7 +43242,7 @@ package android.util {
+ 
+   public class BrahmaConstants {
+     ctor public BrahmaConstants();
+-    method public static boolean isMnemonicPathValid(java.lang.String);
++    method public static boolean isMnemonicPathSupported(java.lang.String);
+     field public static final java.lang.String BRM_MNEMONIC_PATH = "M/44H/60H/0H/0/1";
+     field public static final java.lang.String DEFAULT_MNEMONIC_PATH = "M/2048H/60H/0H/0/0";
+     field public static final java.lang.String ETH_MNEMONIC_PATH = "M/44H/60H/0H/0/0";
+diff --git a/api/system-current.txt b/api/system-current.txt
+index c5295de..8e1a2c1 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -46827,7 +46827,7 @@ package android.util {
+ 
+   public class BrahmaConstants {
+     ctor public BrahmaConstants();
+-    method public static boolean isMnemonicPathValid(java.lang.String);
++    method public static boolean isMnemonicPathSupported(java.lang.String);
+     field public static final java.lang.String BRM_MNEMONIC_PATH = "M/44H/60H/0H/0/1";
+     field public static final java.lang.String DEFAULT_MNEMONIC_PATH = "M/2048H/60H/0H/0/0";
+     field public static final java.lang.String ETH_MNEMONIC_PATH = "M/44H/60H/0H/0/0";
+diff --git a/api/test-current.txt b/api/test-current.txt
+index 5b86563..e81b97c 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -43519,7 +43519,7 @@ package android.util {
+ 
+   public class BrahmaConstants {
+     ctor public BrahmaConstants();
+-    method public static boolean isMnemonicPathValid(java.lang.String);
++    method public static boolean isMnemonicPathSupported(java.lang.String);
+     field public static final java.lang.String BRM_MNEMONIC_PATH = "M/44H/60H/0H/0/1";
+     field public static final java.lang.String DEFAULT_MNEMONIC_PATH = "M/2048H/60H/0H/0/0";
+     field public static final java.lang.String ETH_MNEMONIC_PATH = "M/44H/60H/0H/0/0";
+-- 
+2.7.4
+
