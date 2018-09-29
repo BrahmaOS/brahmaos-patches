@@ -1,0 +1,971 @@
+From 1549ed61cead47c7de1372f515577acc4605ff66 Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Fri, 28 Sep 2018 11:35:22 +0800
+Subject: [PATCH] [SetupWizard]:add wizard wifi activity
+
+Change-Id: Ie617425d3cb7dfa5262eb40e6a6a8ae206a37451
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ AndroidManifest.xml                                |  15 +
+ res/drawable/ic_wifi.png                           | Bin 0 -> 5232 bytes
+ res/drawable/ic_wifi_scanning.xml                  |   6 +
+ res/layout/wizard_wifi_activity.xml                |  34 ++
+ res/layout/wizard_wifi_footer.xml                  |  31 ++
+ res/values-zh-rCN/strings.xml                      |   6 +
+ res/values/dimens.xml                              |  12 +
+ res/values/strings.xml                             |   6 +
+ res/xml/wizard_wifi_settings.xml                   |  26 +
+ .../android/settings/wifi/WizardWifiSettings.java  | 596 +++++++++++++++++++++
+ .../settings/wifi/WizardWifiSettingsActivity.java  |  22 +
+ 11 files changed, 754 insertions(+)
+ create mode 100755 res/drawable/ic_wifi.png
+ create mode 100644 res/drawable/ic_wifi_scanning.xml
+ create mode 100644 res/layout/wizard_wifi_activity.xml
+ create mode 100644 res/layout/wizard_wifi_footer.xml
+ create mode 100644 res/xml/wizard_wifi_settings.xml
+ create mode 100644 src/com/android/settings/wifi/WizardWifiSettings.java
+ create mode 100644 src/com/android/settings/wifi/WizardWifiSettingsActivity.java
+
+diff --git a/AndroidManifest.xml b/AndroidManifest.xml
+index 9365d97..406cbc8 100644
+--- a/AndroidManifest.xml
++++ b/AndroidManifest.xml
+@@ -99,6 +99,21 @@
+             android:defaultToDeviceProtectedStorage="true"
+             android:directBootAware="true">
+ 
++
++        <activity android:name=".wifi.WizardWifiSettingsActivity"
++            android:exported="true"
++            android:excludeFromRecents="true"
++            android:theme="@style/GlifTheme.Light">
++            <intent-filter>
++                <action android:name="android.intent.action.MAIN"/>
++                <category android:name="android.intent.category.DEFAULT" />
++            </intent-filter>
++            <intent-filter>
++                <action android:name="android.settings.WIZARD_WIFI_SETTINGS" />
++                <category android:name="android.intent.category.DEFAULT" />
++            </intent-filter>
++        </activity>
++
+         <!-- Settings -->
+ 
+         <activity android:name="Settings"
+diff --git a/res/drawable/ic_wifi.png b/res/drawable/ic_wifi.png
+new file mode 100755
+index 0000000000000000000000000000000000000000..b77bda270be7a2fec20bd7daca317e33b6bb3c44
+GIT binary patch
+literal 5232
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/res/drawable/ic_wifi_scanning.xml b/res/drawable/ic_wifi_scanning.xml
+new file mode 100644
+index 0000000..160a183
+--- /dev/null
++++ b/res/drawable/ic_wifi_scanning.xml
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="utf-8"?>
++<vector android:height="24.0dip" android:width="24.0dip" android:viewportWidth="24.0" android:viewportHeight="24.0"
++  xmlns:android="http://schemas.android.com/apk/res/android">
++    <path android:fillColor="#ff000000" android:pathData="M20,21.95c0.61,0 1.1,-0.49 1.1,-1.1 0,-0.61 -0.49,-1.1 -1.1,-1.1 -0.61,0 -1.1,0.49 -1.1,1.1 0,0.61 0.49,1.1 1.1,1.1zM20,10c-1.53,0 -2.84,0.99 -3.31,2.36 -0.19,0.56 0.23,1.14 0.81,1.14 0.36,0 0.72,-0.21 0.84,-0.55 0.23,-0.7 0.89,-1.2 1.66,-1.2 0.97,0 1.75,0.78 1.75,1.75 0,0.48 -0.2,0.92 -0.51,1.24l-1.09,1.1c-0.69,0.69 -0.92,1.38 -0.99,2.2 -0.04,0.51 0.36,0.96 0.88,0.96 0.44,0 0.83,-0.33 0.87,-0.77 0.07,-0.79 0.31,-1.27 1,-1.95l0.78,-0.8c0.5,-0.5 0.82,-1.2 0.82,-1.97C23.5,11.57 21.93,10 20,10z" />
++    <path android:fillColor="#ff000000" android:pathData="M14.73,12.88c0,-2.7 2.19,-4.88 4.88,-4.88 1.22,0 2.32,0.46 3.18,1.2l0.88,-1.09c0.39,-0.48 0.29,-1.19 -0.22,-1.54C21.67,5.36 17.55,3 12,3 6.44,3 2.33,5.36 0.56,6.57c-0.51,0.35 -0.61,1.06 -0.23,1.54L11.16,21.6c0.42,0.53 1.23,0.53 1.66,0l3.88,-4.82a4.862,4.862 0,0 1,-1.97 -3.9z" android:fillAlpha="0.3" />
++</vector>
+\ No newline at end of file
+diff --git a/res/layout/wizard_wifi_activity.xml b/res/layout/wizard_wifi_activity.xml
+new file mode 100644
+index 0000000..c4c42fc
+--- /dev/null
++++ b/res/layout/wizard_wifi_activity.xml
+@@ -0,0 +1,34 @@
++<?xml version="1.0" encoding="utf-8"?>
++
++<com.android.setupwizardlib.GlifLayout
++    xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
++    android:id="@+id/setup_wizard_layout"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    style="?attr/fingerprint_layout_theme"
++    app:suwFooter="@layout/wizard_wifi_footer">
++
++    <LinearLayout
++        style="@style/SuwContentFrame"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:clipChildren="false"
++        android:clipToPadding="false"
++        android:orientation="vertical">
++
++        <com.android.setupwizardlib.view.RichTextView
++            android:id="@+id/description_text"
++            style="@style/SuwDescription.Glif"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:text="@string/wifi_info" />
++
++        <fragment
++            android:name="com.android.settings.wifi.WizardWifiSettings"
++            android:layout_width="match_parent"
++            android:layout_height="350dp"
++            android:layout_marginTop="@dimen/space_normal"
++            android:id="@+id/fragment_setup" />
++    </LinearLayout>
++</com.android.setupwizardlib.GlifLayout>
+\ No newline at end of file
+diff --git a/res/layout/wizard_wifi_footer.xml b/res/layout/wizard_wifi_footer.xml
+new file mode 100644
+index 0000000..6bfbc25
+--- /dev/null
++++ b/res/layout/wizard_wifi_footer.xml
+@@ -0,0 +1,31 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++    Copyright (C) 2017 The Android Open Source Project
++
++    Licensed under the Apache License, Version 2.0 (the "License");
++    you may not use this file except in compliance with the License.
++    You may obtain a copy of the License at
++
++         http://www.apache.org/licenses/LICENSE-2.0
++
++    Unless required by applicable law or agreed to in writing, software
++    distributed under the License is distributed on an "AS IS" BASIS,
++    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++    See the License for the specific language governing permissions and
++    limitations under the License
++-->
++
++<!-- TODO: Use aapt:attr when it is fixed (b/36809755) -->
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    style="@style/SuwGlifButtonBar"
++    android:layout_width="match_parent"
++    android:layout_height="wrap_content">
++
++    <Button
++        android:id="@+id/skip_button"
++        style="@style/SuwGlifButton.Secondary"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:text="@string/skip_label" />
++
++</LinearLayout>
+diff --git a/res/values-zh-rCN/strings.xml b/res/values-zh-rCN/strings.xml
+index ebc4143..5ac479f 100644
+--- a/res/values-zh-rCN/strings.xml
++++ b/res/values-zh-rCN/strings.xml
+@@ -3723,4 +3723,10 @@
+     <string name="new_device_suggestion_summary" product="tablet" msgid="393751455688210956">"新平板电脑功能导览"</string>
+     <string name="new_device_suggestion_summary" product="device" msgid="2939870049868336652">"新设备功能导览"</string>
+     <string name="disabled_low_ram_device" msgid="3751578499721173344">"该设备不支持此功能"</string>
++
++    <string name="wifi_title">连接到WLAN网络</string>
++    <string name="wifi_info">要下载应用或复制数据，请连接到网络</string>
++    <string name="wifi_searching">正在搜索WLAN网络\u2026</string>
++    <string name="wifi_see_all">查看所有WLAN网络</string>
++
+ </resources>
+diff --git a/res/values/dimens.xml b/res/values/dimens.xml
+index fdb9c32..aace57b 100755
+--- a/res/values/dimens.xml
++++ b/res/values/dimens.xml
+@@ -307,4 +307,16 @@
+     <dimen name="suggestion_condition_header_padding_collapsed">10dp</dimen>
+     <dimen name="suggestion_condition_header_padding_expanded">5dp</dimen>
+ 
++    <!-- For setup wizard-->
++    <dimen name="space_smaller">8dp</dimen>
++    <dimen name="space_small">10dp</dimen>
++    <dimen name="space_normal">20dp</dimen>
++    <dimen name="space_large">25dp</dimen>
++    <dimen name="space_larger">35dp</dimen>
++    <dimen name="icon_size">45dp</dimen>
++    <dimen name="list_icon">24dp</dimen>
++    <dimen name="list_margin">50dp</dimen>
++    <dimen name="font_size_title">30sp</dimen>
++    <dimen name="font_size_normal">18sp</dimen>
++    <dimen name="font_size_caption">16sp</dimen>
+ </resources>
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index dc63e69..139e2ae 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -9062,4 +9062,10 @@
+ 
+     <!-- Note displayed when certain features are not available on low ram devices. [CHAR LIMIT=NONE] -->
+     <string name="disabled_low_ram_device">This feature is not available on this device</string>
++
++    <string name="wifi_title">Connect to Wi-Fi</string>
++    <string name="wifi_info">To get apps or copy data, connect to a network</string>
++    <string name="wifi_searching">Searching for Wi-Fi networks\u2026</string>
++    <string name="wifi_see_all">See all Wi-Fi networks</string>
++
+ </resources>
+diff --git a/res/xml/wizard_wifi_settings.xml b/res/xml/wizard_wifi_settings.xml
+new file mode 100644
+index 0000000..53ab03e
+--- /dev/null
++++ b/res/xml/wizard_wifi_settings.xml
+@@ -0,0 +1,26 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Copyright (C) 2010 The Android Open Source Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++
++<PreferenceScreen
++        xmlns:android="http://schemas.android.com/apk/res/android"
++        xmlns:settings="http://schemas.android.com/apk/res/com.android.settings"
++        settings:keywords="@string/keywords_wifi">
++
++    <PreferenceCategory android:key="connected_access_point" />
++
++    <PreferenceCategory android:key="access_points"/>
++
++</PreferenceScreen>
+diff --git a/src/com/android/settings/wifi/WizardWifiSettings.java b/src/com/android/settings/wifi/WizardWifiSettings.java
+new file mode 100644
+index 0000000..d5d96dc
+--- /dev/null
++++ b/src/com/android/settings/wifi/WizardWifiSettings.java
+@@ -0,0 +1,596 @@
++/*
++ * Copyright (C) 2010 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.settings.wifi;
++
++import android.annotation.NonNull;
++import android.app.Activity;
++import android.content.ComponentName;
++import android.content.Intent;
++import android.content.pm.PackageManager;
++import android.net.NetworkInfo.State;
++import android.net.wifi.WifiConfiguration;
++import android.net.wifi.WifiManager;
++import android.os.Bundle;
++import android.os.Handler;
++import android.os.HandlerThread;
++import android.os.Process;
++import android.support.v14.preference.PreferenceFragment;
++import android.support.v7.preference.Preference;
++import android.support.v7.preference.PreferenceCategory;
++import android.util.Log;
++import android.view.LayoutInflater;
++import android.view.MotionEvent;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.Button;
++import android.widget.LinearLayout;
++import android.widget.ProgressBar;
++import android.widget.TextView;
++import android.widget.Toast;
++
++import com.android.settings.R;
++import com.android.settings.wifi.details.WifiNetworkDetailsFragment;
++import com.android.settingslib.RestrictedLockUtils;
++import com.android.settingslib.wifi.AccessPoint;
++import com.android.settingslib.wifi.AccessPoint.AccessPointListener;
++import com.android.settingslib.wifi.AccessPointPreference;
++import com.android.settingslib.wifi.WifiTracker;
++import com.android.settingslib.wifi.WifiTrackerFactory;
++import com.android.setupwizardlib.GlifLayout;
++
++import java.util.List;
++
++
++/**
++ * Two types of UI are provided here.
++ *
++ * The first is for "usual Settings", appearing as any other Setup fragment.
++ *
++ * The second is for Setup Wizard, with a simplified interface that hides the action bar
++ * and menus.
++ */
++public class WizardWifiSettings extends PreferenceFragment
++        implements WifiTracker.WifiListener, AccessPointListener {
++
++    private static final String TAG = "WizardWifiSettings";
++
++    private static final String ACTION_SETUP_DATE_TIME = "io.brahmaos.setupwizard.SETUP_DATETIME";
++    private static final String PREF_KEY_EMPTY_WIFI_LIST = "wifi_empty_list";
++    private static final String PREF_KEY_CONNECTED_ACCESS_POINTS = "connected_access_point";
++    private static final String PREF_KEY_ACCESS_POINTS = "access_points";
++    private PreferenceCategory mConnectedAccessPointPreferenceCategory;
++    private PreferenceCategory mAccessPointsPreferenceCategory;
++
++    private WifiTracker mWifiTracker;
++    private HandlerThread mBgThread;
++    protected WifiManager mWifiManager;
++    private WifiManager.ActionListener mConnectListener;
++    private WifiManager.ActionListener mSaveListener;
++    private WifiManager.ActionListener mForgetListener;
++
++    private AccessPointPreference.UserBadgeCache mUserBadgeCache;
++
++    private static final String SAVE_DIALOG_MODE = "dialog_mode";
++    private static final String SAVE_DIALOG_ACCESS_POINT_STATE = "wifi_ap_state";
++    private int mDialogMode;
++    private Bundle mAccessPointSavedState;
++
++    public static final String EXTRA_START_CONNECT_SSID = "wifi_start_connect_ssid";
++    private String mOpenSsid;
++
++    // An access point being editted is stored here.
++    private AccessPoint mSelectedAccessPoint;
++    /**
++     * Tracks whether the user initiated a connection via clicking in order to autoscroll to the
++     * network once connected.
++     */
++    private boolean mClickedConnect;
++
++//    private LinearLayout mSearchLayout;
++    private GlifLayout mGlifLayout;
++
++    public Button mBtnSkip;
++
++    private final Runnable mUpdateAccessPointsRunnable = () -> {
++        updateAccessPointPreferences();
++    };
++    private final Runnable mHideProgressBarRunnable = () -> {
++        setProgressBarVisible(false);
++    };
++
++    private Handler mHandler = new Handler();
++
++    @Override
++    public void onCreate(Bundle icicle) {
++        super.onCreate(icicle);
++
++        addPreferences();
++
++        mBgThread = new HandlerThread(TAG, Process.THREAD_PRIORITY_BACKGROUND);
++        mBgThread.start();
++
++        mWifiTracker = WifiTrackerFactory.create(
++                getActivity(), this, mBgThread.getLooper(), true, true, false);
++        mWifiManager = mWifiTracker.getManager();
++
++        mConnectListener = new WifiManager.ActionListener() {
++            @Override
++            public void onSuccess() {
++            }
++            @Override
++            public void onFailure(int reason) {
++                Activity activity = getActivity();
++                if (activity != null) {
++                    Toast.makeText(activity,
++                            R.string.wifi_failed_connect_message,
++                            Toast.LENGTH_SHORT).show();
++                }
++            }
++        };
++
++        mSaveListener = new WifiManager.ActionListener() {
++            @Override
++            public void onSuccess() {
++            }
++            @Override
++            public void onFailure(int reason) {
++                Activity activity = getActivity();
++                if (activity != null) {
++                    Toast.makeText(activity,
++                            R.string.wifi_failed_save_message,
++                            Toast.LENGTH_SHORT).show();
++                }
++            }
++        };
++
++        mForgetListener = new WifiManager.ActionListener() {
++            @Override
++            public void onSuccess() {
++            }
++            @Override
++            public void onFailure(int reason) {
++                Activity activity = getActivity();
++                if (activity != null) {
++                    Toast.makeText(activity,
++                            R.string.wifi_failed_forget_message,
++                            Toast.LENGTH_SHORT).show();
++                }
++            }
++        };
++
++        if (icicle != null) {
++            mDialogMode = icicle.getInt(SAVE_DIALOG_MODE);
++            if (icicle.containsKey(SAVE_DIALOG_ACCESS_POINT_STATE)) {
++                mAccessPointSavedState =
++                        icicle.getBundle(SAVE_DIALOG_ACCESS_POINT_STATE);
++            }
++        }
++
++    }
++
++    @Override
++    public void onActivityCreated(Bundle savedInstanceState) {
++        super.onActivityCreated(savedInstanceState);
++    }
++
++    @Override
++    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
++    }
++
++    private void addPreferences() {
++        addPreferencesFromResource(R.xml.wizard_wifi_settings);
++
++        mConnectedAccessPointPreferenceCategory =
++                (PreferenceCategory) findPreference(PREF_KEY_CONNECTED_ACCESS_POINTS);
++        mAccessPointsPreferenceCategory =
++                (PreferenceCategory) findPreference(PREF_KEY_ACCESS_POINTS);
++
++        PackageManager pm = getActivity().getPackageManager();
++        mUserBadgeCache = new AccessPointPreference.UserBadgeCache(pm);
++    }
++
++    @Override
++    public void onDestroy() {
++        mBgThread.quit();
++        super.onDestroy();
++    }
++
++    @Override
++    public void onStart() {
++        super.onStart();
++
++//        mSearchLayout = (LinearLayout) getActivity().findViewById(R.id.searching_info_layout);
++        mBtnSkip = (Button) getActivity().findViewById(R.id.skip_button);
++        mBtnSkip.setOnClickListener(view->{startActivity(new Intent(ACTION_SETUP_DATE_TIME));getActivity().finish();});
++        mGlifLayout = (GlifLayout) getActivity().findViewById(R.id.setup_wizard_layout);
++        mGlifLayout.setHeaderText(getActivity().getString(R.string.wifi_title));
++        mGlifLayout.setIcon(getActivity().getDrawable(R.drawable.ic_wifi));
++        mGlifLayout.getScrollView().setOnTouchListener((view, event)->{return true;});
++
++        mWifiManager.setWifiEnabled(true);
++        mWifiTracker.startTracking();
++
++        onWifiStateChanged(mWifiManager.getWifiState());
++    }
++
++    @Override
++    public void onStop() {
++        mWifiTracker.stopTracking();
++        super.onStop();
++    }
++
++    @Override
++    public void onSaveInstanceState(Bundle outState) {
++        super.onSaveInstanceState(outState);
++//        // If the dialog is showing, save its state.
++//        if (mDialog != null && mDialog.isShowing()) {
++//            outState.putInt(SAVE_DIALOG_MODE, mDialogMode);
++//            if (mDlgAccessPoint != null) {
++//                mAccessPointSavedState = new Bundle();
++//                mDlgAccessPoint.saveWifiState(mAccessPointSavedState);
++//                outState.putBundle(SAVE_DIALOG_ACCESS_POINT_STATE, mAccessPointSavedState);
++//            }
++//        }
++
++    }
++
++    /**
++     * Only update the AP list if there are not any APs currently shown.
++     *
++     * <p>Thus forceUpdate will only be called during cold start or when toggling between wifi on
++     * and off. In other use cases, the previous APs will remain until the next update is received
++     * from {@link WifiTracker}.
++     */
++    private void conditionallyForceUpdateAPs() {
++        if (mAccessPointsPreferenceCategory.getPreferenceCount() > 0
++                && mAccessPointsPreferenceCategory.getPreference(0) instanceof
++                AccessPointPreference) {
++            // Make sure we don't update due to callbacks initiated by sticky broadcasts in
++            // WifiTracker.
++            Log.d(TAG, "Did not force update APs due to existing APs displayed");
++            mHandler.removeCallbacks(mUpdateAccessPointsRunnable);
++            return;
++        }
++        setProgressBarVisible(true);
++        mWifiTracker.forceUpdate();
++        if (WifiTracker.sVerboseLogging) {
++            Log.i(TAG, "WifiSettings force update APs: " + mWifiTracker.getAccessPoints());
++        }
++        mHandler.removeCallbacks(mUpdateAccessPointsRunnable);
++        updateAccessPointPreferences();
++    }
++
++    private void showDialog(AccessPoint accessPoint, int dialogMode) {
++        if (accessPoint != null) {
++            WifiConfiguration config = accessPoint.getConfig();
++            if (accessPoint.isActive()) {
++                RestrictedLockUtils.sendShowAdminSupportDetailsIntent(getActivity(),
++                        RestrictedLockUtils.getDeviceOwner(getActivity()));
++                return;
++            }
++        }
++
++        Intent intent = new Intent("com.android.settings.WIFI_DIALOG");
++        intent.putExtra("firstRun", true);
++        Bundle accessPointState = new Bundle();
++        accessPoint.saveWifiState(accessPointState);
++        intent.putExtra("access_point_state", accessPointState);
++        getActivity().startActivity(intent);
++    }
++
++
++    /**
++     * Called to indicate the list of AccessPoints has been updated and
++     * getAccessPoints should be called to get the latest information.
++     */
++    @Override
++    public void onAccessPointsChanged() {
++        Log.d(TAG, "onAccessPointsChanged (WifiTracker) callback initiated");
++        updateAccessPointsDelayed();
++    }
++
++    /**
++     * Updates access points from {@link WifiManager#getScanResults()}. Adds a delay to have
++     * progress bar displayed before starting to modify APs.
++     */
++    private void updateAccessPointsDelayed() {
++        // Safeguard from some delayed event handling
++        if (mWifiManager.isWifiEnabled()) {
++            setProgressBarVisible(true);
++            mHandler.postDelayed(mUpdateAccessPointsRunnable, 300 /* delay milliseconds */);
++        }
++    }
++
++    /** Called when the state of Wifi has changed. */
++    @Override
++    public void onWifiStateChanged(int state) {
++
++        final int wifiState = mWifiManager.getWifiState();
++        switch (wifiState) {
++            case WifiManager.WIFI_STATE_ENABLED:
++                conditionallyForceUpdateAPs();
++                break;
++
++            case WifiManager.WIFI_STATE_ENABLING:
++                removeConnectedAccessPointPreference();
++                mAccessPointsPreferenceCategory.removeAll();
++                setProgressBarVisible(true);
++                break;
++
++            case WifiManager.WIFI_STATE_DISABLING:
++                removeConnectedAccessPointPreference();
++                mAccessPointsPreferenceCategory.removeAll();
++                break;
++
++            case WifiManager.WIFI_STATE_DISABLED:
++                setProgressBarVisible(false);
++                break;
++        }
++    }
++
++    /**
++     * Called when the connection state of wifi has changed and isConnected
++     * should be called to get the updated state.
++     */
++    @Override
++    public void onConnectedChanged() {
++        updateAccessPointsDelayed();
++        changeNextButtonState(mWifiTracker.isConnected());
++    }
++
++    /** Helper method to return whether an AccessPoint is disabled due to a wrong password */
++    private static boolean isDisabledByWrongPassword(AccessPoint accessPoint) {
++        WifiConfiguration config = accessPoint.getConfig();
++        if (config == null) {
++            return false;
++        }
++        WifiConfiguration.NetworkSelectionStatus networkStatus =
++                config.getNetworkSelectionStatus();
++        if (networkStatus == null || networkStatus.isNetworkEnabled()) {
++            return false;
++        }
++        int reason = networkStatus.getNetworkSelectionDisableReason();
++        return WifiConfiguration.NetworkSelectionStatus.DISABLED_BY_WRONG_PASSWORD == reason;
++    }
++
++    private void updateAccessPointPreferences() {
++        // in case state has changed
++        if (!mWifiManager.isWifiEnabled()) {
++            return;
++        }
++        // AccessPoints are sorted by the WifiTracker
++        final List<AccessPoint> accessPoints = mWifiTracker.getAccessPoints();
++        if (WifiTracker.sVerboseLogging) {
++            Log.i(TAG, "updateAccessPoints called for: " + accessPoints);
++        }
++
++        boolean hasAvailableAccessPoints = false;
++
++        int index =
++                configureConnectedAccessPointPreferenceCategory(accessPoints) ? 1 : 0;
++        int numAccessPoints = accessPoints.size();
++        for (; index < numAccessPoints; index++) {
++            AccessPoint accessPoint = accessPoints.get(index);
++            // Ignore access points that are out of range.
++            if (accessPoint.isReachable()) {
++                String key = AccessPointPreference.generatePreferenceKey(accessPoint);
++                hasAvailableAccessPoints = true;
++                LongPressAccessPointPreference pref =
++                        (LongPressAccessPointPreference) mAccessPointsPreferenceCategory.findPreference(key);
++                if (pref != null) {
++                    pref.setOrder(index);
++                    continue;
++                }
++                LongPressAccessPointPreference preference =
++                        createLongPressActionPointPreference(accessPoint);
++                preference.setKey(key);
++                preference.setOrder(index);
++                if (mOpenSsid != null && mOpenSsid.equals(accessPoint.getSsidStr())
++                        && accessPoint.getSecurity() != AccessPoint.SECURITY_NONE) {
++                    if (!accessPoint.isSaved() || isDisabledByWrongPassword(accessPoint)) {
++                        onPreferenceTreeClick(preference);
++                        mOpenSsid = null;
++                    }
++                }
++                mAccessPointsPreferenceCategory.addPreference(preference);
++                accessPoint.setListener(WizardWifiSettings.this);
++                preference.refresh();
++            }
++        }
++
++        if (!hasAvailableAccessPoints) {
++            setProgressBarVisible(true);
++//            Preference pref = new Preference(getActivity());
++//            pref.setSelectable(false);
++//            pref.setSummary(R.string.wifi_empty_list_wifi_on);
++//            pref.setOrder(index++);
++//            pref.setKey(PREF_KEY_EMPTY_WIFI_LIST);
++//            mAccessPointsPreferenceCategory.addPreference(pref);
++        } else {
++//            Preference emptyPref = mAccessPointsPreferenceCategory.findPreference(PREF_KEY_EMPTY_WIFI_LIST);
++//            if (emptyPref != null) {
++//                mAccessPointsPreferenceCategory.removePreference(emptyPref);
++//            }
++            // Continuing showing progress bar for an additional delay to overlap with animation
++            mHandler.postDelayed(mHideProgressBarRunnable, 1700 /* delay millis */);
++        }
++    }
++
++    @NonNull
++    private LongPressAccessPointPreference createLongPressActionPointPreference(
++            AccessPoint accessPoint) {
++        return new LongPressAccessPointPreference(accessPoint, getPreferenceManager().getContext(),
++                mUserBadgeCache,false, R.drawable.ic_wifi_signal_0, this);
++    }
++
++    /**
++     * Configure the ConnectedAccessPointPreferenceCategory and return true if the Category was
++     * shown.
++     */
++    private boolean configureConnectedAccessPointPreferenceCategory(
++            List<AccessPoint> accessPoints) {
++        if (accessPoints.size() == 0) {
++            removeConnectedAccessPointPreference();
++            return false;
++        }
++
++        AccessPoint connectedAp = accessPoints.get(0);
++        if (!connectedAp.isActive()) {
++            removeConnectedAccessPointPreference();
++            return false;
++        }
++
++        // Is the preference category empty?
++        if (mConnectedAccessPointPreferenceCategory.getPreferenceCount() == 0) {
++            addConnectedAccessPointPreference(connectedAp);
++            return true;
++        }
++
++        // Is the previous currently connected SSID different from the new one?
++        AccessPointPreference preference = (AccessPointPreference)
++            (mConnectedAccessPointPreferenceCategory.getPreference(0));
++        // The AccessPoints need to be the same reference to ensure that updates are reflected
++        // in the UI.
++        if (preference.getAccessPoint() != connectedAp) {
++            removeConnectedAccessPointPreference();
++            addConnectedAccessPointPreference(connectedAp);
++            return true;
++        }
++
++        // Else same AP is connected, simply refresh the connected access point preference
++        // (first and only access point in this category).
++        ((LongPressAccessPointPreference) mConnectedAccessPointPreferenceCategory.getPreference(0))
++                .refresh();
++        return true;
++    }
++
++    /**
++     * Creates a Preference for the given {@link AccessPoint} and adds it to the
++     * {@link #mConnectedAccessPointPreferenceCategory}.
++     */
++    private void addConnectedAccessPointPreference(AccessPoint connectedAp) {
++        String key = connectedAp.getBssid();
++        if (null != mConnectedAccessPointPreferenceCategory.findPreference(key)) {
++            return;
++        }
++        LongPressAccessPointPreference pref = createLongPressActionPointPreference(connectedAp);
++
++        // Save the state of the current access point in the bundle so that we can restore it
++        // in the Wifi Network Details Fragment
++        pref.getAccessPoint().saveWifiState(pref.getExtras());
++        pref.setFragment(WifiNetworkDetailsFragment.class.getName());
++        pref.refresh();
++
++        mConnectedAccessPointPreferenceCategory.addPreference(pref);
++        if (mClickedConnect) {
++            mClickedConnect = false;
++//            scrollToPreference(mConnectedAccessPointPreferenceCategory);
++        }
++    }
++
++    /** Removes all preferences and hide the {@link #mConnectedAccessPointPreferenceCategory}. */
++    private void removeConnectedAccessPointPreference() {
++        mConnectedAccessPointPreferenceCategory.removeAll();
++        getPreferenceScreen().removePreference(mConnectedAccessPointPreferenceCategory);
++    }
++
++    protected void setProgressBarVisible(boolean visible) {
++        mGlifLayout.setProgressBarShown(visible);
++    }
++
++    /**
++     * Renames/replaces "Next" button when appropriate. "Next" button usually exists in
++     * Wifi setup screens, not in usual wifi settings screen.
++     *
++     * @param enabled true when the device is connected to a wifi network.
++     */
++    private void changeNextButtonState(boolean enabled) {
++        if (enabled) {
++            startActivity(new Intent(ACTION_SETUP_DATE_TIME));
++            getActivity().finish();
++        }
++    }
++
++    @Override
++    public boolean onPreferenceTreeClick(Preference preference) {
++        // If the preference has a fragment set, open that
++        if (preference.getFragment() != null) {
++            preference.setOnPreferenceClickListener(null);
++            return super.onPreferenceTreeClick(preference);
++        }
++
++        if (preference instanceof LongPressAccessPointPreference) {
++            mSelectedAccessPoint = ((LongPressAccessPointPreference) preference).getAccessPoint();
++            if (mSelectedAccessPoint == null) {
++                return false;
++            }
++            if (mSelectedAccessPoint.isActive()) {
++                return super.onPreferenceTreeClick(preference);
++            }
++            /**
++             * Bypass dialog and connect to unsecured networks, or previously connected saved
++             * networks, or Passpoint provided networks.
++             */
++            WifiConfiguration config = mSelectedAccessPoint.getConfig();
++            if (mSelectedAccessPoint.getSecurity() == AccessPoint.SECURITY_NONE) {
++                mSelectedAccessPoint.generateOpenNetworkConfig();
++                connect(mSelectedAccessPoint.getConfig(), mSelectedAccessPoint.isSaved());
++            } else if (mSelectedAccessPoint.isSaved() && config != null
++                    && config.getNetworkSelectionStatus() != null
++                    && config.getNetworkSelectionStatus().getHasEverConnected()) {
++                connect(config, true /* isSavedNetwork */);
++            } else if (mSelectedAccessPoint.isPasspoint()) {
++                // Access point provided by an installed Passpoint provider, connect using
++                // the associated config.
++                connect(config, true /* isSavedNetwork */);
++            } else {
++                showDialog(mSelectedAccessPoint, WifiConfigUiBase.MODE_CONNECT);
++            }
++        } else {
++            return super.onPreferenceTreeClick(preference);
++        }
++        return true;
++    }
++
++    protected void connect(final WifiConfiguration config, boolean isSavedNetwork) {
++        mWifiManager.connect(config, mConnectListener);
++        mClickedConnect = true;
++    }
++
++    protected void connect(final int networkId, boolean isSavedNetwork) {
++        mWifiManager.connect(networkId, mConnectListener);
++    }
++
++    @Override
++    public void onAccessPointChanged(final AccessPoint accessPoint) {
++        Log.d(TAG, "onAccessPointChanged (singular) callback initiated");
++        mHandler.post(new Runnable() {
++            @Override
++            public void run() {
++                Object tag = accessPoint.getTag();
++                if (tag != null) {
++                    ((LongPressAccessPointPreference) tag).refresh();
++                }
++            }
++        });
++    }
++
++    @Override
++    public void onLevelChanged(AccessPoint accessPoint) {
++        ((LongPressAccessPointPreference) accessPoint.getTag()).onLevelChanged();
++    }
++}
+diff --git a/src/com/android/settings/wifi/WizardWifiSettingsActivity.java b/src/com/android/settings/wifi/WizardWifiSettingsActivity.java
+new file mode 100644
+index 0000000..f8be3e3
+--- /dev/null
++++ b/src/com/android/settings/wifi/WizardWifiSettingsActivity.java
+@@ -0,0 +1,22 @@
++package com.android.settings.wifi;
++
++import android.app.Activity;
++import android.content.Intent;
++import android.os.Bundle;
++import android.support.annotation.Nullable;
++import android.view.View;
++import android.view.Window;
++import android.widget.Button;
++import android.widget.TextView;
++
++import com.android.settings.R;
++
++public class WizardWifiSettingsActivity extends Activity {
++
++    @Override
++    protected void onCreate(@Nullable Bundle savedInstanceState) {
++        super.onCreate(savedInstanceState);
++        requestWindowFeature(Window.FEATURE_NO_TITLE);
++        setContentView(R.layout.wizard_wifi_activity);
++    }
++}
+-- 
+2.7.4
+
