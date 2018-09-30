@@ -1,0 +1,39 @@
+From 0b8a3b1fc674d1110eb55374ce3da817d05fd26f Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Fri, 7 Sep 2018 17:34:49 +0800
+Subject: [PATCH] releasebrahmaso: wipe userdata when flashing brahmaos
+
+1. wipe userdata when flashing brahmaos
+2. windows don't need sudo
+
+Change-Id: I28f980d3740669ed086b86f92697a347df35d762
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ scripts/releasebrahmaos | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/releasebrahmaos b/scripts/releasebrahmaos
+index 6896fff..a3bd6ed 100755
+--- a/scripts/releasebrahmaos
++++ b/scripts/releasebrahmaos
+@@ -32,7 +32,7 @@ if [ -f ${imagefile} ];then
+ 	echo "Copy file ${imagefile} to ${VERSION}/${imgdir}"
+ 	cp ${imagefile} ${VERSION}/${imgdir}
+ 	echo "#!/bin/bash" > ${VERSION}/${imgdir}/flash-all.sh
+-	echo "sudo fastboot update ${basefile}" >> ${VERSION}/${imgdir}/flash-all.sh
++	echo "sudo fastboot -w update ${basefile}" >> ${VERSION}/${imgdir}/flash-all.sh
+ 	cat > ${VERSION}/${imgdir}/flash-all.bat << EOF
+ @ECHO OFF
+ 
+@@ -40,7 +40,7 @@ PATH=%PATH%;"%SYSTEMROOT%\System32"
+ 
+ EOF
+ 	chmod a+x ${VERSION}/${imgdir}/flash-all.sh
+-	echo "sudo fastboot update ${basefile}" >> ${VERSION}/${imgdir}/flash-all.bat
++	echo "fastboot update -w ${basefile}" >> ${VERSION}/${imgdir}/flash-all.bat
+ 
+ 	cd ${VERSION}
+ 	zip -q -r ${imgdir}.zip ${imgdir}
+-- 
+2.7.4
+

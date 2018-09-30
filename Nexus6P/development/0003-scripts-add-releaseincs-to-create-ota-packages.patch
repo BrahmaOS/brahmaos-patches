@@ -1,0 +1,81 @@
+From e010b6de5338b8c929ce278ee96dc6d2da85c8fa Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Thu, 27 Sep 2018 16:38:53 +0800
+Subject: [PATCH] scripts: add releaseincs to create ota packages
+
+How to use it:
+1.make dist
+2.releasebrahmaos to create brahmaos image
+3.releaseincs to create ota packages
+
+Change-Id: Iede3c2830a2bde2dbcf4d51cd063b4bf1cca1a95
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ scripts/releaseincs | 55 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 55 insertions(+)
+ create mode 100755 scripts/releaseincs
+
+diff --git a/scripts/releaseincs b/scripts/releaseincs
+new file mode 100755
+index 0000000..724ae24
+--- /dev/null
++++ b/scripts/releaseincs
+@@ -0,0 +1,55 @@
++#! /bin/bash
++#
++# release.sh
++# Copyright (C) 2018 Winton.Liu <admin@brahmaos.io>
++#
++# Distributed under terms of the MIT license.
++#
++
++OTAINCDIR="ota_incrementals"
++VERSION1=""
++VERSION2=""
++
++usage(){
++cat <<EOF
++Usage:  
++   releaseinc <Version1dir> <Version2dir>
++EOF
++   exit 0
++}
++
++createincs(){
++	version1=${1}
++	version2=${2}
++	target1=`ls ${version1}/*target_files*.zip 2>/dev/null`
++	target2=`ls ${version2}/*target_files*.zip 2>/dev/null`
++	if [ ! -f "$target1" ];then
++		echo "There is no target_files in ${version1}"
++		exit 1
++	fi
++
++	if [ ! -f "$target2" ];then
++		echo "There is no target_files in ${version2}"
++		exit 1
++	fi
++
++	incname=${version1}_${version2}_inc.zip
++	echo "Creating OTA Incremental packages...."
++	echo "./build/tools/releasetools/ota_from_target_files -i ${target1} ${target2} ${version2}/${OTAINCDIR}/${incname}"
++	./build/tools/releasetools/ota_from_target_files -i ${target1} ${target2} ${version2}/${OTAINCDIR}/${incname}
++	cd ${version2}/${OTAINCDIR}
++	sha256sum ${incname} > ${incname}.sha256
++	cd ../../
++}
++
++if [ $# -ne 2 ];then
++	usage
++else
++	VERSION1=$1
++	VERSION2=$2
++	if [ ! -d "${VERSION2}/${OTAINCDIR}" ];then
++		echo "mkdir -p ${VERSION2}/${OTAINCDIR}"
++		mkdir -p ${VERSION2}/${OTAINCDIR}
++	fi
++	createincs $VERSION1 $VERSION2
++fi
+-- 
+2.7.4
+
