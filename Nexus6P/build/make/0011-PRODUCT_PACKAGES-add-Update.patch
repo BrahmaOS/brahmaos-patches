@@ -1,0 +1,28 @@
+From 3d109443e8b81b8bf944f62f35b7873c8633f523 Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Thu, 27 Sep 2018 17:03:58 +0800
+Subject: [PATCH] PRODUCT_PACKAGES: add Update
+
+Build Update for default
+
+Change-Id: Ic8404a205716bb7dac551fecf087df154124d295
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ target/product/core.mk | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/target/product/core.mk b/target/product/core.mk
+index 56b3261..643e634 100644
+--- a/target/product/core.mk
++++ b/target/product/core.mk
+@@ -63,6 +63,7 @@ PRODUCT_PACKAGES += \
+     BraveBrowser \
+     BrahmaWallet \
+     BrahmaSetup \
++    Update \
+     GoodWeather
+ 
+ # The set of packages whose code can be loaded by the system server.
+-- 
+2.7.4
+

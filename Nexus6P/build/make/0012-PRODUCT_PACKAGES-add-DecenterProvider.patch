@@ -1,0 +1,26 @@
+From f42f369ff7a6d0cdadc7b4516846157ef1615d6d Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Fri, 28 Sep 2018 12:58:15 +0800
+Subject: [PATCH] PRODUCT_PACKAGES: add DecenterProvider
+
+Change-Id: I03892bb87c419d32bd7b1442c3884a43aedc13c0
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ target/product/core.mk | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/target/product/core.mk b/target/product/core.mk
+index 643e634..38397db 100644
+--- a/target/product/core.mk
++++ b/target/product/core.mk
+@@ -33,6 +33,7 @@ PRODUCT_PACKAGES += \
+     DeskClock \
+     DocumentsUI \
+     DownloadProviderUi \
++    DecenterProvider \
+     Email \
+     ExactCalculator \
+     ExternalStorageProvider \
+-- 
+2.7.4
+
