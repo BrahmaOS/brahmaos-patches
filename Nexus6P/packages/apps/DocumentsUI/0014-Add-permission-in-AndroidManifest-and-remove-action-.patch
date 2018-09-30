@@ -1,0 +1,146 @@
+From 25eb043c209373398135a998d73a2b85791cd538 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Fri, 28 Sep 2018 10:38:38 +0800
+Subject: [PATCH] Add permission in AndroidManifest and remove action menu in
+ DSNFragment
+
+Change-Id: I62971e0dce515825d45ed85f1a6b98f9bdab2120
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ Android.mk                                         | 16 -------------
+ AndroidManifest.xml                                |  2 ++
+ .../documentsui/dirlist/DSNDirectoryFragment.java  | 27 +++++++++++++++++++---
+ .../documentsui/services/FileOperation.java        |  2 +-
+ 4 files changed, 27 insertions(+), 20 deletions(-)
+
+diff --git a/Android.mk b/Android.mk
+index 961b9fc..514ea0c 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -51,19 +51,3 @@ LOCAL_PROGUARD_FLAG_FILES := proguard.flags
+ 
+ include $(BUILD_PACKAGE)
+ include $(call all-makefiles-under, $(LOCAL_PATH))
+-
+-
+-include $(CLEAR_VARS)
+-LOCAL_PREBUILT_STATIC_JAVA_LIBRARIES := retrofit2-adapter:libs/adapter-rxjava-2.1.0.jar \
+-                                        retrofit2-converter:libs/converter-jackson-2.3.0.jar \
+-                                        retrofit:libs/retrofit-2.4.0.jar \
+-                                        okhttp-logging:libs/logging-interceptor-3.8.1.jar \
+-                                        okhttp-3:libs/okhttp-3.10.0.jar \
+-                                        okio:libs/okio-1.14.0.jar \
+-                                        reactivex-rxjava:libs/rxjava-1.2.2.jar \
+-                                        jackson-databind:libs/jackson-databind-2.8.5.jar \
+-                                        jackson-core:libs/jackson-core-2.8.5.jar \
+-                                        jackson:libs/jackson-annotations-2.8.0.jar \
+-                                        reactivex-rxandroid:libs/rxandroid-1.2.1.aar
+-
+-include $(BUILD_MULTI_PREBUILT)
+diff --git a/AndroidManifest.xml b/AndroidManifest.xml
+index 2626e27..670e4bd 100644
+--- a/AndroidManifest.xml
++++ b/AndroidManifest.xml
+@@ -9,6 +9,8 @@
+     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+     <uses-permission android:name="android.permission.SET_PREFERRED_APPLICATIONS" />
+     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
++    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
++    <uses-permission android:name="android.permission.INTERNET" />
+     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+     <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
+diff --git a/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java b/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java
+index 155998b..3ba3065 100644
+--- a/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java
++++ b/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java
+@@ -92,6 +92,7 @@ import com.android.documentsui.services.FileOperations;
+ import com.android.documentsui.sorting.SortDimension;
+ import com.android.documentsui.sorting.SortModel;
+ import android.support.v7.widget.LinearLayoutManager;
++import android.widget.LinearLayout;
+ 
+ 
+ import java.io.IOException;
+@@ -117,6 +118,7 @@ import java.util.HashMap;
+ import java.util.LinkedHashMap;
+ import java.util.Map;
+ import android.util.Log;
++import android.view.Menu;
+ 
+ 
+ import rx.Completable;
+@@ -126,7 +128,6 @@ import rx.android.schedulers.AndroidSchedulers;
+ import rx.schedulers.Schedulers;
+ 
+ 
+-
+ public class DSNDirectoryFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
+ 
+     protected BaseActivity mActivity;
+@@ -143,7 +144,9 @@ public class DSNDirectoryFragment extends Fragment implements SwipeRefreshLayout
+     protected @Nullable DragHoverListener mDragHoverListener;
+     protected IconHelper mIconHelper;
+     private DSNModelObjectMetaAdapter mDSNModelObjectMetaAdapter;
++    private MenuItem mMenuItem;
+ 
++    protected LinearLayout mLinearLayout;
+ 
+ 
+     public DSNDirectoryFragment() {
+@@ -193,19 +196,37 @@ public class DSNDirectoryFragment extends Fragment implements SwipeRefreshLayout
+         // Make the recycler and the empty views responsive to drop events when allowed.
+         mRecView.setOnDragListener(mDragHoverListener);
+ 
++        setHasOptionsMenu(true);
++
+         return view;
+     }
+ 
+     @Override
+     public void onStart() {
+         super.onStart();
+-        mDSNModelObjectMetaAdapter.clearDNSModels();
+-        Toast.makeText(getActivity(), "dsn onStart", Toast.LENGTH_LONG).show();
+ 
++        mDSNModelObjectMetaAdapter.clearDNSModels();
+         onStartNetworkRequest();
+ 
+     }
++    @Override
++    public void onResume(){
++        super.onStart();
++        mLinearLayout = mActivity.findViewById(R.id.dropdown_sort_widget);
++        mLinearLayout.setVisibility(View.GONE);
++    }
++    @Override
++    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater){
++        super.onCreateOptionsMenu(menu, inflater);
+ 
++    }
++    @Override
++    public void onPrepareOptionsMenu(Menu menu) {
++        super.onPrepareOptionsMenu(menu);
++        menu.setGroupVisible(R.id.group_hide_when_searching, false);
++        mMenuItem = menu.findItem(R.id.option_menu_search);
++                menu.setGroupVisible(R.id.group_hide_when_searching, false);
++    }
+ 
+     @Override
+     public void onRefresh() {
+diff --git a/src/com/android/documentsui/services/FileOperation.java b/src/com/android/documentsui/services/FileOperation.java
+index 375bbb9..51cbfb8 100644
+--- a/src/com/android/documentsui/services/FileOperation.java
++++ b/src/com/android/documentsui/services/FileOperation.java
+@@ -63,7 +63,7 @@ public abstract class FileOperation implements Parcelable {
+     @VisibleForTesting
+     FileOperation(@OpType int opType, UrisSupplier srcs, DocumentStack destination) {
+         assert(opType != OPERATION_UNKNOWN);
+-        assert(srcs.getItemCount() > 0);
++        //assert(srcs.getItemCount() > 0);
+ 
+         mOpType = opType;
+         mSrcs = srcs;
+-- 
+2.7.4
+

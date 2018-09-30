@@ -1,0 +1,186 @@
+From fdf6178c543676f0a0749ec51be2073ffcceaba7 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Fri, 28 Sep 2018 11:41:20 +0800
+Subject: [PATCH] Modify DSN icon in RootFragment
+
+Change-Id: Iae78b3d70a7378f628b4979dc851997c2f120492
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ res/drawable/ic_item_dsnlocal.png               | Bin 0 -> 2351 bytes
+ res/drawable/ic_item_dsnremote.png              | Bin 0 -> 3198 bytes
+ src/com/android/documentsui/base/Providers.java |   2 ++
+ src/com/android/documentsui/base/RootInfo.java  |  10 ++++++++++
+ 4 files changed, 12 insertions(+)
+ create mode 100644 res/drawable/ic_item_dsnlocal.png
+ create mode 100644 res/drawable/ic_item_dsnremote.png
+
+diff --git a/res/drawable/ic_item_dsnlocal.png b/res/drawable/ic_item_dsnlocal.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..9a37863c9107798b088e0a137644f531cc4ffd7e
+GIT binary patch
+literal 2351
+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
+VM-E(5e$M~^002ovPDHLkV1oa_O|bv~
+
+literal 0
+HcmV?d00001
+
+diff --git a/res/drawable/ic_item_dsnremote.png b/res/drawable/ic_item_dsnremote.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..bb7c9494c69f930992cfcd5843e1ee95dc9231c7
+GIT binary patch
+literal 3198
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/src/com/android/documentsui/base/Providers.java b/src/com/android/documentsui/base/Providers.java
+index 586440c..14bce47 100644
+--- a/src/com/android/documentsui/base/Providers.java
++++ b/src/com/android/documentsui/base/Providers.java
+@@ -36,6 +36,8 @@ public final class Providers {
+     public static final String ROOT_ID_DOWNLOADS = "downloads";
+ 
+     public static final String AUTHORITY_MEDIA = "com.android.providers.media.documents";
++    public static final String AUTHORITY_DSNLocal = "com.android.providers.decenterlocaldisk.documents";
++    public static final String AUTHORITY_DSNRemote = "com.android.providers.decentercloud.documents";
+     public static final String ROOT_ID_IMAGES = "images_root";
+     public static final String ROOT_ID_VIDEOS = "videos_root";
+     public static final String ROOT_ID_AUDIO = "audio_root";
+diff --git a/src/com/android/documentsui/base/RootInfo.java b/src/com/android/documentsui/base/RootInfo.java
+index 3fe9a21..81d5b59 100644
+--- a/src/com/android/documentsui/base/RootInfo.java
++++ b/src/com/android/documentsui/base/RootInfo.java
+@@ -229,6 +229,10 @@ public class RootInfo implements Durable, Parcelable, Comparable<RootInfo> {
+             derivedIcon = R.drawable.audio_root_icon;
+         } else if (isRecents()) {
+             derivedType = TYPE_RECENTS;
++        } else if (isDSNLocal()) {
++            derivedIcon = R.drawable.ic_item_dsnlocal;
++        } else if (isDSNRemote()) {
++            derivedIcon = R.drawable.ic_item_dsnremote;
+         } else {
+             derivedType = TYPE_OTHER;
+         }
+@@ -273,6 +277,12 @@ public class RootInfo implements Durable, Parcelable, Comparable<RootInfo> {
+         return Providers.AUTHORITY_MEDIA.equals(authority)
+                 && Providers.ROOT_ID_AUDIO.equals(rootId);
+     }
++    public boolean isDSNLocal() {
++        return Providers.AUTHORITY_DSNLocal.equals(authority);
++    }
++     public boolean isDSNRemote() {
++        return Providers.AUTHORITY_DSNRemote.equals(authority);
++    }
+ 
+     public boolean isMtp() {
+         return Providers.AUTHORITY_MTP.equals(authority);
+-- 
+2.7.4
+

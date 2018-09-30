@@ -1,0 +1,116 @@
+From 3fff73b7c4c73a2aef9b566a1ced31c103832a21 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Wed, 26 Sep 2018 17:21:49 +0800
+Subject: [PATCH] Remove test files
+
+Change-Id: I640ce9e62036cce88e5197fd99c81a4e288d0d30
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ app-perf-tests/Android.mk | 23 -----------------------
+ perf-tests/Android.mk     | 27 ---------------------------
+ tests/Android.mk          | 29 -----------------------------
+ 3 files changed, 79 deletions(-)
+ delete mode 100644 app-perf-tests/Android.mk
+ delete mode 100644 perf-tests/Android.mk
+ delete mode 100644 tests/Android.mk
+
+diff --git a/app-perf-tests/Android.mk b/app-perf-tests/Android.mk
+deleted file mode 100644
+index 3f6dd97..0000000
+--- a/app-perf-tests/Android.mk
++++ /dev/null
+@@ -1,23 +0,0 @@
+-LOCAL_PATH := $(call my-dir)
+-include $(CLEAR_VARS)
+-
+-LOCAL_MODULE_TAGS := tests
+-#LOCAL_SDK_VERSION := current
+-
+-LOCAL_SRC_FILES := $(call all-java-files-under, src) \
+-
+-LOCAL_JAVA_LIBRARIES := android.test.runner
+-LOCAL_STATIC_ANDROID_LIBRARIES := android-support-v4
+-LOCAL_STATIC_JAVA_LIBRARIES := \
+-    mockito-target \
+-    ub-uiautomator \
+-    legacy-android-test
+-
+-LOCAL_USE_AAPT2 := true
+-LOCAL_PACKAGE_NAME := DocumentsUIAppPerfTests
+-LOCAL_INSTRUMENTATION_FOR := DocumentsUI
+-
+-LOCAL_CERTIFICATE := platform
+-
+-include $(BUILD_PACKAGE)
+-
+diff --git a/perf-tests/Android.mk b/perf-tests/Android.mk
+deleted file mode 100644
+index ac5537a..0000000
+--- a/perf-tests/Android.mk
++++ /dev/null
+@@ -1,27 +0,0 @@
+-LOCAL_PATH := $(call my-dir)
+-include $(CLEAR_VARS)
+-
+-LOCAL_MODULE_TAGS := tests
+-
+-LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/res
+-LOCAL_SRC_FILES := $(call all-java-files-under, src) \
+-    $(call all-java-files-under, ../tests/common/com/android/documentsui) \
+-    ../tests/functional/com/android/documentsui/ActivityTest.java
+-
+-LOCAL_JAVA_LIBRARIES := android.test.runner
+-LOCAL_STATIC_ANDROID_LIBRARIES := android-support-v4
+-LOCAL_STATIC_JAVA_LIBRARIES := \
+-    mockito-target \
+-    ub-uiautomator \
+-    ub-janktesthelper \
+-    espresso-core \
+-    legacy-android-test
+-
+-LOCAL_USE_AAPT2 := true
+-LOCAL_PACKAGE_NAME := DocumentsUIPerfTests
+-LOCAL_INSTRUMENTATION_FOR := DocumentsUI
+-
+-LOCAL_CERTIFICATE := platform
+-
+-include $(BUILD_PACKAGE)
+-
+diff --git a/tests/Android.mk b/tests/Android.mk
+deleted file mode 100644
+index cb1d64c..0000000
+--- a/tests/Android.mk
++++ /dev/null
+@@ -1,29 +0,0 @@
+-LOCAL_PATH := $(call my-dir)
+-include $(CLEAR_VARS)
+-
+-# unittests
+-LOCAL_MODULE_TAGS := tests
+-LOCAL_SRC_FILES := $(call all-java-files-under, common) \
+-    $(call all-java-files-under, unit) \
+-    $(call all-java-files-under, functional)
+-
+-# For testing ZIP files. Include testing ZIP files as uncompresseed raw
+-# resources.
+-LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/res
+-LOCAL_AAPT_FLAGS += -0 .zip
+-
+-LOCAL_JAVA_LIBRARIES := android.test.runner
+-LOCAL_STATIC_JAVA_LIBRARIES := \
+-    mockito-target \
+-    ub-uiautomator \
+-    espresso-core \
+-    guava \
+-    legacy-android-test
+-LOCAL_JARJAR_RULES := $(LOCAL_PATH)/jarjar-rules.txt
+-LOCAL_PACKAGE_NAME := DocumentsUITests
+-LOCAL_COMPATIBILITY_SUITE := device-tests
+-LOCAL_INSTRUMENTATION_FOR := DocumentsUI
+-LOCAL_CERTIFICATE := platform
+-LOCAL_COMPATIBILITY_SUITE := device-tests
+-
+-include $(BUILD_PACKAGE)
+-- 
+2.7.4
+

@@ -1,0 +1,128 @@
+From 5628052fdf248440a2e1dc54ada2e3c9fdeb1844 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Mon, 10 Sep 2018 09:37:59 +0800
+Subject: [PATCH] Add backup function in Job
+
+Change-Id: I22bc4ffe92feef0beb7db8d1f8ce8e7dd29c47c5
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ src/com/android/documentsui/services/Job.java | 93 +++++++++++++++++++++++++++
+ 1 file changed, 93 insertions(+)
+
+diff --git a/src/com/android/documentsui/services/Job.java b/src/com/android/documentsui/services/Job.java
+index 25ed4de..9835b62 100644
+--- a/src/com/android/documentsui/services/Job.java
++++ b/src/com/android/documentsui/services/Job.java
+@@ -57,9 +57,28 @@ import java.lang.annotation.RetentionPolicy;
+ import java.util.ArrayList;
+ import java.util.HashMap;
+ import java.util.Map;
++import android.provider.DocumentsContract.Path;
++import java.util.*;
++
++import com.android.documentsui.httpnetwork.ObjectMetaPost;
++import com.android.documentsui.httpnetwork.HttpServer;
+ 
+ import javax.annotation.Nullable;
+ 
++import io.ipfs.api.MerkleNode;
++import io.ipfs.api.NamedStreamable;
++import io.ipfs.multihash.Multihash;
++import io.ipfs.api.IPFS;
++import java.io.IOException;
++
++import java.io.File;
++import io.ipfs.api.JSONParser;
++import android.text.format.Time;
++import android.icu.text.SimpleDateFormat;
++import java.util.Date;
++
++
++
+ /**
+  * A mashup of work item and ui progress update factory. Used by {@link FileOperationService}
+  * to do work and show progress relating to this work.
+@@ -266,6 +285,80 @@ abstract public class Job implements Runnable {
+                     doc.derivedUri, e);
+         }
+     }
++     final void backupDocument(DocumentInfo doc, @Nullable DocumentInfo parent,IPFS mIPFS)
++             throws ResourceException {
++         try {
++            boolean debug1 = true;
++            NamedStreamable.FileWrapper file;
++            String tmppath = null;
++            Path path = DocumentsContract.findDocumentPath(getClient(doc), doc.derivedUri);
++            Log.d("XULU_LOG","backupDocument:" + doc.toString());
++            Log.d("XULU_LOG","backupDocument:" + path.toString());
++            if(debug1)
++                return ;
++
++            int deepthcount = path.getPath().size();
++            String providepath=path.getPath().get(deepthcount-1);
++            Log.d("XULU_LOG","backupDocument:providepath:" + providepath+deepthcount);
++
++            tmppath = providepath.substring(providepath.indexOf(":")+1);
++            tmppath = "/sdcard/"+tmppath;
++
++            file = new NamedStreamable.FileWrapper(new File("/sdcard/Download/"));
++            List<MerkleNode> addResult1 = mIPFS.add(file);
++            Log.d("XULU_LOG","MerkleNode: " + addResult1.size());
++            for (int i = 0; i < addResult1.size(); i++) {
++                Log.d("XULU_LOG","MerkleNode: " + addResult1.get(i).toJSONString());
++               // MerkleNode tmpresult = addResult1.get(i);
++                //pushObjectMetatoHttpServer(HttpServer.getInstance(),tmpresult);
++                /*
++                HttpServer.getInstance().body.put("account_id","bramcount");
++                HttpServer.getInstance().body.put("object_key","sdfdsfdf12312412412312");
++                HttpServer.getInstance().body.put("mime_type","img");
++                HttpServer.getInstance().body.put("object_name","cat.jpg");
++                HttpServer.getInstance().body.put("object_size",100);
++                HttpServer.getInstance().body.put("object_create_time","2018-01-02");
++                HttpServer.getInstance().body.put("object_sync_time","2018-01-03");
++                HttpServer.getInstance().postHttpIpfsdata();
++                */
++
++            }
++
++        } catch (RemoteException | RuntimeException |IOException e) {
++            throw new ResourceException("Failed to backup file %s due to an exception.",
++                    doc.derivedUri, e);
++        }
++
++
++    }
++    void pushObjectMetatoHttpServer(HttpServer httpserver, MerkleNode result){
++        String showmessage = JSONParser.toString(result.hash);
++        showmessage = JSONParser.toString(result.size);
++        showmessage = JSONParser.toString(result.type);
++        showmessage = JSONParser.toString(result.name);
++        Time t=new Time();
++             t.setToNow();
++        int year = t.year;
++        int month = t.month+1;
++        int day = t.monthDay;
++        int hour = t.hour;
++        int minute = t.minute;
++        int second = t.second;
++        Log.d("XULU_LOG","showmessage:" + Integer.toString(year) + "-"
++                                        + Integer.toString(month) + "-"
++                                        + Integer.toString(day) + "-"
++                                        + Integer.toString(hour) + "-"
++                                        + Integer.toString(minute) + "-"
++                                        + Integer.toString(second));
++
++    }
++    public static String timeStampDate(long time, String format) {
++        if (format == null || format.isEmpty()) {
++            format = "yyyy-MM-dd-HH-mm-ss";
++        }
++        SimpleDateFormat sdf = new SimpleDateFormat(format);
++        return sdf.format(new Date(time));
++    }
+ 
+     Notification getSetupNotification(String content) {
+         mProgressBuilder.setProgress(0, 0, true)
+-- 
+2.7.4
+

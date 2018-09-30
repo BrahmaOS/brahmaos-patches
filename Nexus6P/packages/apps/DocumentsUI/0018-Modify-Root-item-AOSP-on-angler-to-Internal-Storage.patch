@@ -1,0 +1,29 @@
+From 9383e6cd859c57a617df5c57df8ab5df6a07c7e4 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Fri, 28 Sep 2018 15:18:53 +0800
+Subject: [PATCH] Modify Root item "AOSP on angler" to "Internal Storage"
+
+Change-Id: I468dfc0d524777de2288f36f598c319e38820e69
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ src/com/android/documentsui/sidebar/RootsFragment.java | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/com/android/documentsui/sidebar/RootsFragment.java b/src/com/android/documentsui/sidebar/RootsFragment.java
+index 15d0c77..05bc4b8 100644
+--- a/src/com/android/documentsui/sidebar/RootsFragment.java
++++ b/src/com/android/documentsui/sidebar/RootsFragment.java
+@@ -262,8 +262,8 @@ public class RootsFragment extends Fragment {
+         final List<RootItem> decenters = new ArrayList<>();
+ 
+         for (final RootInfo root : roots) {
+-			Log.d(TAG,"sortLoadResult"+root.toString());
+-
++            if(root.title.equals("AOSP on angler"))
++                root.title = "Internal Storage";
+             final RootItem item = new RootItem(root, mActionHandler);
+             Activity activity = getActivity();
+             if (root.isHome() && !Shared.shouldShowDocumentsRoot(activity)) {
+-- 
+2.7.4
+

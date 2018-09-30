@@ -1,0 +1,110 @@
+From 53048f4326ceee5ed9f5ef1da5cac83c1a78d267 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Wed, 12 Sep 2018 09:19:20 +0800
+Subject: [PATCH] Modify network in DocumentsUI
+
+Change-Id: I223e4cbd759684a5f70b8310148616694b42e0b9
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ .../android/documentsui/httpnetwork/ApiConst.java  |  3 +-
+ .../documentsui/httpnetwork/HttpServer.java        | 32 +++++++++++++++++-----
+ .../documentsui/httpnetwork/httpIpfsApi.java       |  2 +-
+ 3 files changed, 28 insertions(+), 9 deletions(-)
+
+diff --git a/src/com/android/documentsui/httpnetwork/ApiConst.java b/src/com/android/documentsui/httpnetwork/ApiConst.java
+index d1f3e23..a580197 100644
+--- a/src/com/android/documentsui/httpnetwork/ApiConst.java
++++ b/src/com/android/documentsui/httpnetwork/ApiConst.java
+@@ -5,9 +5,10 @@ package com.android.documentsui.httpnetwork;
+  */
+ public class ApiConst {
+ 
+-    public static final String PARAM_QUOTES = "quotes";
++    public static final String PARAM_QUOTES = "objects";
+     public static final int OSTYPE_ANDROID = 0;
+     public static final String PARAM_VER_INFO = "v";
+     public static final int TOKEN_TYPE_ERC20 = 1;
+     public static final String PARAM_TRANSACTIONS = "transactions";
++    public static final String CLOUD_AUTHORITIES = "com.android.providers.decentercloud.documents";
+ }
+diff --git a/src/com/android/documentsui/httpnetwork/HttpServer.java b/src/com/android/documentsui/httpnetwork/HttpServer.java
+index 4dfe881..e3338a6 100644
+--- a/src/com/android/documentsui/httpnetwork/HttpServer.java
++++ b/src/com/android/documentsui/httpnetwork/HttpServer.java
+@@ -21,6 +21,8 @@ import rx.Observable;
+ import rx.Observer;
+ import rx.android.schedulers.AndroidSchedulers;
+ import rx.schedulers.Schedulers;
++import com.android.documentsui.httpnetwork.ObjectMeta;
++
+ 
+ public class HttpServer extends BaseService{
+     @Override
+@@ -42,28 +44,44 @@ public class HttpServer extends BaseService{
+     private boolean isHaveAccount;
+ 
+     //GET
+-    public String accountID = "brahmaos";
++    //public String accountID = "brahmaos";
++    public String accountID = "111";
+     public void getHttpIpfsdata() {
+             Networks.getInstance().gethttpIpfsApi()
+                     .getDataFromIpfsCloud(accountID)
+                     .subscribeOn(Schedulers.io())
+                     .observeOn(AndroidSchedulers.mainThread())
+-                    .subscribe(new Observer<LinkedHashMap<String, Object>>() {
++                    .subscribe(new Observer<ApiRespResult>() {
+                         @Override
+                         public void onCompleted() {
+-                            Log.d("XULU_LOG","getKyberTokens 1");
++                            Log.d("XULU_LOG","getKyberTokens onCompleted");
+                         }
+ 
+                         @Override
+                         public void onError(Throwable throwable) {
+                             throwable.printStackTrace();
+-                            Log.d("XULU_LOG","getKyberTokens 2");
++                            Log.d("XULU_LOG","getKyberTokens onError");
+                         }
+ 
+                         @Override
+-                        public void onNext(LinkedHashMap<String, Object> apr) {
+-				            Log.d("XULU_LOG","getKyberTokens"+ apr.toString());
+-                        }
++                        public void onNext(ApiRespResult apr) {
++                        Log.d("XULU_LOG","onNext" + apr.toString());
++                            if (apr.getResult() == 0 && apr.getData().containsKey(ApiConst.PARAM_QUOTES)) {
++                                ObjectMapper objectMapper = new ObjectMapper();
++                                try {
++                                    List<ObjectMeta> objectlists = objectMapper.readValue(objectMapper.writeValueAsString(apr.getData().get(ApiConst.PARAM_QUOTES)), new TypeReference<List<ObjectMeta>>() {});
++                                    ObjectMeta xx = objectlists.get(0);
++
++                                      Log.d("XULU_LOG","getHttpIpfsdata:" + xx.get_account_id());
++                                      Log.d("XULU_LOG","getHttpIpfsdata:" + xx.get_object_name());
++                                } catch (IOException e1) {
++                                    e1.printStackTrace();
++                                }
++                            } else {
++                                Log.d("XULU_LOG","getHttpIpfsdata");
++                            }
++                       }
++
+                     });
+     }
+     // POST;
+diff --git a/src/com/android/documentsui/httpnetwork/httpIpfsApi.java b/src/com/android/documentsui/httpnetwork/httpIpfsApi.java
+index b3183dd..27e4a0b 100644
+--- a/src/com/android/documentsui/httpnetwork/httpIpfsApi.java
++++ b/src/com/android/documentsui/httpnetwork/httpIpfsApi.java
+@@ -17,7 +17,7 @@ import rx.Observable;
+ public interface httpIpfsApi{
+ 
+     @GET("/metas/{accountId}")
+-    Observable<LinkedHashMap<String, Object>> getDataFromIpfsCloud(@Path("accountId") String accountId);
++    Observable<ApiRespResult> getDataFromIpfsCloud(@Path("accountId") String accountId);
+ 
+     @POST("/metas")
+     Observable<LinkedHashMap<String, Object>> postDataToIpfsCloud(@Body Map<String,Object> body);
+-- 
+2.7.4
+

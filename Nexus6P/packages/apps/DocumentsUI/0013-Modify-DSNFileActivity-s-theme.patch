@@ -1,0 +1,59 @@
+From bc6040a0f07017ca58871573d9fd04f08e06cbad Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Thu, 27 Sep 2018 18:01:54 +0800
+Subject: [PATCH] Modify DSNFileActivity's theme
+
+Change-Id: I45f9724d0deccdaef7f52f9a793cbbdd3c855a35
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ AndroidManifest.xml   |  2 +-
+ res/values/styles.xml | 20 ++++++++++++++++++++
+ 2 files changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/AndroidManifest.xml b/AndroidManifest.xml
+index 7739f4d..2626e27 100644
+--- a/AndroidManifest.xml
++++ b/AndroidManifest.xml
+@@ -102,7 +102,7 @@
+         </activity>
+         <activity
+             android:name=".files.DSNFilesActivity"
+-	    android:theme="@style/DocumentsTheme">
++	    android:theme="@style/DNSDocumentsTheme">
+         </activity>
+ 
+ 
+diff --git a/res/values/styles.xml b/res/values/styles.xml
+index ad2d370..59bc507 100644
+--- a/res/values/styles.xml
++++ b/res/values/styles.xml
+@@ -45,6 +45,26 @@
+ 
+         <item name="android:windowSoftInputMode">stateUnspecified|adjustUnspecified</item>
+     </style>
++    <style name="DNSDocumentsTheme" parent="@style/Theme.AppCompat.Light.NoActionBar">
++        <item name="actionBarWidgetTheme">@null</item>
++        <item name="actionBarTheme">@style/ActionBarTheme</item>
++        <item name="actionBarPopupTheme">@style/ActionBarPopupTheme</item>
++
++        <item name="android:windowBackground">@color/window_background</item>
++        <item name="android:colorPrimaryDark">@color/primary_dark</item>
++        <item name="android:colorPrimary">@color/primary</item>
++        <item name="android:colorAccent">@color/accent</item>
++        <item name="android:colorControlActivated">?android:attr/colorAccent</item>
++        <item name="android:queryBackground">@color/menu_search_background</item>
++
++        <item name="android:listDivider">@*android:drawable/list_divider_material</item>
++
++        <item name="android:windowActionBar">false</item>
++        <item name="android:windowActionModeOverlay">true</item>
++        <item name="android:windowNoTitle">true</item>
++
++        <item name="android:windowSoftInputMode">stateUnspecified|adjustUnspecified</item>
++    </style>
+ 
+     <style name="TrimmedHorizontalProgressBar" parent="android:Widget.Material.ProgressBar.Horizontal">
+         <item name="android:indeterminateDrawable">@drawable/progress_indeterminate_horizontal_material_trimmed</item>
+-- 
+2.7.4
+

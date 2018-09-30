@@ -1,0 +1,2538 @@
+From 6929b712fa2752771cc8d104c1c5b4955665fb90 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Wed, 26 Sep 2018 13:41:01 +0800
+Subject: [PATCH] Add DSN Remote fragment and detal page in DocumentsUI
+
+-add DSN Remote fragment to show MetaObject from DSN
+-add detal page to show MetaObject's content
+
+Change-Id: Id7550f0b3fabfe1e08e8fac3f6d16c9472d02c97
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ AndroidManifest.xml                                |   9 +
+ res/drawable/list_item_dsn_bg.xml                  |   9 +
+ res/layout/dsn_drawer_layout.xml                   | 256 ++++++++++++
+ res/layout/list_item_dsn.xml                       |  72 ++++
+ res/menu/action_mode_menu.xml                      |   6 -
+ res/menu/dsn_files_activity.xml                    |  42 ++
+ res/values/colors.xml                              |   9 +
+ res/values/dimens.xml                              |  41 ++
+ res/values/strings.xml                             |   1 -
+ res/values/styles.xml                              |   6 +
+ .../android/documentsui/AbstractActionHandler.java |   4 -
+ src/com/android/documentsui/ActionHandler.java     |   4 -
+ src/com/android/documentsui/BaseActivity.java      |   7 +
+ .../android/documentsui/DocumentsApplication.java  |   5 +-
+ src/com/android/documentsui/MenuManager.java       |   7 +-
+ .../documentsui/dirlist/DSNDirectoryFragment.java  | 121 ++++--
+ .../dirlist/DSNModelObjectMetaAdapter.java         | 154 +++++++
+ .../documentsui/dirlist/DirectoryFragment.java     |  10 +-
+ .../android/documentsui/files/ActionHandler.java   |  50 ---
+ .../documentsui/files/DSNFilesActivity.java        | 457 +++++++++++++++++++++
+ .../android/documentsui/files/FilesActivity.java   |   5 +
+ src/com/android/documentsui/files/MenuManager.java |  11 +-
+ .../documentsui/httpnetwork/HttpServer.java        |  22 +-
+ .../documentsui/httpnetwork/ObjectMeta.java        |  38 +-
+ .../android/documentsui/picker/MenuManager.java    |  13 +-
+ .../android/documentsui/services/BackupJob.java    | 157 ++++++-
+ .../services/DownloadDocumentsFromDSNJob.java      | 142 +++++++
+ .../documentsui/services/FileOperation.java        |  70 +++-
+ .../documentsui/services/FileOperationService.java |   4 +-
+ src/com/android/documentsui/services/Job.java      |  77 ----
+ .../android/documentsui/ui/DialogController.java   |  39 ++
+ 31 files changed, 1600 insertions(+), 248 deletions(-)
+ create mode 100644 res/drawable/list_item_dsn_bg.xml
+ create mode 100644 res/layout/dsn_drawer_layout.xml
+ create mode 100644 res/layout/list_item_dsn.xml
+ create mode 100644 res/menu/dsn_files_activity.xml
+ create mode 100644 src/com/android/documentsui/dirlist/DSNModelObjectMetaAdapter.java
+ create mode 100644 src/com/android/documentsui/files/DSNFilesActivity.java
+ create mode 100644 src/com/android/documentsui/services/DownloadDocumentsFromDSNJob.java
+
+diff --git a/AndroidManifest.xml b/AndroidManifest.xml
+index 83bb2b8..7739f4d 100644
+--- a/AndroidManifest.xml
++++ b/AndroidManifest.xml
+@@ -8,6 +8,10 @@
+     <uses-permission android:name="android.permission.CACHE_CONTENT" />
+     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+     <uses-permission android:name="android.permission.SET_PREFERRED_APPLICATIONS" />
++    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
++    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
++    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
++    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
+ 
+     <application
+         android:name=".DocumentsApplication"
+@@ -96,6 +100,11 @@
+                 <data android:mimeType="vnd.android.document/directory" />
+             </intent-filter>
+         </activity>
++        <activity
++            android:name=".files.DSNFilesActivity"
++	    android:theme="@style/DocumentsTheme">
++        </activity>
++
+ 
+         <activity-alias android:name="ViewDownloadsActivity"
+                         android:targetActivity=".files.FilesActivity"
+diff --git a/res/drawable/list_item_dsn_bg.xml b/res/drawable/list_item_dsn_bg.xml
+new file mode 100644
+index 0000000..bc6fe98
+--- /dev/null
++++ b/res/drawable/list_item_dsn_bg.xml
+@@ -0,0 +1,9 @@
++<?xml version="1.0" encoding="utf-8"?>
++<ripple xmlns:android="http://schemas.android.com/apk/res/android"
++    android:color="#cfcfcf">
++    <item>
++        <shape android:shape="rectangle">
++            <solid android:color="#FFFFFF" />
++        </shape>
++    </item>
++</ripple>
+diff --git a/res/layout/dsn_drawer_layout.xml b/res/layout/dsn_drawer_layout.xml
+new file mode 100644
+index 0000000..1d8a50b
+--- /dev/null
++++ b/res/layout/dsn_drawer_layout.xml
+@@ -0,0 +1,256 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Copyright (C) 2013 The Android Open Source Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++
++<!-- CoordinatorLayout is necessary for various components (e.g. Snackbars, and
++     floating action buttons) to operate correctly. -->
++<android.support.design.widget.CoordinatorLayout
++    xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:id="@+id/coordinator_layout">
++
++    <LinearLayout
++            android:layout_width="match_parent"
++            android:layout_height="match_parent"
++            android:background="@color/colorBackgroundGray"
++            android:orientation="vertical">
++
++	    <android.support.v7.widget.Toolbar
++		android:id="@+id/toolbar"
++		android:layout_width="match_parent"
++		android:layout_height="?android:attr/actionBarSize"
++		android:background="?android:attr/colorPrimary"
++		android:elevation="8dp"
++		android:theme="?actionBarTheme"
++		app:popupTheme="@style/popup_theme">
++
++		<com.android.documentsui.DropdownBreadcrumb
++		    android:id="@+id/dropdown_breadcrumb"
++		    android:layout_width="wrap_content"
++		    android:layout_height="wrap_content"
++		    android:layout_marginStart="4dp"
++		    android:popupTheme="?actionBarPopupTheme"
++		    android:background="@android:color/transparent"
++		    android:overlapAnchor="true" />
++
++	    </android.support.v7.widget.Toolbar>
++
++	    <LinearLayout
++		android:layout_width="match_parent"
++		android:layout_height="88dp"
++		android:background="@color/colorBackgroundWhite"
++		android:paddingStart="@dimen/space_normal"
++		android:paddingEnd="@dimen/space_normal"
++		android:gravity="center_vertical"
++		android:orientation="vertical">
++
++		<TextView
++		    android:id="@+id/tv_hashkey_title"
++		    android:layout_width="match_parent"
++		    android:layout_height="wrap_content"
++		    android:textSize="@dimen/font_subtitle"
++		    android:text="对象的 Hash Key"
++		    android:textColor="@color/colorSubTitle"
++		    />
++
++		<TextView
++		    android:id="@+id/tv_hashkey_content"
++		    android:layout_marginTop="4dp"
++		    android:layout_width="wrap_content"
++		    android:layout_height="wrap_content"
++		    android:textSize="@dimen/font_subcontent"
++		    android:textColor="@color/colorSubContent"
++		    android:text="QmVNVJPoUc4t7VRBcQFh2mDxsjDdZMidZi4pSHR2jzF6qvTextView" />
++	    </LinearLayout>
++
++	    <RelativeLayout
++		android:layout_width="match_parent"
++		android:layout_height="48dp"
++		android:layout_marginTop="16dp"
++		android:background="@color/colorBackgroundWhite"
++		android:gravity="center_vertical"
++		android:paddingEnd="@dimen/space_normal"
++		android:paddingStart="@dimen/space_normal">
++
++		<TextView
++		    android:id="@+id/tv_mimetype_title"
++		    android:layout_width="wrap_content"
++		    android:layout_height="wrap_content"
++		    android:text="文件的 MIME-TYPE"
++		    android:textSize="@dimen/font_subtitle"
++		    android:textColor="@color/colorSubTitle"
++		    />
++
++		<TextView
++		    android:id="@+id/tv_mimetype_content"
++		    android:layout_width="wrap_content"
++		    android:layout_height="wrap_content"
++		    android:layout_alignParentEnd="true"
++		    android:layout_alignParentTop="true"
++		    android:textSize="@dimen/font_subcontent"
++		    android:text="img"
++		    android:textColor="@color/colorSubContent"
++		    />
++	    </RelativeLayout>
++
++	    <RelativeLayout
++		android:layout_width="match_parent"
++		android:layout_height="48dp"
++		android:layout_marginTop="1dp"
++		android:gravity="center_vertical"
++		android:background="@color/colorBackgroundWhite"
++		android:paddingEnd="@dimen/space_normal"
++		android:paddingStart="@dimen/space_normal">
++
++		<TextView
++		    android:id="@+id/tv_size_title"
++		    android:layout_width="wrap_content"
++		    android:layout_height="wrap_content"
++		    android:text="文件大小"
++		    android:textSize="@dimen/font_subtitle"
++		    android:textColor="@color/colorSubTitle"
++		 />
++
++		<TextView
++		    android:id="@+id/tv_size_content"
++		    android:layout_width="wrap_content"
++		    android:layout_height="wrap_content"
++		    android:layout_alignParentEnd="true"
++		    android:layout_alignParentTop="true"
++		    android:textSize="@dimen/font_subcontent"
++		    android:text="100KB"
++		    android:textColor="@color/colorSubContent"
++		    />
++	    </RelativeLayout>
++
++	    <RelativeLayout
++		android:layout_width="match_parent"
++		android:layout_height="48dp"
++		android:layout_marginTop="1dp"
++		android:gravity="center_vertical"
++		android:background="@color/colorBackgroundWhite"
++		android:paddingEnd="@dimen/space_normal"
++		android:paddingStart="@dimen/space_normal">
++
++		<TextView
++		    android:id="@+id/tv_name_title"
++		    android:layout_width="wrap_content"
++		    android:layout_height="wrap_content"
++		    android:text="原始文件名"
++		    android:textSize="@dimen/font_subtitle"
++		    android:textColor="@color/colorSubTitle"
++		    />
++
++		<TextView
++		    android:id="@+id/tv_name_content"
++		    android:layout_width="wrap_content"
++		    android:layout_height="wrap_content"
++		    android:layout_alignParentEnd="true"
++		    android:textSize="@dimen/font_subcontent"
++		    android:layout_alignParentTop="true"
++		    android:text="zzz.jpg"
++		    android:textColor="@color/colorSubContent"
++		    />
++	    </RelativeLayout>
++	    <RelativeLayout
++		android:layout_width="match_parent"
++		android:layout_height="48dp"
++		android:layout_marginTop="1dp"
++		android:gravity="center_vertical"
++		android:background="@color/colorBackgroundWhite"
++		android:paddingEnd="@dimen/space_normal"
++		android:paddingStart="@dimen/space_normal">
++
++		<TextView
++		    android:id="@+id/tv_createtime_title"
++		    android:layout_width="wrap_content"
++		    android:layout_height="wrap_content"
++		    android:text="文件创建时间"
++		    android:textSize="@dimen/font_subtitle"
++		    android:textColor="@color/colorSubTitle"
++		    />
++
++		<TextView
++		    android:id="@+id/tv_createtime_content"
++		    android:layout_width="wrap_content"
++		    android:layout_height="wrap_content"
++		    android:layout_alignParentEnd="true"
++		    android:layout_alignParentTop="true"
++		    android:textSize="@dimen/font_subcontent"
++		    android:text="2018-09-10"
++		    android:textColor="@color/colorSubContent"
++		    />
++	    </RelativeLayout>
++	    <RelativeLayout
++		android:layout_width="match_parent"
++		android:layout_height="48dp"
++		android:layout_marginTop="1dp"
++		android:gravity="center_vertical"
++		android:background="@color/colorBackgroundWhite"
++		android:paddingEnd="@dimen/space_normal"
++		android:paddingStart="@dimen/space_normal">
++		<TextView
++		    android:id="@+id/tv_synctime_title"
++		    android:layout_width="wrap_content"
++		    android:layout_height="wrap_content"
++		    android:text="文件同步时间"
++		    android:textSize="@dimen/font_subtitle"
++		    android:textColor="@color/colorSubTitle"
++		    />
++		<TextView
++		    android:id="@+id/tv_synctime_content"
++		    android:layout_width="wrap_content"
++		    android:layout_height="wrap_content"
++		    android:layout_alignParentEnd="true"
++		    android:layout_alignParentTop="true"
++		    android:textSize="@dimen/font_subcontent"
++		    android:text="2018-09-10"
++		    android:textColor="@color/colorSubContent"
++		    />
++	    </RelativeLayout>
++
++	    <RelativeLayout
++		android:layout_width="match_parent"
++		android:layout_height="48dp"
++		android:layout_marginTop="16dp"
++		android:gravity="center_vertical"
++		android:background="@color/colorBackgroundWhite"
++		android:paddingEnd="@dimen/space_normal"
++		android:paddingStart="@dimen/space_normal">
++
++		<TextView
++		    android:id="@+id/tv_blockcount_tilte"
++		    android:layout_width="wrap_content"
++		    android:layout_height="wrap_content"
++		    android:text="分开的区块数目"
++		    android:textSize="@dimen/font_subtitle"
++		    android:textColor="@color/colorSubTitle"
++		    />
++
++		<TextView
++		    android:id="@+id/tv_blockcount_content"
++		    android:layout_width="wrap_content"
++		    android:layout_height="wrap_content"
++		    android:layout_alignParentEnd="true"
++		    android:layout_alignParentTop="true"
++		    android:textSize="@dimen/font_subcontent"
++		    android:text="23"
++		    android:textColor="@color/colorSubContent"
++		    />
++	    </RelativeLayout>
++ 	</LinearLayout>
++</android.support.design.widget.CoordinatorLayout>
+diff --git a/res/layout/list_item_dsn.xml b/res/layout/list_item_dsn.xml
+new file mode 100644
+index 0000000..fbbe2a0
+--- /dev/null
++++ b/res/layout/list_item_dsn.xml
+@@ -0,0 +1,72 @@
++<?xml version="1.0" encoding="utf-8"?>
++<LinearLayout
++    xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="wrap_content"
++    android:background="@drawable/list_item_dsn_bg"	
++    android:clickable="true"
++    android:orientation="vertical">
++    <RelativeLayout
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:paddingTop="@dimen/space_small"
++        android:paddingBottom="@dimen/space_small"
++        android:paddingStart="@dimen/space_normal"
++        android:paddingEnd="@dimen/space_normal">
++        <ImageView
++            android:id="@+id/iv_dsn_icon"
++            android:layout_centerVertical="true"
++            android:layout_width="@dimen/icon_normal_size"
++            android:layout_height="@dimen/icon_normal_size"
++            android:padding="6dp"
++            android:src="@drawable/ic_lable_jpg"/>
++        
++        <LinearLayout
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_marginStart="@dimen/space_normal"
++            android:layout_toEndOf="@id/iv_dsn_icon"
++            android:layout_centerVertical="true"
++            android:orientation="vertical">
++            <LinearLayout
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:orientation="horizontal">
++                <TextView
++                    android:id="@+id/tv_dsn_short_name"
++                    android:textAlignment="center"
++                    android:layout_width="wrap_content"
++                    android:layout_height="wrap_content"
++                    android:textSize="@dimen/font_size_subheading"/>
++            </LinearLayout>
++        <LinearLayout
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:orientation="horizontal">
++            <TextView
++                android:id="@+id/tv_dsn_date"
++                android:textAlignment="center"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:layout_marginTop="@dimen/space_unit"
++                android:textSize="@dimen/font_size_caption"
++                android:textColor="@color/color_hint_text"/>
++            <TextView
++                android:id="@+id/tv_dsn_size"
++                android:textAlignment="center"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++		android:layout_marginLeft="50dp"
++                android:layout_marginTop="@dimen/space_unit"
++                android:textSize="@dimen/font_size_caption"
++                android:textColor="@color/color_hint_text"/>
++            </LinearLayout>
++        </LinearLayout>
++    </RelativeLayout>
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="1px"
++        android:orientation="horizontal"
++        android:background="@color/horizontal_divider">
++    </LinearLayout>
++</LinearLayout>
+diff --git a/res/menu/action_mode_menu.xml b/res/menu/action_mode_menu.xml
+index d38f32c..de3559a 100644
+--- a/res/menu/action_mode_menu.xml
++++ b/res/menu/action_mode_menu.xml
+@@ -77,10 +77,4 @@
+         android:title="@string/menu_backup"
+         android:showAsAction="never"
+         android:visible="false" />
+-  <item
+-        android:id="@+id/action_menu_getdocuments"
+-        android:title="@string/menu_getdocuments"
+-        android:showAsAction="never"
+-        android:visible="false" />
+-
+ </menu>
+diff --git a/res/menu/dsn_files_activity.xml b/res/menu/dsn_files_activity.xml
+new file mode 100644
+index 0000000..1b5e2f7
+--- /dev/null
++++ b/res/menu/dsn_files_activity.xml
+@@ -0,0 +1,42 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Copyright (C) 2013 The Android Open Source Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++
++<menu xmlns:android="http://schemas.android.com/apk/res/android">
++<!-- showAsAction flag impacts the behavior of SearchView.
++     When set to collapseActionView, collapsing SearchView to icon is the
++     default behavior. It would fit UX, however after expanding SearchView is
++     shown on the left site of the toolbar (replacing title). Since no way to
++     prevent this behavior was found, the flag is set to always. SearchView is
++     always visible by default and it is being collapse manually by calling
++     setIconified() method
++-->
++<!-- This group is being hidden when searching is in full bar mode-->
++    <group android:id="@+id/group_hide_when_searching">
++        <item
++            android:id="@+id/option_menu_delete"
++            android:title="Delete"
++            android:icon="@drawable/ic_debug_menu"
++            android:visible="false"
++            android:showAsAction="never"
++            />
++        <item
++            android:id="@+id/option_menu_download"
++            android:title="Download"
++            android:icon="@drawable/ic_menu_view_grid"
++            android:visible="false"
++            android:showAsAction="never" />
++    </group>
++</menu>
+diff --git a/res/values/colors.xml b/res/values/colors.xml
+index e7801b9..1976348 100644
+--- a/res/values/colors.xml
++++ b/res/values/colors.xml
+@@ -77,4 +77,13 @@
+ 
+     <color name="inspector_value">#ff939393</color>
+     <color name="inspector_section_title">#ff939393</color>
++    <color name="color_hint_text">#64000000</color>
++    <color name="divider">#18000000</color>
++    <color name="horizontal_divider">@color/divider</color>
++    <color name="white">#ffffff</color>
++
++    <color name="colorBackgroundGray">#F0F0F0</color>
++    <color name="colorBackgroundWhite">#FFFFFF</color>
++    <color name="colorSubTitle">#666</color>
++    <color name="colorSubContent">#999</color>
+ </resources>
+diff --git a/res/values/dimens.xml b/res/values/dimens.xml
+index 7eadccc..e356c03 100644
+--- a/res/values/dimens.xml
++++ b/res/values/dimens.xml
+@@ -71,4 +71,45 @@
+     <dimen name="bottom_bar_positive_button_elevation">2dp</dimen>
+ 
+     <dimen name="inspector_header_height">250dp</dimen>
++
++    <dimen name="height_toolbar">52dp</dimen>
++    <dimen name="block_corner">4dp</dimen>
++
++    <dimen name="toolbar_init_elevation">0dp</dimen>
++
++    <dimen name="font_size_display2">30sp</dimen>
++    <dimen name="font_size_display1">28sp</dimen>
++    <dimen name="font_size_headline">24sp</dimen>
++    <dimen name="font_size_title">20sp</dimen>
++    <dimen name="font_size_subtitle">18sp</dimen>
++    <dimen name="font_size_subheading">16sp</dimen>
++    <dimen name="font_size_body">14sp</dimen>
++    <dimen name="font_size_caption">12sp</dimen>
++    <dimen name="font_size_test_network">10sp</dimen>
++
++    <!-- Default screen margins, per the Android Design guidelines. -->
++    <dimen name="activity_horizontal_margin">16dp</dimen>
++    <dimen name="activity_vertical_margin">16dp</dimen>
++    <dimen name="fab_margin">16dp</dimen>
++
++    <dimen name="space_unit">4dp</dimen>
++    <dimen name="space_smaller">8dp</dimen>
++    <dimen name="space_small">12dp</dimen>
++    <dimen name="space_normal">16dp</dimen>
++    <dimen name="space_large">24dp</dimen>
++    <dimen name="space_larger">32dp</dimen>
++    <dimen name="space_largest">40dp</dimen>
++
++    <dimen name="icon_large_size">56dp</dimen>
++    <dimen name="icon_normal_size">40dp</dimen>
++    <dimen name="toolbar_icon_size">24dp</dimen>
++    <dimen name="icon_small_size">16dp</dimen>
++    <dimen name="appbar_padding_top">8dp</dimen>
++    <dimen name="nav_header_vertical_spacing">8dp</dimen>
++    <dimen name="nav_header_height">176dp</dimen>
++
++    <dimen name="dialog_label_width">70dp</dimen>
++
++    <dimen name="font_subtitle">16sp</dimen>
++    <dimen name="font_subcontent">14sp</dimen>
+ </resources>
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index 620fa88..549f052 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -75,7 +75,6 @@
+     <!-- Menu item title that creates a new window in the activity [CHAR LIMIT=28] -->
+     <string name="menu_new_window">New window</string>
+     <string name="menu_backup">Backup files</string>
+-    <string name="menu_getdocuments">Get files</string>
+     <!-- Menu item title that cuts the selected documents to clipboard [CHAR LIMIT=28] -->
+     <string name="menu_cut_to_clipboard">Cut</string>
+     <!-- Menu item title that copies the selected documents to clipboard [CHAR LIMIT=28] -->
+diff --git a/res/values/styles.xml b/res/values/styles.xml
+index 37659d4..ad2d370 100644
+--- a/res/values/styles.xml
++++ b/res/values/styles.xml
+@@ -60,5 +60,11 @@
+         <item name="android:textSize">14sp</item>
+         <item name="android:textAllCaps">true</item>
+     </style>
++    <style name="popup_theme" parent="@style/ThemeOverlay.AppCompat.Light">
++       <!-- <item name="android:background">@android:color/white</item> -->
++        <item name="android:textColor">@android:color/black</item>
++    </style>
++
++
+ 
+ </resources>
+diff --git a/src/com/android/documentsui/AbstractActionHandler.java b/src/com/android/documentsui/AbstractActionHandler.java
+index a895fc5..77b84cd 100644
+--- a/src/com/android/documentsui/AbstractActionHandler.java
++++ b/src/com/android/documentsui/AbstractActionHandler.java
+@@ -449,10 +449,6 @@ public abstract class AbstractActionHandler<T extends Activity & CommonAddons>
+         throw new UnsupportedOperationException("Backup not supported!");
+     }
+     @Override
+-    public void getDocuments() {
+-        throw new UnsupportedOperationException("getdocuments not supported!");
+-    }
+-    @Override
+     public void shareSelectedDocuments() {
+         throw new UnsupportedOperationException("Share not supported!");
+     }
+diff --git a/src/com/android/documentsui/ActionHandler.java b/src/com/android/documentsui/ActionHandler.java
+index 76e554f..ca7d699 100644
+--- a/src/com/android/documentsui/ActionHandler.java
++++ b/src/com/android/documentsui/ActionHandler.java
+@@ -138,10 +138,6 @@ public interface ActionHandler {
+      * In general, selected = selection or single focused item
+      */
+ 	void backupDocuments();
+-	    /**
+-     * In general, selected = selection or single focused item
+-     */
+-	void getDocuments();
+ 
+     void shareSelectedDocuments();
+ 
+diff --git a/src/com/android/documentsui/BaseActivity.java b/src/com/android/documentsui/BaseActivity.java
+index 290dd63..64db20c 100644
+--- a/src/com/android/documentsui/BaseActivity.java
++++ b/src/com/android/documentsui/BaseActivity.java
+@@ -64,6 +64,8 @@ import com.android.documentsui.selection.Selection;
+ import com.android.documentsui.sidebar.RootsFragment;
+ import com.android.documentsui.sorting.SortController;
+ import com.android.documentsui.sorting.SortModel;
++import android.widget.LinearLayout;
++
+ 
+ import java.util.ArrayList;
+ import java.util.Date;
+@@ -89,6 +91,7 @@ public abstract class BaseActivity
+ 
+     protected NavigationViewManager mNavigator;
+     protected SortController mSortController;
++    protected LinearLayout mLinearLayout;
+ 
+     private final List<EventListener> mEventListeners = new ArrayList<>();
+     private final String mTag;
+@@ -143,6 +146,8 @@ public abstract class BaseActivity
+         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+         setActionBar(toolbar);
+ 
++        mLinearLayout = findViewById(R.id.dropdown_sort_widget);
++
+         Breadcrumb breadcrumb =
+                 Shared.findView(this, R.id.dropdown_breadcrumb, R.id.horizontal_breadcrumb);
+         assert(breadcrumb != null);
+@@ -354,6 +359,8 @@ public abstract class BaseActivity
+                 return true;
+ 
+             case R.id.option_menu_select_all:
++                //mLinearLayout.setVisibility(View.GONE);
++                //breadcrumb.setVisibility(View.GONE);
+                 getInjector().actions.selectAllFiles();
+                 return true;
+ 
+diff --git a/src/com/android/documentsui/DocumentsApplication.java b/src/com/android/documentsui/DocumentsApplication.java
+index bf09fb7..fefb5b1 100644
+--- a/src/com/android/documentsui/DocumentsApplication.java
++++ b/src/com/android/documentsui/DocumentsApplication.java
+@@ -47,8 +47,8 @@ public class DocumentsApplication extends Application {
+     private DragAndDropManager mDragAndDropManager;
+     private Lookup<String, String> mFileTypeLookup;
+     public static IPFS mhandleIPFS;
+-    public long mtag;
+ 
++    public Injector<?> mInjector;
+ 
+     public static ProvidersCache getProvidersCache(Context context) {
+         return ((DocumentsApplication) context.getApplicationContext()).mProviders;
+@@ -89,7 +89,6 @@ public class DocumentsApplication extends Application {
+     @Override
+     public void onCreate() {
+         super.onCreate();
+-        Log.d("XULU_LOG","DocumentsApplication onCreate");
+         final ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+         final int memoryClassBytes = am.getMemoryClass() * 1024 * 1024;
+ 
+@@ -144,8 +143,6 @@ public class DocumentsApplication extends Application {
+     class IPFSInitRunnable implements Runnable {
+         @Override
+         public void run() {
+-            mtag = Thread.currentThread().getId();
+-            Log.d("XULU_LOG","IPFSInitRunnable" + mtag);
+             if(mhandleIPFS == null) {
+                 mhandleIPFS = new IPFS("/ip4/127.0.0.1/tcp/5001");
+             }
+diff --git a/src/com/android/documentsui/MenuManager.java b/src/com/android/documentsui/MenuManager.java
+index 4a5b4a3..221224c 100644
+--- a/src/com/android/documentsui/MenuManager.java
++++ b/src/com/android/documentsui/MenuManager.java
+@@ -64,9 +64,7 @@ public abstract class MenuManager {
+         updateExtractTo(menu.findItem(R.id.action_menu_extract_to), selection);
+         updateViewInOwner(menu.findItem(R.id.action_menu_view_in_owner), selection);
+         updateInspector(menu.findItem(R.id.action_menu_inspector), selection);
+-	updateBackup(menu.findItem(R.id.action_menu_backup));
+-	updateGet(menu.findItem(R.id.action_menu_getdocuments));
+-
++        updateBackup(menu.findItem(R.id.action_menu_backup));
+ 
+         Menus.disableHiddenItems(menu);
+     }
+@@ -314,8 +312,7 @@ public abstract class MenuManager {
+     protected abstract void updateSelectAll(MenuItem selectAll);
+     protected abstract void updateCreateDir(MenuItem createDir);
+ 
+-    protected abstract void updateBackup(MenuItem storedecent);
+-    protected abstract void updateGet(MenuItem Downdecent);
++    protected abstract void updateBackup(MenuItem backupDSN);
+ 
+     /**
+      * Access to meta data about the selection.
+diff --git a/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java b/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java
+index d31b1e0..155998b 100644
+--- a/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java
++++ b/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java
+@@ -45,6 +45,8 @@ import android.view.View;
+ import android.view.ViewGroup;
+ import android.widget.ImageView;
+ import android.widget.Toast;
++import android.widget.TextView;
++
+ 
+ import com.android.documentsui.AbstractActionHandler;
+ import com.android.documentsui.ActionHandler;
+@@ -89,6 +91,8 @@ import com.android.documentsui.services.FileOperationService.OpType;
+ import com.android.documentsui.services.FileOperations;
+ import com.android.documentsui.sorting.SortDimension;
+ import com.android.documentsui.sorting.SortModel;
++import android.support.v7.widget.LinearLayoutManager;
++
+ 
+ import java.io.IOException;
+ import java.lang.annotation.Retention;
+@@ -101,17 +105,49 @@ import javax.annotation.Nullable;
+ import com.android.documentsui.DSNObjectMeta;
+ import com.android.documentsui.DSNObjectMetaLoader;
+ import com.android.documentsui.httpnetwork.HttpServer;
+-import com.android.documentsui.httpnetwork.ObjectMeta;
++import com.android.documentsui.httpnetwork.*;
++
++import com.fasterxml.jackson.core.type.TypeReference;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import com.android.documentsui.httpnetwork.Networks;
++
++
++import java.util.Collections;
++import java.util.HashMap;
++import java.util.LinkedHashMap;
++import java.util.Map;
++import android.util.Log;
++
+ 
++import rx.Completable;
++import rx.Observable;
++import rx.Observer;
++import rx.android.schedulers.AndroidSchedulers;
++import rx.schedulers.Schedulers;
++
++
++
++public class DSNDirectoryFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
++
++    protected BaseActivity mActivity;
++    protected View mProgressBar;
++    protected RecyclerView mRecView;
++    protected SwipeRefreshLayout mRefreshLayout;
++    @Injected
++    @ContentScoped
++    protected Injector<?> mInjector;
++    protected State mState;
++    protected Model mModel;
++    protected final Runnable mOnDisplayStateChanged = this::onDisplayStateChanged;
++    protected DocumentClipper mClipper;
++    protected @Nullable DragHoverListener mDragHoverListener;
++    protected IconHelper mIconHelper;
++    private DSNModelObjectMetaAdapter mDSNModelObjectMetaAdapter;
+ 
+-public class DSNDirectoryFragment extends DirectoryFragment {
+ 
+-    public static List<ObjectMeta> getModel = new ArrayList();
+-    private final LoaderBindings mBindings;
+ 
+     public DSNDirectoryFragment() {
+         super();
+-        mBindings = new LoaderBindings();
+     }
+ 
+     @Override
+@@ -121,10 +157,13 @@ public class DSNDirectoryFragment extends DirectoryFragment {
+         mActivity = (BaseActivity) getActivity();
+         final View view = inflater.inflate(R.layout.fragment_dsn_directory, container, false);
+ 
++
+         mProgressBar = view.findViewById(R.id.progressbar);
+         assert(mProgressBar != null);
+ 
++
+         mRecView = (RecyclerView) view.findViewById(R.id.dir_list);
++
+         mRecView.setRecyclerListener(
+                 new RecyclerListener() {
+                     @Override
+@@ -132,6 +171,7 @@ public class DSNDirectoryFragment extends DirectoryFragment {
+                         cancelThumbnailTask(holder.itemView);
+                     }
+                 });
++        mIconHelper = new IconHelper(mActivity, MODE_GRID);
+ 
+         mRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.refresh_layout);
+         mRefreshLayout.setOnRefreshListener(this);
+@@ -140,8 +180,12 @@ public class DSNDirectoryFragment extends DirectoryFragment {
+         mInjector = mActivity.getInjector();
+         mModel = mInjector.getModel();
+         mModel.reset();
+-       // Log.d("XULU_LOG","getHttpIpfsdata:" + getModel.get(0).get_account_id());
+-        //sLog.d("XULU_LOG","getHttpIpfsdata:" + getModel.get(0).get_object_name());
++        mDSNModelObjectMetaAdapter = new DSNModelObjectMetaAdapter(this,getContext());
++
++        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
++
++        mRecView.setLayoutManager(layoutManager);
++        mRecView.setAdapter(mDSNModelObjectMetaAdapter);
+ 
+         mInjector.actions.registerDisplayStateChangedListener(mOnDisplayStateChanged);
+ 
+@@ -155,33 +199,62 @@ public class DSNDirectoryFragment extends DirectoryFragment {
+     @Override
+     public void onStart() {
+         super.onStart();
++        mDSNModelObjectMetaAdapter.clearDNSModels();
+         Toast.makeText(getActivity(), "dsn onStart", Toast.LENGTH_LONG).show();
+-        getActivity().getLoaderManager().restartLoader(1001, null, mBindings);
+-        HttpServer.getInstance().getHttpIpfsdata();
++
++        onStartNetworkRequest();
++
+     }
++
++
+     @Override
+     public void onRefresh() {
+         mRefreshLayout.setRefreshing(false);
+     }
++    private void onDisplayStateChanged() {
++    }
++    protected void cancelThumbnailTask(View view) {
++        final ImageView iconThumb = (ImageView) view.findViewById(R.id.icon_thumb);
++        if (iconThumb != null) {
++            mIconHelper.stopLoading(iconThumb);
++        }
++    }
+ 
+-    private final class LoaderBindings implements LoaderManager.LoaderCallbacks<DSNObjectMeta> {
++    private void onStartNetworkRequest(){
++        String accountID = "Brahmaos";
++        Networks.getInstance().gethttpIpfsApi()
++                    .getDataFromIpfsCloud(accountID)
++                    .subscribeOn(Schedulers.io())
++                    .observeOn(AndroidSchedulers.mainThread())
++                    .subscribe(new Observer<ApiRespResult>() {
++                        @Override
++                        public void onCompleted() {
++                        }
++                        @Override
++                        public void onError(Throwable throwable) {
++                            throwable.printStackTrace();
++                        }
++                        @Override
++                        public void onNext(ApiRespResult apr) {
++                            if (apr.getResult() == 0 && apr.getData().containsKey(ApiConst.PARAM_QUOTES)) {
++                                ObjectMapper objectMapper = new ObjectMapper();
++                                try {
++                                    List<ObjectMeta> objectlist = objectMapper.readValue(objectMapper.writeValueAsString(apr.getData().get(ApiConst.PARAM_QUOTES)), new TypeReference<List<ObjectMeta>>() {});
++                                    ObjectMeta tmpobj = objectlist.get(0);
++                                    for(ObjectMeta objectMeta: objectlist)
++                                       mDSNModelObjectMetaAdapter.addDNSModelsObjectMeta(objectMeta);
+ 
+-        @Override
+-        public Loader<DSNObjectMeta> onCreateLoader(int id, Bundle args) {
+-            Context context = getActivity();
+-            return new DSNObjectMetaLoader(context);
+-        }
++                                } catch (IOException e1) {
++                                    e1.printStackTrace();
++                                }
++                            } else {
++                            }
+ 
+-        @Override
+-        public void onLoadFinished(Loader<DSNObjectMeta> loader, DSNObjectMeta result) {
+-            assert(result != null);
+-            Toast.makeText(getActivity(), result.hashKey, Toast.LENGTH_LONG).show();
+-        }
++                            mDSNModelObjectMetaAdapter.notifyDataSetChanged();
++                       }
++
++           });
+ 
+-        @Override
+-        public void onLoaderReset(Loader<DSNObjectMeta> loader) {
+-            Toast.makeText(getActivity(), "dsn onLoaderReset", Toast.LENGTH_LONG).show();
+-        }
+     }
+ 
+ }
+diff --git a/src/com/android/documentsui/dirlist/DSNModelObjectMetaAdapter.java b/src/com/android/documentsui/dirlist/DSNModelObjectMetaAdapter.java
+new file mode 100644
+index 0000000..836b144
+--- /dev/null
++++ b/src/com/android/documentsui/dirlist/DSNModelObjectMetaAdapter.java
+@@ -0,0 +1,154 @@
++/*
++ * Copyright (C) 2015 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.documentsui.dirlist;
++
++import static com.android.documentsui.base.DocumentInfo.getCursorInt;
++import static com.android.documentsui.base.DocumentInfo.getCursorString;
++import static com.android.documentsui.base.State.MODE_GRID;
++import static com.android.documentsui.base.State.MODE_LIST;
++
++import android.database.Cursor;
++import android.provider.DocumentsContract.Document;
++import android.util.Log;
++import android.view.ViewGroup;
++
++import com.android.documentsui.Model;
++import com.android.documentsui.base.EventListener;
++import com.android.documentsui.base.Lookup;
++import com.android.documentsui.base.State;
++import com.android.documentsui.Model.Update;
++
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Iterator;
++
++import android.text.format.Formatter;
++import android.support.v7.widget.RecyclerView;
++import com.android.documentsui.R;
++import android.widget.TextView;
++import android.widget.ImageView;
++import android.view.View;
++import android.support.v7.widget.LinearLayoutManager;
++import android.view.LayoutInflater;
++import android.support.v7.widget.LinearLayoutManager;
++import android.graphics.Color;
++import com.android.documentsui.httpnetwork.ObjectMeta;
++import android.content.Intent;
++import com.android.documentsui.base.Shared;
++import android.net.Uri;
++import android.app.Activity;
++import android.content.Context;
++import android.app.Fragment;
++import com.android.documentsui.files.DSNFilesActivity;
++
++
++
++/**
++ * Adapts from dirlist.Model to something RecyclerView understands.
++ */
++final class DSNModelObjectMetaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
++        public List<ObjectMeta> mDSNModel = new ArrayList();
++        private Fragment mfragment;
++        private Context  mContext;
++
++        @Override
++        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
++            View rootView = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_item_dsn, parent, false);
++
++            return new DSNModelObjectMetaAdapter.ItemViewHolder(rootView);
++        }
++        public DSNModelObjectMetaAdapter(Fragment fragment, Context context) {
++            mfragment = fragment;
++            mContext = context;
++        }
++
++        @Override
++        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
++            DSNModelObjectMetaAdapter.ItemViewHolder itemViewHolder = (DSNModelObjectMetaAdapter.ItemViewHolder) holder;
++            ObjectMeta mObjectMeta = mDSNModel.get(position);
++            setData(itemViewHolder, mObjectMeta);
++            itemViewHolder.itemView.setOnClickListener(new View.OnClickListener() {
++                @Override public void onClick(View v) {
++                    Log.e("XULU_LOG","onBindViewHolder"+position);
++                    Intent intent = new Intent(mfragment.getActivity(),DSNFilesActivity.class);
++                    intent.putExtra("DSNObjectMeta", mDSNModel.get(position));
++                    mfragment.startActivity(intent);
++                }
++            });
++       }
++
++        public void addDNSModelsObjectMeta(ObjectMeta objectMeta) {
++               mDSNModel.add(objectMeta);
++        }
++        public void clearDNSModels() {
++            mDSNModel.removeAll(mDSNModel);
++        }
++         /**
++         * return Item object
++         */
++        @Override
++        public long getItemId(int position) {
++             return position;
++        }
++
++        /**
++         * set account view
++         */
++        private void setData(DSNModelObjectMetaAdapter.ItemViewHolder holder, final ObjectMeta Meta) {
++            if (Meta == null) {
++                return ;
++            }
++            holder.tvDSNShoreName.setText(Meta.getobjectname());
++            holder.tvDSNDate.setText(Meta.getobjectsynctime());
++            if (Meta.getobjectsize() > -1) {
++                holder.tvDSNSize.setVisibility(View.VISIBLE);
++                holder.tvDSNSize.setText(Formatter.formatFileSize(mContext, Meta.getobjectsize()));
++            } else {
++                holder.tvDSNSize.setVisibility(View.INVISIBLE);
++            }
++            if(Meta.getmimetype().contains("text")){
++                holder.ivDSNIcon.setImageResource(R.drawable.ic_lable_txt);
++            }else if(Meta.getmimetype().contains("jpeg")){
++                holder.ivDSNIcon.setImageResource(R.drawable.ic_lable_jpg);
++            }else if(Meta.getmimetype().contains("zip")){
++                holder.ivDSNIcon.setImageResource(R.drawable.ic_lable_zip);
++            }
++
++        }
++
++        @Override
++        public int getItemCount() {
++            return mDSNModel.size();
++        }
++
++        class ItemViewHolder extends RecyclerView.ViewHolder {
++            ImageView ivDSNIcon;
++            TextView tvDSNShoreName;
++            TextView tvDSNDate;
++            TextView tvDSNSize;
++
++            ItemViewHolder(View itemView) {
++                super(itemView);
++                ivDSNIcon = itemView.findViewById(R.id.iv_dsn_icon);
++                tvDSNShoreName = itemView.findViewById(R.id.tv_dsn_short_name);
++                tvDSNDate = itemView.findViewById(R.id.tv_dsn_date);
++                tvDSNSize = itemView.findViewById(R.id.tv_dsn_size);
++
++        }
++   }
++}
++
+diff --git a/src/com/android/documentsui/dirlist/DirectoryFragment.java b/src/com/android/documentsui/dirlist/DirectoryFragment.java
+index 4585026..c33e89f 100644
+--- a/src/com/android/documentsui/dirlist/DirectoryFragment.java
++++ b/src/com/android/documentsui/dirlist/DirectoryFragment.java
+@@ -273,9 +273,6 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+     public void onActivityCreated(Bundle savedInstanceState) {
+         super.onActivityCreated(savedInstanceState);
+ 
+-
+-
+-
+         mState = mActivity.getDisplayState();
+ 
+         // Read arguments when object created for the first time.
+@@ -652,11 +649,6 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+                 // It won't end action mode if user cancels the delete.
+                 mActions.backupDocuments();
+                 return true;
+-			case R.id.action_menu_getdocuments:
+-						// deleteDocuments will end action mode if the documents are deleted.
+-						// It won't end action mode if user cancels the delete.
+-				mActions.getDocuments();
+-				return true;
+ 
+             case R.id.action_menu_copy_to:
+                 transferDocuments(selection, null, FileOperationService.OPERATION_COPY);
+@@ -1048,7 +1040,7 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+         AnimationView.setupAnimations(ft, anim, args);
+ 
+         if (root != null && root.authority != null && root.authority.equals("com.android.providers.decentercloud.documents")) {
+-            final DirectoryFragment fragment = new DSNDirectoryFragment();
++            final Fragment fragment = new DSNDirectoryFragment();
+             args.putBoolean(Shared.FRAGMENT_MARK, true);
+             fragment.setArguments(args);
+ 
+diff --git a/src/com/android/documentsui/files/ActionHandler.java b/src/com/android/documentsui/files/ActionHandler.java
+index 0f6f612..6d4d68f 100644
+--- a/src/com/android/documentsui/files/ActionHandler.java
++++ b/src/com/android/documentsui/files/ActionHandler.java
+@@ -386,56 +386,6 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+ 
+         mDialogs.confirmBackup(docs, result);
+     }
+-    @Override
+-    public void getDocuments() {
+-        Metrics.logUserAction(mActivity, Metrics.USER_ACTION_DELETE);
+-        Selection selection = getSelectedOrFocused();
+-
+-        if (selection.isEmpty()) {
+-            return;
+-        }
+-
+-        final @Nullable DocumentInfo srcParent = mState.stack.peek();
+-
+-        // Model must be accessed in UI thread, since underlying cursor is not threadsafe.
+-        List<DocumentInfo> docs = mModel.getDocuments(selection);
+-
+-        ConfirmationCallback result = (@Result int code) -> {
+-            // share the news with our caller, be it good or bad.
+-            mActionModeAddons.finishOnConfirmed(code);
+-
+-            if (code != ConfirmationCallback.CONFIRM) {
+-                return;
+-            }
+-
+-            UrisSupplier srcs;
+-            try {
+-                srcs = UrisSupplier.create(
+-                        selection,
+-                        mModel::getItemUri,
+-                        mClipStore);
+-            } catch (Exception e) {
+-                Log.e(TAG,"Failed to delete a file because we were unable to get item URIs.", e);
+-                mDialogs.showFileOperationStatus(
+-                        FileOperations.Callback.STATUS_FAILED,
+-                        FileOperationService.OPERATION_GETDOCUMENTS,
+-                        selection.size());
+-                return;
+-            }
+-
+-            FileOperation operation = new FileOperation.Builder()
+-                    .withOpType(FileOperationService.OPERATION_GETDOCUMENTS)
+-                    .withDestination(mState.stack)
+-                    .withSrcs(srcs)
+-                    .withSrcParent(srcParent == null ? null : srcParent.derivedUri)
+-                    .build();
+-
+-            FileOperations.start(mActivity, operation, mDialogs::showFileOperationStatus,
+-                    FileOperations.createJobId());
+-        };
+-
+-        mDialogs.confirmDelete(docs, result);
+-    }
+ 
+     @Override
+     public void shareSelectedDocuments() {
+diff --git a/src/com/android/documentsui/files/DSNFilesActivity.java b/src/com/android/documentsui/files/DSNFilesActivity.java
+new file mode 100644
+index 0000000..7f09755
+--- /dev/null
++++ b/src/com/android/documentsui/files/DSNFilesActivity.java
+@@ -0,0 +1,457 @@
++/*
++ * Copyright (C) 2015 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.documentsui.files;
++
++import static com.android.documentsui.base.Shared.DEBUG;
++import static com.android.documentsui.base.Shared.EXTRA_BENCHMARK;
++import static com.android.documentsui.base.State.MODE_GRID;
++
++import android.app.Activity;
++import android.app.Fragment;
++import android.content.Intent;
++import android.content.pm.PackageInfo;
++import android.content.pm.PackageManager;
++import android.content.pm.ProviderInfo;
++import android.net.Uri;
++import android.os.Bundle;
++import android.os.MessageQueue.IdleHandler;
++import android.preference.PreferenceManager;
++import android.provider.DocumentsContract;
++import android.support.annotation.CallSuper;
++import android.support.annotation.LayoutRes;
++import android.support.annotation.VisibleForTesting;
++import android.util.Log;
++import android.view.KeyEvent;
++import android.view.Menu;
++import android.view.MenuItem;
++import android.view.View;
++import android.support.v7.widget.Toolbar;
++import android.support.v7.app.ActionBar;
++import android.support.v7.app.AppCompatActivity;
++import android.widget.TextView;
++import android.text.format.Formatter;
++
++
++
++import com.android.documentsui.AbstractActionHandler.CommonAddons;
++import com.android.documentsui.Injector.Injected;
++import com.android.documentsui.base.DocumentInfo;
++import com.android.documentsui.base.EventHandler;
++import com.android.documentsui.base.RootInfo;
++import com.android.documentsui.base.Shared;
++import com.android.documentsui.base.State;
++import com.android.documentsui.base.State.ViewMode;
++import com.android.documentsui.dirlist.AnimationView;
++import com.android.documentsui.dirlist.DirectoryFragment;
++import com.android.documentsui.prefs.LocalPreferences;
++import com.android.documentsui.prefs.Preferences;
++import com.android.documentsui.prefs.PreferencesMonitor;
++import com.android.documentsui.prefs.ScopedPreferences;
++import com.android.documentsui.queries.CommandInterceptor;
++import com.android.documentsui.queries.SearchViewManager;
++import com.android.documentsui.queries.SearchViewManager.SearchManagerListener;
++import com.android.documentsui.roots.ProvidersCache;
++import com.android.documentsui.selection.Selection;
++import com.android.documentsui.sidebar.RootsFragment;
++import com.android.documentsui.sorting.SortController;
++import com.android.documentsui.sorting.SortModel;
++import com.android.documentsui.Injector.ContentScoped;
++import com.android.documentsui.ui.MessageBuilder;
++import com.android.documentsui.services.FileOperationService.OpType;
++
++
++import java.util.ArrayList;
++import java.util.Date;
++import java.util.List;
++import com.android.documentsui.*;
++import com.android.documentsui.base.Menus;
++import com.android.documentsui.base.ConfirmationCallback;
++import com.android.documentsui.base.ConfirmationCallback.Result;
++import com.android.documentsui.selection.Selection;
++import com.android.documentsui.services.FileOperation;
++import com.android.documentsui.services.FileOperationService;
++import com.android.documentsui.services.FileOperations;
++import com.android.documentsui.ActionModeAddons;
++import com.android.documentsui.clipping.UrisSupplier;
++import com.android.documentsui.ui.DialogController;
++import com.android.documentsui.clipping.ClipStore;
++import com.android.documentsui.ui.DialogController;
++import com.android.documentsui.base.Features;
++
++import android.annotation.IntDef;
++import javax.annotation.Nullable;
++import io.ipfs.api.IPFS;
++import java.lang.annotation.Retention;
++import java.lang.annotation.RetentionPolicy;
++import com.android.documentsui.services.DownloadDocumentsFromDSNJob;
++import com.android.documentsui.httpnetwork.ObjectMeta;
++
++public class DSNFilesActivity extends AppCompatActivity  {
++
++    private static final String TAG = "DSNFilesActivity";
++
++    protected State mState;
++
++
++    protected DrawerController mDrawer;
++
++    protected NavigationViewManager mNavigator;
++    protected SortController mSortController;
++
++   // private final List<EventListener> mEventListeners = new ArrayList<>();
++    private final String mTag="Brahmaos";
++
++    private int mLayoutId;
++    private DocumentsApplication mApp;
++
++    @Injected
++    @ContentScoped
++    private Injector<?> mInjector;
++
++    @Injected
++    @ContentScoped
++    protected ActionHandler mActions;
++    protected DirectoryReloadLock mReloadLock = new DirectoryReloadLock();
++
++    protected DialogController mDialogs;
++
++    private TextView textViewHashKeyContent;
++    private TextView textViewMimeTypeContent;
++    private TextView textViewSizeContent;
++    private TextView textViewNameContent;
++    private TextView textViewCreateTimeContent;
++    private TextView textViewSyncTimeContent;
++    private TextView textViewBlockCOuntContent;
++
++
++    private PreferencesMonitor mPreferencesMonitor;
++    private ObjectMeta mObjectMeta;
++
++
++   // protected  void refreshDirectory(int anim);
++    /** Allows sub-classes to include information in a newly created State instance. */
++    //protected  void includeState(State initialState);
++   // protected  void onDirectoryCreated(DocumentInfo doc);
++
++   // public  Injector<?> getInjector();
++
++    @CallSuper
++    @Override
++    public void onCreate(Bundle icicle) {
++        // Record the time when onCreate is invoked for metric.
++
++        super.onCreate(icicle);
++
++        //final Intent intent = getIntent();
++
++        mObjectMeta = (ObjectMeta) getIntent().getSerializableExtra("DSNObjectMeta");
++
++        setContentView(R.layout.dsn_drawer_layout);
++
++        textViewHashKeyContent = (TextView)findViewById(R.id.tv_hashkey_content);
++        textViewHashKeyContent.setText(mObjectMeta.getobjectkey());
++        textViewMimeTypeContent = (TextView)findViewById(R.id.tv_mimetype_content);
++        textViewMimeTypeContent.setText(mObjectMeta.getmimetype());
++        textViewSizeContent = (TextView)findViewById(R.id.tv_size_content);
++        textViewSizeContent.setText(String.valueOf(mObjectMeta.getobjectsize()));
++
++        if (mObjectMeta.getobjectsize() > -1) {
++            textViewSizeContent.setVisibility(View.VISIBLE);
++            textViewSizeContent.setText(Formatter.formatFileSize(getApplicationContext(), mObjectMeta.getobjectsize()));
++        } else {
++            textViewSizeContent.setVisibility(View.INVISIBLE);
++        }
++
++        textViewNameContent = (TextView)findViewById(R.id.tv_name_content);
++        textViewNameContent.setText(mObjectMeta.getobjectname());
++        textViewCreateTimeContent = (TextView)findViewById(R.id.tv_createtime_content);
++        textViewCreateTimeContent.setText(mObjectMeta.getobjectcreate_time());
++        textViewSyncTimeContent = (TextView)findViewById(R.id.tv_synctime_content);
++        textViewSyncTimeContent.setText(mObjectMeta.getobjectsynctime());
++        textViewBlockCOuntContent = (TextView)findViewById(R.id.tv_blockcount_content);
++        textViewBlockCOuntContent.setText(mObjectMeta.getobjectBlockCnt());
++
++
++
++        //Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
++        //setActionBar(toolbar);
++        showNavBackBtn();
++
++        mPreferencesMonitor = new PreferencesMonitor(
++                getApplicationContext().getPackageName(),
++                PreferenceManager.getDefaultSharedPreferences(this),
++                this::onPreferenceChanged);
++        mPreferencesMonitor.start();
++
++        // Base classes must update result in their onCreate.
++        setResult(Activity.RESULT_CANCELED);
++        mApp = (DocumentsApplication)getApplication();
++        mInjector = mApp.mInjector;
++        mActions = (ActionHandler)mInjector.getActionHandler(mReloadLock);
++
++        MessageBuilder messages = new MessageBuilder(this);
++        Features features = Features.create(this);
++
++        mDialogs = DialogController.create(features, this, messages);
++
++
++    }
++
++    public void onPreferenceChanged(String pref) {
++        // For now, we only work with prefs that we backup. This
++        // just limits the scope of what we expect to come flowing
++        // through here until we know we want more and fancier options.
++        assert(Preferences.shouldBackup(pref));
++
++        switch (pref) {
++            case ScopedPreferences.INCLUDE_DEVICE_ROOT:
++                updateDisplayAdvancedDevices(mInjector.prefs.getShowDeviceRoot());
++        }
++    }
++
++    @Override
++    protected void onPostCreate(Bundle savedInstanceState) {
++        super.onPostCreate(savedInstanceState);
++    }
++
++
++    @Override
++    protected void onDestroy() {
++       // mRootsMonitor.stop();
++        mPreferencesMonitor.stop();
++        //mSortController.destroy();
++        super.onDestroy();
++    }
++
++    private State getState(@Nullable Bundle icicle) {
++        if (icicle != null) {
++            State state = icicle.<State>getParcelable(Shared.EXTRA_STATE);
++            if (DEBUG) Log.d(mTag, "Recovered existing state object: " + state);
++            return state;
++        }
++
++        State state = new State();
++
++        final Intent intent = getIntent();
++
++        state.sortModel = SortModel.createModel();
++        state.localOnly = intent.getBooleanExtra(Intent.EXTRA_LOCAL_ONLY, false);
++        state.excludedAuthorities = getExcludedAuthorities();
++
++        //includeState(state);
++
++        state.showAdvanced = Shared.mustShowDeviceRoot(intent)
++                || mInjector.prefs.getShowDeviceRoot();
++
++        // Only show the toggle if advanced isn't forced enabled.
++        state.showDeviceStorageOption = !Shared.mustShowDeviceRoot(intent);
++
++        if (DEBUG) Log.d(mTag, "Created new state object: " + state);
++
++        return state;
++    }
++
++    @Override
++    public boolean onCreateOptionsMenu(Menu menu) {
++        boolean showMenu = super.onCreateOptionsMenu(menu);
++        getMenuInflater().inflate(R.menu.dsn_files_activity, menu);
++        return showMenu;
++    }
++    // set return item
++    protected void showNavBackBtn() {
++        Toolbar toolbar = findViewById(R.id.toolbar);
++
++        if (toolbar != null) {
++            setSupportActionBar(toolbar);
++            ActionBar ab = getSupportActionBar();
++            if (ab != null) {
++                ab.setDisplayHomeAsUpEnabled(true);
++                ab.setDisplayShowHomeEnabled(true);
++            }
++        }
++    }
++
++    @Override
++    public boolean onPrepareOptionsMenu(Menu menu) {
++       super.onPrepareOptionsMenu(menu);
++
++       MenuItem  option_menu_delete ;
++       option_menu_delete = menu.findItem(R.id.option_menu_delete);
++       option_menu_delete.setVisible(true);
++       option_menu_delete.setEnabled(true);
++       MenuItem  option_menu_download ;
++       option_menu_download = menu.findItem(R.id.option_menu_download);
++       option_menu_download.setVisible(true);
++       option_menu_download.setEnabled(true);
++
++       Menus.disableHiddenItems(menu);
++
++       return true;
++    }
++
++    @Override
++    public boolean onOptionsItemSelected(MenuItem item) {
++        DirectoryFragment dir;
++        switch (item.getItemId()) {
++            case R.id.option_menu_delete:
++                Log.d("XULU_LOG","onOptionsItemSelected detele");
++                Intent intent = new Intent(this,DSNFilesActivity.class);
++                intent.putExtra("DSNObjectMeta", mObjectMeta);
++                this.startActivity(intent);
++                break;
++            case R.id.option_menu_download:
++                Log.d("XULU_LOG","onOptionsItemSelected download");
++                downloadDocumentsFromDSN();
++                break;
++            case android.R.id.home:
++                finish();
++            default:
++                return super.onOptionsItemSelected(item);
++        }
++        return true;
++    }
++    public void downloadDocumentsFromDSN() {
++        List<DocumentInfo> docs = null;
++        ConfirmationCallback result = (@Result int code) -> {
++            // share the news with our caller, be it good or bad.
++
++            if (code != ConfirmationCallback.CONFIRM) {
++                return;
++            }
++            FileOperation operation = new FileOperation.Builder()
++                    .withOpType(FileOperationService.OPERATION_DOWNLOADDOCUMENTSFROMDSN)
++                    .build();
++
++            startDownloadDocumentsFromDSN(operation, mDialogs::showFileOperationStatus,
++                    FileOperations.createJobId());
++        };
++
++        mDialogs.confirmdownloadDocumentsFromDSN(docs, result);
++    }
++
++
++    protected final @Nullable DirectoryFragment getDirectoryFragment() {
++        return DirectoryFragment.get(getFragmentManager());
++    }
++
++    public void startDownloadDocumentsFromDSN(FileOperation operation, Callback callback,
++            @Nullable String jobId) {
++
++        callback.onOperationResult(Callback.STATUS_ACCEPTED, operation.getOpType(),1);
++        DownloadDocumentsFromDSNJob mDownloadDocumentsFromDSNJob= new DownloadDocumentsFromDSNJob(this,mObjectMeta);
++        Thread mThreadJob = new Thread(mDownloadDocumentsFromDSNJob);
++        mThreadJob.start();
++    }
++
++    /**
++     * Returns true if a directory can be created in the current location.
++     * @return
++     */
++
++    private final List<String> getExcludedAuthorities() {
++        List<String> authorities = new ArrayList<>();
++        if (getIntent().getBooleanExtra(DocumentsContract.EXTRA_EXCLUDE_SELF, false)) {
++            // Exclude roots provided by the calling package.
++            String packageName = Shared.getCallingPackageName(this);
++            try {
++                PackageInfo pkgInfo = getPackageManager().getPackageInfo(packageName,
++                        PackageManager.GET_PROVIDERS);
++                for (ProviderInfo provider: pkgInfo.providers) {
++                    authorities.add(provider.authority);
++                }
++            } catch (PackageManager.NameNotFoundException e) {
++                Log.e(mTag, "Calling package name does not resolve: " + packageName);
++            }
++        }
++        return authorities;
++    }
++
++    public static BaseActivity get(Fragment fragment) {
++        return (BaseActivity) fragment.getActivity();
++    }
++
++    public State getDisplayState() {
++        return mState;
++    }
++
++    /**
++     * Set internal storage visible based on explicit user action.
++     */
++    private void onDisplayAdvancedDevices() {
++        boolean display = !mState.showAdvanced;
++        Metrics.logUserAction(this,
++                display ? Metrics.USER_ACTION_SHOW_ADVANCED : Metrics.USER_ACTION_HIDE_ADVANCED);
++
++        mInjector.prefs.setShowDeviceRoot(display);
++        updateDisplayAdvancedDevices(display);
++    }
++
++    private void updateDisplayAdvancedDevices(boolean display) {
++        mState.showAdvanced = display;
++        @Nullable RootsFragment fragment = RootsFragment.get(getFragmentManager());
++        if (fragment != null) {
++            // This also takes care of updating launcher shortcuts (which are roots :)
++            fragment.onDisplayStateChanged();
++        }
++        invalidateOptionsMenu();
++    }
++
++    /**
++     * Set mode based on explicit user action.
++     */
++    void setViewMode(@ViewMode int mode) {
++        if (mode == State.MODE_GRID) {
++            Metrics.logUserAction(this, Metrics.USER_ACTION_GRID);
++        } else if (mode == State.MODE_LIST) {
++            Metrics.logUserAction(this, Metrics.USER_ACTION_LIST);
++        }
++
++       // LocalPreferences.setViewMode(this, getCurrentRoot(), mode);
++        mState.derivedMode = mode;
++
++        // view icon needs to be updated, but we *could* do it
++        // in onOptionsItemSelected, and not do the full invalidation
++        // But! That's a larger refactoring we'll save for another day.
++        invalidateOptionsMenu();
++        DirectoryFragment dir = getDirectoryFragment();
++        if (dir != null) {
++            dir.onViewModeChanged();
++        }
++
++        mSortController.onViewModeChanged(mode);
++    }
++
++    @FunctionalInterface
++    public interface Callback {
++        @Retention(RetentionPolicy.SOURCE)
++        @IntDef({STATUS_ACCEPTED, STATUS_REJECTED})
++        @interface Status {}
++        static final int STATUS_ACCEPTED = 0;
++        static final int STATUS_REJECTED = 1;
++        static final int STATUS_FAILED = 2;
++
++        /**
++         * Performs operation when the file operation starts or fails to start.
++         *
++         * @param status {@link Status} of this operation.
++         * @param opType file operation type {@link OpType}.
++         * @param docCount number of documents operated.
++         */
++        void onOperationResult(@Status int status, @OpType int opType, int docCount);
++    }
++
++}
+diff --git a/src/com/android/documentsui/files/FilesActivity.java b/src/com/android/documentsui/files/FilesActivity.java
+index e5355a2..95f58bb 100644
+--- a/src/com/android/documentsui/files/FilesActivity.java
++++ b/src/com/android/documentsui/files/FilesActivity.java
+@@ -81,6 +81,8 @@ public class FilesActivity extends BaseActivity implements ActionHandler.Addons
+     private ActivityInputHandler mActivityInputHandler;
+     private SharedInputHandler mSharedInputHandler;
+ 
++    private DocumentsApplication mApp;
++
+     public FilesActivity() {
+         super(R.layout.files_activity, TAG);
+     }
+@@ -177,6 +179,9 @@ public class FilesActivity extends BaseActivity implements ActionHandler.Addons
+         }
+ 
+         presentFileErrors(icicle, intent);
++
++        mApp = (DocumentsApplication)getApplication();
++        mApp.mInjector = getInjector();
+     }
+ 
+     // This is called in the intent contains label and icon resources.
+diff --git a/src/com/android/documentsui/files/MenuManager.java b/src/com/android/documentsui/files/MenuManager.java
+index 51cb2fc..81ac16a 100644
+--- a/src/com/android/documentsui/files/MenuManager.java
++++ b/src/com/android/documentsui/files/MenuManager.java
+@@ -242,14 +242,9 @@ public final class MenuManager extends com.android.documentsui.MenuManager {
+         storedecent.setEnabled(mDirDetails.canCreateDirectory());
+     }
+     @Override
+-    protected void updateBackup(MenuItem Downdecent) {
+-        Downdecent.setVisible(true);
+-        Downdecent.setEnabled(true);
+-    }
+-	    @Override
+-    protected void updateGet(MenuItem createDir) {
+-        createDir.setVisible(true);
+-        createDir.setEnabled(true);
++    protected void updateBackup(MenuItem backupDSN) {
++        backupDSN.setVisible(true);
++        backupDSN.setEnabled(true);
+     }
+ 
+     @Override
+diff --git a/src/com/android/documentsui/httpnetwork/HttpServer.java b/src/com/android/documentsui/httpnetwork/HttpServer.java
+index ee4df89..88c630c 100644
+--- a/src/com/android/documentsui/httpnetwork/HttpServer.java
++++ b/src/com/android/documentsui/httpnetwork/HttpServer.java
+@@ -26,6 +26,7 @@ import com.android.documentsui.dirlist.DSNDirectoryFragment;
+ 
+ 
+ public class HttpServer extends BaseService{
++    public final String TAG = "HttpServer";
+     @Override
+     protected String tag() {
+         return HttpServer.class.getName();
+@@ -45,8 +46,7 @@ public class HttpServer extends BaseService{
+     private boolean isHaveAccount;
+ 
+     //GET
+-    //public String accountID = "brahmaos";
+-    public String accountID = "111";
++    String accountID ="Brahmaos";
+     public void getHttpIpfsdata() {
+             Networks.getInstance().gethttpIpfsApi()
+                     .getDataFromIpfsCloud(accountID)
+@@ -55,32 +55,32 @@ public class HttpServer extends BaseService{
+                     .subscribe(new Observer<ApiRespResult>() {
+                         @Override
+                         public void onCompleted() {
+-                            Log.d("XULU_LOG","getKyberTokens onCompleted");
++                            Log.d(TAG,"gethttpIpfsApi onCompleted");
+                         }
+ 
+                         @Override
+                         public void onError(Throwable throwable) {
+                             throwable.printStackTrace();
+-                            Log.d("XULU_LOG","getKyberTokens onError");
++                            Log.d(TAG,"gethttpIpfsApi onError");
+                         }
+ 
+                         @Override
+                         public void onNext(ApiRespResult apr) {
+-                        Log.d("XULU_LOG","onNext" + apr.toString());
++                        Log.d(TAG,"onNext" + apr.toString());
+                             if (apr.getResult() == 0 && apr.getData().containsKey(ApiConst.PARAM_QUOTES)) {
+                                 ObjectMapper objectMapper = new ObjectMapper();
+                                 try {
+                                     List<ObjectMeta> objectlist = objectMapper.readValue(objectMapper.writeValueAsString(apr.getData().get(ApiConst.PARAM_QUOTES)), new TypeReference<List<ObjectMeta>>() {});
+                                     ObjectMeta tmpobj = objectlist.get(0);
+-                                    for(ObjectMeta getObjectMeta: objectlist)
+-                                       DSNDirectoryFragment.getModel.add(getObjectMeta);
++                                    //for(ObjectMeta getObjectMeta: objectlist)
++                                     //  DSNDirectoryFragment.getModel.add(getObjectMeta);
+                                       //Log.d("XULU_LOG","getHttpIpfsdata:" + xx.get_account_id());
+                                       //Log.d("XULU_LOG","getHttpIpfsdata:" + xx.get_object_name());
+                                 } catch (IOException e1) {
+                                     e1.printStackTrace();
+                                 }
+                             } else {
+-                                Log.d("XULU_LOG","getHttpIpfsdata");
++                                Log.d(TAG,"getHttpIpfsdata");
+                             }
+                        }
+ 
+@@ -94,16 +94,16 @@ public class HttpServer extends BaseService{
+                 .subscribe(new Observer<LinkedHashMap<String, Object>>() {
+                     @Override
+                     public void onCompleted() {
+-                        Log.d("XULU_LOG","postHttpIpfsdata onCompleted");
++                        Log.d(TAG,"postHttpIpfsdata onCompleted");
+                     }
+                     @Override
+                     public void onError(Throwable throwable) {
+                         throwable.printStackTrace();
+-                        Log.d("XULU_LOG","postHttpIpfsdata onError");
++                        Log.d(TAG,"postHttpIpfsdata onError");
+                     }
+                     @Override
+                     public void onNext(LinkedHashMap<String, Object> apr) {
+-			            Log.d("XULU_LOG","postHttpIpfsdata:"+ apr.toString());
++			            Log.d(TAG,"postHttpIpfsdata:"+ apr.toString());
+                     }
+                 });
+     }
+diff --git a/src/com/android/documentsui/httpnetwork/ObjectMeta.java b/src/com/android/documentsui/httpnetwork/ObjectMeta.java
+index c3ce97e..64d8367 100644
+--- a/src/com/android/documentsui/httpnetwork/ObjectMeta.java
++++ b/src/com/android/documentsui/httpnetwork/ObjectMeta.java
+@@ -25,62 +25,72 @@ public class ObjectMeta implements Serializable {
+     private String objectCreateTime;
+     @JsonProperty("object_sync_time")
+     private String objectSyncTime;
++    @JsonProperty("object_block_cnt")
++    private String objectBlockCnt;
+ 
+     //	account_id
+-    public String get_account_id() {
++    public String getaccountid() {
+         return accountId;
+     }
+-    public void set_account_id(String accountId) {
++    public void setaccountid(String accountId) {
+         this.accountId = accountId;
+     }
+     //	object_key
+-    public String get_object_key() {
++    public String getobjectkey() {
+         return objectKey;
+     }
+ 
+-    public void set_object_key(String objectKey) {
++    public void setobjectkey(String objectKey) {
+         this.objectKey = objectKey;
+     }
+     //	mime_type
+-    public String getmime_type() {
++    public String getmimetype() {
+         return mimeType;
+     }
+ 
+-    public void set_mime_type(String mimeType) {
++    public void setmimetype(String mimeType) {
+         this.mimeType = mimeType;
+     }
+     // object_name
+-    public String get_object_name() {
++    public String getobjectname() {
+         return objectName;
+     }
+ 
+-    public void set_object_name(String objectName) {
++    public void setobjectname(String objectName) {
+         this.objectName = objectName;
+     }
+     //	object_size
+-    public int get_object_size() {
++    public int getobjectsize() {
+         return objectSize;
+     }
+ 
+-    public void set_object_size(int objectSize) {
++    public void setobjectsize(int objectSize) {
+         this.objectSize = objectSize;
+     }
+     // object_create_time
+-    public String get_object_create_time() {
++    public String getobjectcreate_time() {
+         return objectCreateTime;
+     }
+ 
+-    public void set_object_create_time(String objectCreateTime) {
++    public void setobjectcreatetime(String objectCreateTime) {
+         this.objectCreateTime = objectCreateTime;
+     }
+     // object_sync_time
+-    public String get_object_sync_time() {
++    public String getobjectsynctime() {
+         return objectSyncTime;
+     }
+ 
+-    public void set_object_sync_time(String objectSyncTime) {
++    public void setobjectsynctime(String objectSyncTime) {
+         this.objectSyncTime = objectSyncTime;
+     }
++    // object_block_cnt
++    public String getobjectBlockCnt() {
++        return objectBlockCnt;
++    }
++
++    public void setobjectBlockCnt(String objectBlockCnt) {
++        this.objectBlockCnt = objectBlockCnt;
++    }
+     public String toString() {
+         return "ObjectMetaPost{" +
+                 "account_id='" + accountId + '\'' +
+diff --git a/src/com/android/documentsui/picker/MenuManager.java b/src/com/android/documentsui/picker/MenuManager.java
+index c501042..4bf5e2a 100644
+--- a/src/com/android/documentsui/picker/MenuManager.java
++++ b/src/com/android/documentsui/picker/MenuManager.java
+@@ -78,23 +78,16 @@ public final class MenuManager extends com.android.documentsui.MenuManager {
+         selectAll.setVisible(enabled);
+         selectAll.setEnabled(enabled);
+     }
+-
+     @Override
+     protected void updateCreateDir(MenuItem createDir) {
+         createDir.setVisible(picking());
+         createDir.setEnabled(picking() && mDirDetails.canCreateDirectory());
+     }
+     @Override
+-    protected void updateBackup(MenuItem createDir) {
+-        createDir.setVisible(picking());
+-        createDir.setEnabled(picking() && mDirDetails.canCreateDirectory());
+-    }
+-    @Override
+-    protected void updateGet(MenuItem createDir) {
+-        createDir.setVisible(picking());
+-        createDir.setEnabled(picking() && mDirDetails.canCreateDirectory());
++    protected void updateBackup(MenuItem backupDSN) {
++        backupDSN.setVisible(picking());
++        backupDSN.setEnabled(picking() && mDirDetails.canCreateDirectory());
+     }
+-
+     @Override
+     protected void updateOpenInActionMode(MenuItem open, SelectionDetails selectionDetails) {
+         updateOpen(open, selectionDetails);
+diff --git a/src/com/android/documentsui/services/BackupJob.java b/src/com/android/documentsui/services/BackupJob.java
+index fdc3f6f..d6de3a9 100644
+--- a/src/com/android/documentsui/services/BackupJob.java
++++ b/src/com/android/documentsui/services/BackupJob.java
+@@ -25,6 +25,10 @@ import android.content.ContentResolver;
+ import android.content.Context;
+ import android.net.Uri;
+ import android.util.Log;
++import android.provider.DocumentsContract.Path;
++import android.icu.text.SimpleDateFormat;
++import android.provider.DocumentsContract;
++
+ 
+ import com.android.documentsui.Metrics;
+ import com.android.documentsui.R;
+@@ -45,25 +49,46 @@ import okio.BufferedSource;
+ import retrofit2.Retrofit;
+ import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
+ import retrofit2.converter.jackson.JacksonConverterFactory;
++import android.os.RemoteException;
++import android.os.Bundle;
+ 
++import java.util.List;
++import java.util.ArrayList;
+ import java.io.FileNotFoundException;
+-
+ import javax.annotation.Nullable;
+-import io.ipfs.api.IPFS;
+-import android.icu.text.SimpleDateFormat;
+ import java.util.Date;
+ 
++import io.ipfs.api.MerkleNode;
++import io.ipfs.api.NamedStreamable;
++import io.ipfs.multihash.Multihash;
++import io.ipfs.api.IPFS;
++import java.io.IOException;
++import java.util.List;
++import io.ipfs.cid.Cid;
++import io.ipfs.api.JSONParser;
++import java.io.File;
++import java.lang.String.*;
++import java.lang.*;
++import android.webkit.MimeTypeMap;
++import java.util.Map;
++import java.util.HashMap;
++import java.util.LinkedHashMap;
++
+ 
+ 
+ final class BackupJob extends ResolvedResourcesJob {
+ 
+     private static final String TAG = "BackupJob";
+-
++    private static final String ABSOlUTE_PATH_PREFIX = "/sdcard/";
++    private static final String ABSOlUTE_PATH_DOWNLOAD_PREFIX = "/sdcard/Download";
++    private static final String PRIMARY_PREFIX = "primary:";
++    private static final String RAW_PREFIX = "raw:";
++    private static final String RAW_STORAGE_PREFIX = "raw:/storage/emulated/0/";
++    private static final String COUNT_ID = "Brahmaos";
+     private final Uri mParentUri;
+ 
+     private volatile int mDocsProcessed = 0;
+     private static IPFS mhandleIPFS;
+-    private long mtag;
+     /**
+      * Moves files to a destination identified by {@code destination}.
+      * Performs most work by delegating to CopyJob, then deleting
+@@ -116,17 +141,12 @@ final class BackupJob extends ResolvedResourcesJob {
+ 
+     @Override
+     void start() {
+-
+-     //   HttpServer.getInstance().getHttpIpfsdata();
+-
+         ContentResolver resolver = appContext.getContentResolver();
+         DocumentsApplication app = (DocumentsApplication) appContext.getApplicationContext();
+         mhandleIPFS = app.mhandleIPFS;
+-        mtag = app.mtag;
+         if(mhandleIPFS == null){
+-            Log.d("XULU_LOG","BackupJob---------null"+ mtag);
++            Log.e(TAG,"mhandleIPFS is null");
+         }
+-        Log.d("XULU_LOG","BackupJob---------"+ mtag);
+         DocumentInfo parentDoc;
+         try {
+             parentDoc = mParentUri != null
+@@ -141,10 +161,8 @@ final class BackupJob extends ResolvedResourcesJob {
+         for (DocumentInfo doc : mResolvedDocs) {
+             if (DEBUG) Log.d(TAG, "Backuping document @ " + doc.derivedUri);
+             try {
+-                backupDocument(doc, parentDoc,mhandleIPFS);
++                backupDocument(doc, parentDoc);
+             } catch (ResourceException e) {
+-                //Metrics.logFileOperationFailure(
+-                //appContext, Metrics.SUBFILEOP_DELETE_DOCUMENT, doc.derivedUri);
+                 Log.e(TAG, "Failed to Backuping document @ " + doc.derivedUri, e);
+                 onFileFailed(doc);
+             }
+@@ -157,7 +175,118 @@ final class BackupJob extends ResolvedResourcesJob {
+ 
+         Metrics.logFileOperation(service, operationType, mResolvedDocs, null);
+     }
++    final void backupDocument(DocumentInfo doc, @Nullable DocumentInfo parent)
++             throws ResourceException {
++         try {
++            NamedStreamable.FileWrapper file;
++
++           // Path path = DocumentsContract.findDocumentPath(getClient(doc), doc.derivedUri);
++
++            Log.d(TAG,"backupDocument:" + doc.toString());
++
++            String mPath;
++            if(doc.documentId.startsWith(PRIMARY_PREFIX)){
++                mPath = doc.documentId.replace(PRIMARY_PREFIX,ABSOlUTE_PATH_PREFIX);
++            } else if(doc.documentId.startsWith(RAW_PREFIX)){
++                mPath = doc.documentId.replace(RAW_STORAGE_PREFIX,ABSOlUTE_PATH_PREFIX);
++            } else {
++                Log.d(TAG,"backupDocument:" +"is DB data ");
++                return;
++            }
++            String createFileTime;
++            String lastModifiedFileTime;
++            String fileType;
++            int blockCnt;
++
++            List<String> filenames = getFileListame(mPath);
++            if(filenames!= null){
++                for(String filename : filenames){
++                    File backupfile = new File(filename);
++                    Date nowDate = new Date();
++                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
++                    createFileTime = dateFormat.format(nowDate);
++                    lastModifiedFileTime = dateFormat.format(new Date(backupfile.lastModified()));
++                    fileType = getFileType(filename);
++
++                    file = new NamedStreamable.FileWrapper(backupfile);
++                    List<MerkleNode> addResult = mhandleIPFS.add(file);
++                    blockCnt = getBlockCount(addResult.get(0));
++                    postHttpDSNData(addResult.get(0), lastModifiedFileTime, createFileTime, fileType,blockCnt);
++                }
++            } else
++                return;
++
++        } catch (IOException e) {
++            throw new ResourceException("Failed to backup file %s due to an exception.",doc.derivedUri, e);
++        }
++
++    }
++
++    public int getBlockCount(MerkleNode node)throws ResourceException {
++        try{
++            List<MerkleNode> lsResult = mhandleIPFS.ls(node.hash);
++            return lsResult.size();
++        }  catch (IOException e) {
++             Log.e(TAG,"Failed to get BlockCount."+ e);
++        }
++        return 0;
++    }
++
++    public void postHttpDSNData(MerkleNode node,String modifyTime,String createTime,String fileType,int blockCnt){
++        Map<String,Object> body = new HashMap<String, Object>();
++        body.put("account_id",COUNT_ID);
++        body.put("object_key",node.hash.toString());
++        body.put("mime_type",fileType);
++        body.put("object_name",node.name.get());
++        if(node.size.isPresent())
++            body.put("object_size",node.size.get());
++        else
++            body.put("object_size",node.largeSize.get());
++        body.put("object_create_time",modifyTime);
++        body.put("object_sync_time",createTime);
++        body.put("object_block_cnt",blockCnt);
++        HttpServer.getInstance().postHttpIpfsdata(body);
++    }
++
++	public List<String> getFileListame(String strPath) {
++        List<String> returnList = new ArrayList();
++        File dir = new File(strPath);
++        if(!dir.isDirectory()){
++            returnList.add(strPath);
++            return returnList;
++        }
++        File[] fs = dir.listFiles();
++        for(File f:fs){
++            if(f.isDirectory())
++                returnList.addAll(getFileListame(f.getAbsolutePath()));
++            if(f.isFile()) {
++                returnList.add(f.getAbsolutePath());
++            }
++
++        }
++        return returnList;
++	}
++    public String getFileType(String filename){
++        int idx = filename.lastIndexOf(".");
++        if (idx <= 0 || (idx+1) == filename.length()) {
++            return null;
++        }
++        String extensionName = filename.substring(idx+1);
++        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extensionName);
++    }
+ 
++    /**
++     * Get the last element
++     */
++    public static <T> T getLastElement(List<T> list) {
++        return list.get(list.size() - 1);
++    }
++    /**
++     * Get the first element
++     */
++    public static <T> T getFirstElement(List<T> list) {
++        return list.get(0);
++    }
+     @Override
+     public String toString() {
+         return new StringBuilder()
+diff --git a/src/com/android/documentsui/services/DownloadDocumentsFromDSNJob.java b/src/com/android/documentsui/services/DownloadDocumentsFromDSNJob.java
+new file mode 100644
+index 0000000..5141d07
+--- /dev/null
++++ b/src/com/android/documentsui/services/DownloadDocumentsFromDSNJob.java
+@@ -0,0 +1,142 @@
++/*
++ * Copyright (C) 2016 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.documentsui.services;
++
++import static com.android.documentsui.base.Shared.DEBUG;
++import static com.android.documentsui.services.FileOperationService.OPERATION_DELETE;
++
++import android.app.Notification;
++import android.app.Notification.Builder;
++import android.content.ContentResolver;
++import android.content.Context;
++import android.net.Uri;
++import android.util.Log;
++import android.os.StatFs;
++import android.os.Environment;
++import android.content.Context;
++
++
++import com.android.documentsui.Metrics;
++import com.android.documentsui.R;
++import com.android.documentsui.base.DocumentInfo;
++import com.android.documentsui.base.DocumentStack;
++import com.android.documentsui.base.Features;
++import com.android.documentsui.clipping.UrisSupplier;
++import com.android.documentsui.DocumentsApplication;
++
++import com.android.documentsui.httpnetwork.ObjectMeta;
++
++import javax.annotation.Nullable;
++
++import java.io.FileNotFoundException;
++import java.io.IOException;
++import java.util.List;
++import java.io.File;
++import java.lang.String.*;
++import java.lang.*;
++import java.util.Map;
++import java.util.HashMap;
++import java.util.LinkedHashMap;
++import java.io.FileInputStream;
++import java.io.FileOutputStream;
++import java.io.File;
++import java.io.InputStream;
++
++import io.ipfs.api.MerkleNode;
++import io.ipfs.api.NamedStreamable;
++import io.ipfs.multihash.Multihash;
++import io.ipfs.api.IPFS;
++import io.ipfs.cid.Cid;
++import io.ipfs.api.JSONParser;
++
++
++public class DownloadDocumentsFromDSNJob implements Runnable {
++
++    private String PATH_PREFIX = "/sdcard/LocalHD";
++    private ObjectMeta mObjectMeta;
++
++    private static final String TAG = "DownloadDocumentsFromDSNJob";
++
++    private Context mappContext;
++    private IPFS mhandleIPFS;
++
++    public DownloadDocumentsFromDSNJob(Context appContext, ObjectMeta objectMeta) {
++        mObjectMeta = objectMeta;
++        mappContext = appContext;
++
++    }
++
++
++    @Override
++    public void run(){
++        String mObjectName = mObjectMeta.getobjectname();
++        String mMimeType = mObjectMeta.getmimetype();
++        String mHashKey = mObjectMeta.getobjectkey();
++        DocumentsApplication app = (DocumentsApplication) mappContext.getApplicationContext();
++        mhandleIPFS = app.mhandleIPFS;
++
++        StringBuffer fileNameBuffer = new StringBuffer();
++        fileNameBuffer.append(PATH_PREFIX);
++        fileNameBuffer.append("/");
++        fileNameBuffer.append(mObjectName);
++        String fileNameBufferString = fileNameBuffer.toString();
++        IPFS mipfs = new IPFS("/ip4/127.0.0.1/tcp/5001");
++
++
++        File filePath = new File(PATH_PREFIX);
++        createDirToStoreage(filePath);
++
++        try{
++            int len;
++            byte[] buffer = new byte[1024];
++            InputStream in = mipfs.catStream(Multihash.fromBase58(mHashKey));
++
++            try{
++                    FileOutputStream fileOutput = new FileOutputStream(fileNameBufferString);
++                    while ((len = in.read(buffer)) >= 0)
++                        fileOutput.write(buffer, 0, len);
++                    } catch (IOException e) {
++                    e.printStackTrace();
++                }
++
++           } catch (IOException e) {
++                e.printStackTrace();
++           }
++    }
++    public void createDirToStoreage (File path) {
++         if (path.exists()) {
++             Log.d(TAG,"createDirToStoraage path is exist");;
++         } else {
++             try {
++                 path.createNewFile();
++             } catch (IOException e) {
++                 e.printStackTrace();
++             }
++         }
++
++     }
++    private long getSDAvailableSize() {
++        File path = Environment.getExternalStorageDirectory();
++        StatFs stat = new StatFs(path.getPath());
++        long blockSize = stat.getBlockSize();
++        long availableBlocks = stat.getAvailableBlocks();
++        //return Formatter.formatFileSize(MainActivity.this, blockSize * availableBlocks);
++        return availableBlocks;
++    }
++
++}
++
+diff --git a/src/com/android/documentsui/services/FileOperation.java b/src/com/android/documentsui/services/FileOperation.java
+index 4a7682b..375bbb9 100644
+--- a/src/com/android/documentsui/services/FileOperation.java
++++ b/src/com/android/documentsui/services/FileOperation.java
+@@ -23,7 +23,7 @@ import static com.android.documentsui.services.FileOperationService.OPERATION_DE
+ import static com.android.documentsui.services.FileOperationService.OPERATION_MOVE;
+ import static com.android.documentsui.services.FileOperationService.OPERATION_UNKNOWN;
+ import static com.android.documentsui.services.FileOperationService.OPERATION_BACKUP;
+-import static com.android.documentsui.services.FileOperationService.OPERATION_GETDOCUMENTS;
++import static com.android.documentsui.services.FileOperationService.OPERATION_DOWNLOADDOCUMENTSFROMDSN;
+ 
+ 
+ 
+@@ -322,9 +322,6 @@ public abstract class FileOperation implements Parcelable {
+                 case OPERATION_BACKUP:
+                     return new BackupJob(service, listener, id, getDestination(), getSrc(), mSrcParent,
+                              features);
+-                case OPERATION_GETDOCUMENTS:
+-                    return new GetDocumentsJob(service, listener, id, getDestination(), getSrc(),
+-                            mSrcParent, features);
+                 default:
+                     throw new UnsupportedOperationException("Unsupported op type: " + getOpType());
+             }
+@@ -369,6 +366,68 @@ public abstract class FileOperation implements Parcelable {
+         };
+     }
+ 
++    public static class downloadFromDSNOperation extends FileOperation {
++        private final @Nullable Uri mSrcParent;
++
++        private downloadFromDSNOperation(@OpType int opType, UrisSupplier srcs,
++                DocumentStack destination, @Nullable Uri srcParent) {
++            super(opType, srcs, destination);
++            mSrcParent = srcParent;
++			Log.d("XULU_LOG","downloadFromDSNOperation");
++        }
++
++        @Override
++        Job createJob(Context service, Job.Listener listener, String id, Features features) {
++            switch(getOpType()) {
++                case OPERATION_DOWNLOADDOCUMENTSFROMDSN:
++                    return new GetDocumentsJob(service, listener, id, getDestination(), getSrc(),
++                            mSrcParent, features);
++                default:
++                    throw new UnsupportedOperationException("Unsupported op type: " + getOpType());
++            }
++        }
++
++        @Override
++        public String toString() {
++            StringBuilder builder = new StringBuilder();
++
++            builder.append("downloadFromDSNOperation{");
++            super.appendInfoTo(builder);
++            builder.append(", srcParent=").append(mSrcParent.toString());
++            builder.append("}");
++
++            return builder.toString();
++        }
++
++        @Override
++        public void writeToParcel(Parcel out, int flag) {
++            super.writeToParcel(out, flag);
++            out.writeParcelable(mSrcParent, flag);
++        }
++
++        private downloadFromDSNOperation(Parcel in) {
++            super(in);
++            mSrcParent = in.readParcelable(null);
++        }
++
++        public static final Parcelable.Creator<downloadFromDSNOperation> CREATOR =
++                new Parcelable.Creator<downloadFromDSNOperation>() {
++
++
++            @Override
++            public downloadFromDSNOperation createFromParcel(Parcel source) {
++                return new downloadFromDSNOperation(source);
++            }
++
++            @Override
++            public downloadFromDSNOperation[] newArray(int size) {
++                return new downloadFromDSNOperation[size];
++            }
++        };
++    }
++
++
++
+     public static class Builder {
+         private @OpType int mOpType;
+         private Uri mSrcParent;
+@@ -408,8 +467,9 @@ public abstract class FileOperation implements Parcelable {
+                 case OPERATION_DELETE:
+                     return new MoveDeleteOperation(mOpType, mSrcs, mDestination, mSrcParent);
+ 				case OPERATION_BACKUP:
+-				case OPERATION_GETDOCUMENTS:
+                     return new BackupGetOperation(mOpType, mSrcs, mDestination, mSrcParent);
++                case OPERATION_DOWNLOADDOCUMENTSFROMDSN:
++                    return new downloadFromDSNOperation(mOpType, mSrcs, mDestination, mSrcParent);
+                 default:
+                     throw new UnsupportedOperationException("Unsupported op type: " + mOpType);
+             }
+diff --git a/src/com/android/documentsui/services/FileOperationService.java b/src/com/android/documentsui/services/FileOperationService.java
+index 4f8fdf0..83145c2 100644
+--- a/src/com/android/documentsui/services/FileOperationService.java
++++ b/src/com/android/documentsui/services/FileOperationService.java
+@@ -74,7 +74,7 @@ public class FileOperationService extends Service implements Job.Listener {
+             OPERATION_MOVE,
+             OPERATION_DELETE,
+             OPERATION_BACKUP,
+-            OPERATION_GETDOCUMENTS
++            OPERATION_DOWNLOADDOCUMENTSFROMDSN
+     })
+     @Retention(RetentionPolicy.SOURCE)
+     public @interface OpType {}
+@@ -85,7 +85,7 @@ public class FileOperationService extends Service implements Job.Listener {
+     public static final int OPERATION_MOVE = 4;
+     public static final int OPERATION_DELETE = 5;
+     public static final int OPERATION_BACKUP = 6;
+-    public static final int OPERATION_GETDOCUMENTS = 7;
++    public static final int OPERATION_DOWNLOADDOCUMENTSFROMDSN = 7;
+ 
+     @IntDef({
+             MESSAGE_PROGRESS,
+diff --git a/src/com/android/documentsui/services/Job.java b/src/com/android/documentsui/services/Job.java
+index dc78bb9..804e89c 100644
+--- a/src/com/android/documentsui/services/Job.java
++++ b/src/com/android/documentsui/services/Job.java
+@@ -57,7 +57,6 @@ import java.lang.annotation.RetentionPolicy;
+ import java.util.ArrayList;
+ import java.util.HashMap;
+ import java.util.Map;
+-import android.provider.DocumentsContract.Path;
+ import java.util.*;
+ 
+ //import com.android.documentsui.httpnetwork.ObjectMetaPost;
+@@ -72,7 +71,6 @@ import io.ipfs.api.IPFS;
+ import java.io.IOException;
+ 
+ import java.io.File;
+-import io.ipfs.api.JSONParser;
+ import android.text.format.Time;
+ import android.icu.text.SimpleDateFormat;
+ import java.util.Date;
+@@ -285,82 +283,7 @@ abstract public class Job implements Runnable {
+                     doc.derivedUri, e);
+         }
+     }
+-     final void backupDocument(DocumentInfo doc, @Nullable DocumentInfo parent,IPFS mIPFS)
+-             throws ResourceException {
+-         try {
+-            boolean debug1 = true;
+-            NamedStreamable.FileWrapper file;
+-            String tmppath = null;
+-            Path path = DocumentsContract.findDocumentPath(getClient(doc), doc.derivedUri);
+-            Log.d("XULU_LOG","backupDocument:" + doc.toString());
+-            Log.d("XULU_LOG","backupDocument:" + path.toString());
+-            if(debug1)
+-                return ;
+-
+-            int deepthcount = path.getPath().size();
+-            String providepath=path.getPath().get(deepthcount-1);
+-            Log.d("XULU_LOG","backupDocument:providepath:" + providepath+deepthcount);
+-
+-            tmppath = providepath.substring(providepath.indexOf(":")+1);
+-            tmppath = "/sdcard/"+tmppath;
+-
+-            file = new NamedStreamable.FileWrapper(new File("/sdcard/Download/"));
+-            List<MerkleNode> addResult1 = mIPFS.add(file);
+-            Log.d("XULU_LOG","MerkleNode: " + addResult1.size());
+-            for (int i = 0; i < addResult1.size(); i++) {
+-                Log.d("XULU_LOG","MerkleNode: " + addResult1.get(i).toJSONString());
+-               // MerkleNode tmpresult = addResult1.get(i);
+-                //pushObjectMetatoHttpServer(HttpServer.getInstance(),tmpresult);
+-                /*
+-                HttpServer.getInstance().body.put("account_id","bramcount");
+-                HttpServer.getInstance().body.put("object_key","sdfdsfdf12312412412312");
+-                HttpServer.getInstance().body.put("mime_type","img");
+-                HttpServer.getInstance().body.put("object_name","cat.jpg");
+-                HttpServer.getInstance().body.put("object_size",100);
+-                HttpServer.getInstance().body.put("object_create_time","2018-01-02");
+-                HttpServer.getInstance().body.put("object_sync_time","2018-01-03");
+-                HttpServer.getInstance().postHttpIpfsdata();
+-                */
+ 
+-            }
+-
+-        } catch (RemoteException | RuntimeException |IOException e) {
+-            throw new ResourceException("Failed to backup file %s due to an exception.",
+-                    doc.derivedUri, e);
+-        }
+-
+-
+-    }/*
+-    void pushObjectMetatoHttpServer(HttpServer httpserver, MerkleNode result){
+-        String showmessage = JSONParser.toString(result.hash);
+-        showmessage = JSONParser.toString(result.size);
+-        showmessage = JSONParser.toString(result.type);
+-        showmessage = JSONParser.toString(result.name);
+-        Time t=new Time();
+-             t.setToNow();
+-        int year = t.year;
+-        int month = t.month+1;
+-        int day = t.monthDay;
+-        int hour = t.hour;
+-        int minute = t.minute;
+-        int second = t.second;
+-        Log.d("XULU_LOG","showmessage:" + Integer.toString(year) + "-"
+-                                        + Integer.toString(month) + "-"
+-                                        + Integer.toString(day) + "-"
+-                                        + Integer.toString(hour) + "-"
+-                                        + Integer.toString(minute) + "-"
+-                                        + Integer.toString(second));
+-
+-
+-    }
+-*/
+-    public static String timeStampDate(long time, String format) {
+-        if (format == null || format.isEmpty()) {
+-            format = "yyyy-MM-dd-HH-mm-ss";
+-        }
+-        SimpleDateFormat sdf = new SimpleDateFormat(format);
+-        return sdf.format(new Date(time));
+-    }
+ 
+     Notification getSetupNotification(String content) {
+         mProgressBuilder.setProgress(0, 0, true)
+diff --git a/src/com/android/documentsui/ui/DialogController.java b/src/com/android/documentsui/ui/DialogController.java
+index 7f1f296..e3700a9 100644
+--- a/src/com/android/documentsui/ui/DialogController.java
++++ b/src/com/android/documentsui/ui/DialogController.java
+@@ -45,6 +45,7 @@ public interface DialogController {
+     void confirmDelete(List<DocumentInfo> docs, ConfirmationCallback callback);
+     void confirmBackup(List<DocumentInfo> docs, ConfirmationCallback callback);
+     void showFileOperationStatus(int status, int opType, int docCount);
++    void confirmdownloadDocumentsFromDSN(List<DocumentInfo> docs, ConfirmationCallback callback);
+ 
+     /**
+      * There can be only one progress dialog active at the time. Each call to this
+@@ -147,6 +148,41 @@ public interface DialogController {
+         }
+ 
+         @Override
++        public void confirmdownloadDocumentsFromDSN(List<DocumentInfo> docs, ConfirmationCallback callback) {
++            TextView message =
++                    (TextView) mActivity.getLayoutInflater().inflate(
++                            R.layout.dialog_delete_confirmation, null);
++           //message.setText(mMessages.generateBackupMessage(docs));
++            message.setText("Download file from DSN");
++
++            // For now, we implement this dialog NOT
++            // as a fragment (which can survive rotation and have its own state),
++            // but as a simple runtime dialog. So rotating a device with an
++            // active delete dialog...results in that dialog disappearing.
++            // We can do better, but don't have cycles for it now.
++            final AlertDialog alertDialog = new AlertDialog.Builder(mActivity)
++                    .setView(message)
++                    .setPositiveButton(
++                            android.R.string.ok,
++                            new DialogInterface.OnClickListener() {
++                                @Override
++                                public void onClick(DialogInterface dialog, int id) {
++                                    callback.accept(ConfirmationCallback.CONFIRM);
++                                }
++                            })
++                    .setNegativeButton(android.R.string.cancel, null)
++                    .create();
++
++            alertDialog.setOnShowListener(
++                    (DialogInterface) -> {
++                        Button positive = alertDialog.getButton(AlertDialog.BUTTON_POSITIVE);
++                        positive.setFocusable(true);
++                        positive.requestFocus();
++                    });
++            alertDialog.show();
++        }
++
++        @Override
+         public void showFileOperationStatus(@Status int status, @OpType int opType,
+                 int docCount) {
+             if (status == FileOperations.Callback.STATUS_REJECTED) {
+@@ -188,6 +224,9 @@ public interface DialogController {
+                 case FileOperationService.OPERATION_BACKUP:
+                     Snackbars.showBackup(mActivity, docCount);
+                     break;
++                case FileOperationService.OPERATION_DOWNLOADDOCUMENTSFROMDSN:
++                    Snackbars.showBackup(mActivity, docCount);
++                    break;
+                 default:
+                     throw new UnsupportedOperationException("Unsupported Operation: " + opType);
+             }
+-- 
+2.7.4
+

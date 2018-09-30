@@ -1,0 +1,536 @@
+From 1bb3d3d727781ad4d1b7c53355b1c02174ca5052 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Tue, 4 Sep 2018 21:29:48 +0800
+Subject: [PATCH] Add httpnetworks api to DocumentsUI
+
+Change-Id: I6794e3d2d813bcd68c413316201034867b76dc38
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ .../android/documentsui/httpnetwork/ApiConst.java  |  13 +++
+ .../documentsui/httpnetwork/ApiRespResult.java     |  62 +++++++++++
+ .../documentsui/httpnetwork/BaseService.java       |  18 ++++
+ .../documentsui/httpnetwork/BuildConfig.java       |  17 +++
+ .../documentsui/httpnetwork/HttpServer.java        |  91 ++++++++++++++++
+ .../documentsui/httpnetwork/KyberToken.java        | 114 ++++++++++++++++++++
+ .../android/documentsui/httpnetwork/Networks.java  | 120 +++++++++++++++++++++
+ .../documentsui/httpnetwork/httpIpfsApi.java       |  24 +++++
+ 8 files changed, 459 insertions(+)
+ create mode 100644 src/com/android/documentsui/httpnetwork/ApiConst.java
+ create mode 100644 src/com/android/documentsui/httpnetwork/ApiRespResult.java
+ create mode 100644 src/com/android/documentsui/httpnetwork/BaseService.java
+ create mode 100644 src/com/android/documentsui/httpnetwork/BuildConfig.java
+ create mode 100644 src/com/android/documentsui/httpnetwork/HttpServer.java
+ create mode 100644 src/com/android/documentsui/httpnetwork/KyberToken.java
+ create mode 100644 src/com/android/documentsui/httpnetwork/Networks.java
+ create mode 100644 src/com/android/documentsui/httpnetwork/httpIpfsApi.java
+
+diff --git a/src/com/android/documentsui/httpnetwork/ApiConst.java b/src/com/android/documentsui/httpnetwork/ApiConst.java
+new file mode 100644
+index 0000000..d1f3e23
+--- /dev/null
++++ b/src/com/android/documentsui/httpnetwork/ApiConst.java
+@@ -0,0 +1,13 @@
++package com.android.documentsui.httpnetwork;
++
++/**
++ * Define API const
++ */
++public class ApiConst {
++
++    public static final String PARAM_QUOTES = "quotes";
++    public static final int OSTYPE_ANDROID = 0;
++    public static final String PARAM_VER_INFO = "v";
++    public static final int TOKEN_TYPE_ERC20 = 1;
++    public static final String PARAM_TRANSACTIONS = "transactions";
++}
+diff --git a/src/com/android/documentsui/httpnetwork/ApiRespResult.java b/src/com/android/documentsui/httpnetwork/ApiRespResult.java
+new file mode 100644
+index 0000000..22d77a0
+--- /dev/null
++++ b/src/com/android/documentsui/httpnetwork/ApiRespResult.java
+@@ -0,0 +1,62 @@
++package com.android.documentsui.httpnetwork;
++
++import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
++import com.fasterxml.jackson.annotation.JsonProperty;
++
++import java.io.Serializable;
++import java.math.BigDecimal;
++
++import java.util.Map;
++
++/**
++ * Unified API response object
++ * The response structure returned by all owned services is unified
++ */
++@JsonIgnoreProperties(ignoreUnknown = true)
++public class ApiRespResult {
++
++    // Response result code
++    @JsonProperty("ret")
++    private int result;
++
++    // Response data
++    @JsonProperty("data")
++    private Map<String, Object> data;
++
++    // Response message, mainly returned on failure
++    @JsonProperty("msg")
++    private String msg;
++
++    @Override
++    public String toString() {
++        return "ApiRespResult{" +
++                "result=" + result +
++                ", data=" + data +
++                ", msg='" + msg + '\'' +
++                '}';
++    }
++
++    public int getResult() {
++        return result;
++    }
++
++    public void setResult(int result) {
++        this.result = result;
++    }
++
++    public Map<String, Object> getData() {
++        return data;
++    }
++
++    public void setData(Map<String, Object> data) {
++        this.data = data;
++    }
++
++    public String getMsg() {
++        return msg;
++    }
++
++    public void setMsg(String msg) {
++        this.msg = msg;
++    }
++}
+diff --git a/src/com/android/documentsui/httpnetwork/BaseService.java b/src/com/android/documentsui/httpnetwork/BaseService.java
+new file mode 100644
+index 0000000..825f832
+--- /dev/null
++++ b/src/com/android/documentsui/httpnetwork/BaseService.java
+@@ -0,0 +1,18 @@
++package com.android.documentsui.httpnetwork;
++
++import android.content.Context;
++
++public abstract class BaseService {
++
++    protected Context context;
++    protected abstract String tag();
++
++    public boolean init(Context context) {
++        this.context = context;
++        return true;
++    }
++
++    public boolean destroy() {
++        return true;
++    }
++}
+diff --git a/src/com/android/documentsui/httpnetwork/BuildConfig.java b/src/com/android/documentsui/httpnetwork/BuildConfig.java
+new file mode 100644
+index 0000000..d67f9cd
+--- /dev/null
++++ b/src/com/android/documentsui/httpnetwork/BuildConfig.java
+@@ -0,0 +1,17 @@
++/**
++ * Automatically generated file. DO NOT MODIFY
++ */
++package com.android.documentsui.httpnetwork;
++
++public final class BuildConfig {
++    public static final boolean DEBUG = Boolean.parseBoolean("true");
++    public static final String APPLICATION_ID = "io.brahmaos.wallet.brahmawallet";
++    public static final String BUILD_TYPE = "debug";
++    public static final String FLAVOR = "";
++    public static final int VERSION_CODE = 6002;
++    public static final String VERSION_NAME = "Jupiter (v0.6.2)";
++    // Fields from build type: debug
++    public static final boolean LOG_DEBUG = true;
++    // Fields from default config.
++    public static final String OBJECTMETA_API_URL = "http://dev.brahmaos.io:20001";
++}
+diff --git a/src/com/android/documentsui/httpnetwork/HttpServer.java b/src/com/android/documentsui/httpnetwork/HttpServer.java
+new file mode 100644
+index 0000000..4dfe881
+--- /dev/null
++++ b/src/com/android/documentsui/httpnetwork/HttpServer.java
+@@ -0,0 +1,91 @@
++package com.android.documentsui.httpnetwork;
++
++import android.content.Context;
++
++import com.fasterxml.jackson.core.type.TypeReference;
++import com.fasterxml.jackson.databind.ObjectMapper;
++
++
++import java.io.IOException;
++import java.util.ArrayList;
++import java.util.Collections;
++import java.util.HashMap;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import android.util.Log;
++
++
++import rx.Completable;
++import rx.Observable;
++import rx.Observer;
++import rx.android.schedulers.AndroidSchedulers;
++import rx.schedulers.Schedulers;
++
++public class HttpServer extends BaseService{
++    @Override
++    protected String tag() {
++        return HttpServer.class.getName();
++    }
++
++    // singleton
++    private static HttpServer instance = new HttpServer();
++    public static HttpServer getInstance() {
++        return instance;
++    }
++
++    @Override
++    public boolean init(Context context) {
++        super.init(context);
++        return true;
++    }
++    private boolean isHaveAccount;
++
++    //GET
++    public String accountID = "brahmaos";
++    public void getHttpIpfsdata() {
++            Networks.getInstance().gethttpIpfsApi()
++                    .getDataFromIpfsCloud(accountID)
++                    .subscribeOn(Schedulers.io())
++                    .observeOn(AndroidSchedulers.mainThread())
++                    .subscribe(new Observer<LinkedHashMap<String, Object>>() {
++                        @Override
++                        public void onCompleted() {
++                            Log.d("XULU_LOG","getKyberTokens 1");
++                        }
++
++                        @Override
++                        public void onError(Throwable throwable) {
++                            throwable.printStackTrace();
++                            Log.d("XULU_LOG","getKyberTokens 2");
++                        }
++
++                        @Override
++                        public void onNext(LinkedHashMap<String, Object> apr) {
++				            Log.d("XULU_LOG","getKyberTokens"+ apr.toString());
++                        }
++                    });
++    }
++    // POST;
++    public void postHttpIpfsdata(Map<String,Object> body) {
++        Networks.getInstance().gethttpIpfsApi().postDataToIpfsCloud(body)
++                .subscribeOn(Schedulers.io())
++                .observeOn(AndroidSchedulers.mainThread())
++                .subscribe(new Observer<LinkedHashMap<String, Object>>() {
++                    @Override
++                    public void onCompleted() {
++                        Log.d("XULU_LOG","postHttpIpfsdata onCompleted");
++                    }
++                    @Override
++                    public void onError(Throwable throwable) {
++                        throwable.printStackTrace();
++                        Log.d("XULU_LOG","postHttpIpfsdata onError");
++                    }
++                    @Override
++                    public void onNext(LinkedHashMap<String, Object> apr) {
++			            Log.d("XULU_LOG","postHttpIpfsdata:"+ apr.toString());
++                    }
++                });
++    }
++}
++
+diff --git a/src/com/android/documentsui/httpnetwork/KyberToken.java b/src/com/android/documentsui/httpnetwork/KyberToken.java
+new file mode 100644
+index 0000000..bc858fa
+--- /dev/null
++++ b/src/com/android/documentsui/httpnetwork/KyberToken.java
+@@ -0,0 +1,114 @@
++package com.android.documentsui.httpnetwork;
++
++import android.support.annotation.NonNull;
++
++import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
++import com.fasterxml.jackson.annotation.JsonProperty;
++
++import java.io.Serializable;
++import java.math.BigDecimal;
++
++@JsonIgnoreProperties(ignoreUnknown = true)
++public class KyberToken implements Serializable, Comparable<KyberToken> {
++    private String symbol;
++    private String name;
++    private String contractAddress;
++    private int decimals;
++    private BigDecimal currentPrice;
++    private BigDecimal lastPrice;
++    private long lastTimestamp;
++    private BigDecimal baseVolume;
++    private BigDecimal quotoVolume;
++
++    public String getSymbol() {
++        return symbol;
++    }
++
++    public void setSymbol(String symbol) {
++        this.symbol = symbol;
++    }
++
++    public String getName() {
++        return name;
++    }
++
++    public void setName(String name) {
++        this.name = name;
++    }
++
++    public String getContractAddress() {
++        return contractAddress;
++    }
++
++    public void setContractAddress(String contractAddress) {
++        this.contractAddress = contractAddress;
++    }
++
++    public int getDecimals() {
++        return decimals;
++    }
++
++    public void setDecimals(int decimals) {
++        this.decimals = decimals;
++    }
++
++    public BigDecimal getCurrentPrice() {
++        return currentPrice;
++    }
++
++    public void setCurrentPrice(BigDecimal currentPrice) {
++        this.currentPrice = currentPrice;
++    }
++
++    public BigDecimal getLastPrice() {
++        return lastPrice;
++    }
++
++    public void setLastPrice(BigDecimal lastPrice) {
++        this.lastPrice = lastPrice;
++    }
++
++    public long getLastTimestamp() {
++        return lastTimestamp;
++    }
++
++    public void setLastTimestamp(long lastTimestamp) {
++        this.lastTimestamp = lastTimestamp;
++    }
++
++    public BigDecimal getBaseVolume() {
++        return baseVolume;
++    }
++
++    public void setBaseVolume(BigDecimal baseVolume) {
++        this.baseVolume = baseVolume;
++    }
++
++    public BigDecimal getQuotoVolume() {
++        return quotoVolume;
++    }
++
++    public void setQuotoVolume(BigDecimal quotoVolume) {
++        this.quotoVolume = quotoVolume;
++    }
++
++    @Override
++    public int compareTo(@NonNull KyberToken another) {
++        return (another.getSymbol().compareTo(this.getSymbol()) < 0) ? 1 : -1;
++    }
++
++    @Override
++    public String toString() {
++        return "KyberToken{" +
++                "symbol='" + symbol + '\'' +
++                ", name='" + name + '\'' +
++                ", contractAddress='" + contractAddress + '\'' +
++                ", decimals=" + decimals +
++                ", currentPrice=" + currentPrice +
++                ", lastPrice=" + lastPrice +
++                ", lastTimestamp=" + lastTimestamp +
++                ", baseVolume=" + baseVolume +
++                ", quotoVolume=" + quotoVolume +
++                '}';
++    }
++}
+diff --git a/src/com/android/documentsui/httpnetwork/Networks.java b/src/com/android/documentsui/httpnetwork/Networks.java
+new file mode 100644
+index 0000000..eadb3ef
+--- /dev/null
++++ b/src/com/android/documentsui/httpnetwork/Networks.java
+@@ -0,0 +1,120 @@
++package com.android.documentsui.httpnetwork;
++
++import android.content.Context;
++import android.support.annotation.NonNull;
++
++import com.fasterxml.jackson.databind.ObjectMapper;
++
++import java.io.IOException;
++import java.util.concurrent.TimeUnit;
++
++import okhttp3.Interceptor;
++import okhttp3.OkHttpClient;
++import okhttp3.Request;
++import okhttp3.Response;
++import okhttp3.ResponseBody;
++import okhttp3.logging.HttpLoggingInterceptor;
++import okio.BufferedSource;
++import retrofit2.Retrofit;
++import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
++import retrofit2.converter.jackson.JacksonConverterFactory;
++import android.util.Log;
++
++/**
++ * new api access
++ */
++public class Networks {
++
++    // Default timeout period, unit: second
++    private static final int DEFAULT_TIMEOUT = 15;
++    ObjectMapper mapper = new ObjectMapper();
++
++    private Context context;
++
++    static String tag() {
++        return Networks.class.getName();
++    }
++
++    private static Networks instance = new Networks();
++    public static Networks getInstance() {
++        return instance;
++    }
++
++    /**
++     * http cline init
++     */
++    public boolean init(Context ctx) {
++        context = ctx;
++        // Get the content of the top 100 crypto currencies
++        return true;
++    }
++
++    private httpIpfsApi mhttpIpfsApi;
++    public httpIpfsApi gethttpIpfsApi() {
++        if (mhttpIpfsApi == null) {
++            mhttpIpfsApi = httpIpfsConfigRetrofit(httpIpfsApi.class, false);
++        }
++        return mhttpIpfsApi;
++    }
++
++
++    private <T> T httpIpfsConfigRetrofit(Class<T> service, boolean isAddCommonParam) {
++        Retrofit retrofit = new Retrofit.Builder()
++                .baseUrl(BuildConfig.OBJECTMETA_API_URL)
++                .client(configClient(isAddCommonParam))
++                .addConverterFactory(JacksonConverterFactory.create(mapper))
++                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
++                .build();
++
++        return retrofit.create(service);
++    }
++
++    private OkHttpClient configClient(final boolean isAddCommonParam) {
++        OkHttpClient.Builder okHttpClient = new OkHttpClient.Builder();
++
++        // Add header configuration interceptors for all requests
++        Interceptor headerIntercept = new Interceptor() {
++            @Override
++            public Response intercept(Chain chain) throws IOException {
++                Request.Builder builder = chain.request().newBuilder();
++                builder.addHeader("X-Client-Platform", "Android");
++                builder.addHeader("Content-Type", "application/json; charset=utf-8");
++                builder.addHeader("X-Client-Version", BuildConfig.VERSION_NAME);
++                builder.addHeader("X-Client-Build", String.valueOf(BuildConfig.VERSION_CODE));
++                Request request = builder.build();
++                return chain.proceed(request);
++            }
++        };
++        okHttpClient.addNetworkInterceptor(headerIntercept);
++
++        // Response Interceptor
++        Interceptor responseInterceptor = new Interceptor() {
++            @Override
++            public Response intercept(Chain chain) throws IOException {
++                Request request = chain.request();
++                Response response = chain.proceed(request);
++                ResponseBody responseBody = response.body();
++                BufferedSource source = responseBody.source();
++                source.request(Long.MAX_VALUE);  // Buffer the entire body.
++                return response;
++            }
++        };
++        okHttpClient.addNetworkInterceptor(responseInterceptor);
++        Log.d("XULU_LOG","configClient");
++        if (BuildConfig.LOG_DEBUG) {
++            HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
++                @Override
++                public void log(@NonNull String message) {
++                   // BLog.i(tag(), message);
++                   Log.d("XULU_LOG","HttpLogging " + message);
++                }
++            });
++            httpLoggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
++            okHttpClient.addInterceptor(httpLoggingInterceptor);
++        }
++
++        okHttpClient.connectTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS);
++
++        return okHttpClient.build();
++    }
++}
+diff --git a/src/com/android/documentsui/httpnetwork/httpIpfsApi.java b/src/com/android/documentsui/httpnetwork/httpIpfsApi.java
+new file mode 100644
+index 0000000..b3183dd
+--- /dev/null
++++ b/src/com/android/documentsui/httpnetwork/httpIpfsApi.java
+@@ -0,0 +1,24 @@
++package com.android.documentsui.httpnetwork;
++
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++
++import retrofit2.http.GET;
++import retrofit2.http.POST;
++import retrofit2.http.Path;
++import retrofit2.http.Body;
++
++import rx.Observable;
++
++/**
++ * kyber api
++ */
++public interface httpIpfsApi{
++
++    @GET("/metas/{accountId}")
++    Observable<LinkedHashMap<String, Object>> getDataFromIpfsCloud(@Path("accountId") String accountId);
++
++    @POST("/metas")
++    Observable<LinkedHashMap<String, Object>> postDataToIpfsCloud(@Body Map<String,Object> body);
++}
+-- 
+2.7.4
+

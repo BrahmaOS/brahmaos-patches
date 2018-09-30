@@ -1,0 +1,143 @@
+From dbe0290083445bd8572ecf6d19594fed85472caf Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Fri, 28 Sep 2018 16:23:30 +0800
+Subject: [PATCH] Add acountid message when backup file to DSN
+
+Change-Id: I3b5d95e08fd5e7d12942ca93344fad754a5fff35
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ AndroidManifest.xml                                         |  1 +
+ src/com/android/documentsui/DocumentsApplication.java       | 13 ++++++++++++-
+ .../android/documentsui/dirlist/DSNDirectoryFragment.java   |  6 +++---
+ src/com/android/documentsui/services/BackupJob.java         |  7 +++++--
+ 4 files changed, 21 insertions(+), 6 deletions(-)
+
+diff --git a/AndroidManifest.xml b/AndroidManifest.xml
+index 670e4bd..b6210de 100644
+--- a/AndroidManifest.xml
++++ b/AndroidManifest.xml
+@@ -14,6 +14,7 @@
+     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+     <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
++    <uses-permission android:name="android.permission.MANAGE_USERS"/>
+ 
+     <application
+         android:name=".DocumentsApplication"
+diff --git a/src/com/android/documentsui/DocumentsApplication.java b/src/com/android/documentsui/DocumentsApplication.java
+index fefb5b1..0a70499 100644
+--- a/src/com/android/documentsui/DocumentsApplication.java
++++ b/src/com/android/documentsui/DocumentsApplication.java
+@@ -21,12 +21,15 @@ import android.app.Application;
+ import android.content.BroadcastReceiver;
+ import android.content.ContentProviderClient;
+ import android.content.ContentResolver;
+-import android.content.Context;
+ import android.content.Intent;
+ import android.content.IntentFilter;
+ import android.net.Uri;
+ import android.os.RemoteException;
+ import android.text.format.DateUtils;
++import android.content.Context;
++import android.os.UserHandle;
++import android.os.UserManager;
++
+ 
+ import com.android.documentsui.base.Lookup;
+ import com.android.documentsui.clipping.ClipStorage;
+@@ -47,6 +50,7 @@ public class DocumentsApplication extends Application {
+     private DragAndDropManager mDragAndDropManager;
+     private Lookup<String, String> mFileTypeLookup;
+     public static IPFS mhandleIPFS;
++    private String accountStr;
+ 
+     public Injector<?> mInjector;
+ 
+@@ -85,6 +89,9 @@ public class DocumentsApplication extends Application {
+     public static Lookup<String, String> getFileTypeLookup(Context context) {
+         return ((DocumentsApplication) context.getApplicationContext()).mFileTypeLookup;
+     }
++    public static String getAccountStr(Context context) {
++        return ((DocumentsApplication) context.getApplicationContext()).accountStr;
++    }
+ 
+     @Override
+     public void onCreate() {
+@@ -146,6 +153,10 @@ public class DocumentsApplication extends Application {
+             if(mhandleIPFS == null) {
+                 mhandleIPFS = new IPFS("/ip4/127.0.0.1/tcp/5001");
+             }
++            final UserManager um = (UserManager)getSystemService(Context.USER_SERVICE);
++            int userId = UserHandle.myUserId();
++            accountStr = um.getUserBrahmaAccount(userId);
++
+         }
+     }
+ }
+diff --git a/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java b/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java
+index 3ba3065..31eeb03 100644
+--- a/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java
++++ b/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java
+@@ -145,6 +145,7 @@ public class DSNDirectoryFragment extends Fragment implements SwipeRefreshLayout
+     protected IconHelper mIconHelper;
+     private DSNModelObjectMetaAdapter mDSNModelObjectMetaAdapter;
+     private MenuItem mMenuItem;
++    private String ACOUNT_ID ;
+ 
+     protected LinearLayout mLinearLayout;
+ 
+@@ -197,7 +198,7 @@ public class DSNDirectoryFragment extends Fragment implements SwipeRefreshLayout
+         mRecView.setOnDragListener(mDragHoverListener);
+ 
+         setHasOptionsMenu(true);
+-
++        ACOUNT_ID = DocumentsApplication.getAccountStr(getContext());
+         return view;
+     }
+ 
+@@ -242,9 +243,8 @@ public class DSNDirectoryFragment extends Fragment implements SwipeRefreshLayout
+     }
+ 
+     private void onStartNetworkRequest(){
+-        String accountID = "Brahmaos";
+         Networks.getInstance().gethttpIpfsApi()
+-                    .getDataFromIpfsCloud(accountID)
++                    .getDataFromIpfsCloud(ACOUNT_ID)
+                     .subscribeOn(Schedulers.io())
+                     .observeOn(AndroidSchedulers.mainThread())
+                     .subscribe(new Observer<ApiRespResult>() {
+diff --git a/src/com/android/documentsui/services/BackupJob.java b/src/com/android/documentsui/services/BackupJob.java
+index d6de3a9..145ad89 100644
+--- a/src/com/android/documentsui/services/BackupJob.java
++++ b/src/com/android/documentsui/services/BackupJob.java
+@@ -84,7 +84,7 @@ final class BackupJob extends ResolvedResourcesJob {
+     private static final String PRIMARY_PREFIX = "primary:";
+     private static final String RAW_PREFIX = "raw:";
+     private static final String RAW_STORAGE_PREFIX = "raw:/storage/emulated/0/";
+-    private static final String COUNT_ID = "Brahmaos";
++    private String ACOUNT_ID ;
+     private final Uri mParentUri;
+ 
+     private volatile int mDocsProcessed = 0;
+@@ -147,6 +147,9 @@ final class BackupJob extends ResolvedResourcesJob {
+         if(mhandleIPFS == null){
+             Log.e(TAG,"mhandleIPFS is null");
+         }
++
++        ACOUNT_ID = DocumentsApplication.getAccountStr(appContext);
++
+         DocumentInfo parentDoc;
+         try {
+             parentDoc = mParentUri != null
+@@ -234,7 +237,7 @@ final class BackupJob extends ResolvedResourcesJob {
+ 
+     public void postHttpDSNData(MerkleNode node,String modifyTime,String createTime,String fileType,int blockCnt){
+         Map<String,Object> body = new HashMap<String, Object>();
+-        body.put("account_id",COUNT_ID);
++        body.put("account_id",ACOUNT_ID);
+         body.put("object_key",node.hash.toString());
+         body.put("mime_type",fileType);
+         body.put("object_name",node.name.get());
+-- 
+2.7.4
+

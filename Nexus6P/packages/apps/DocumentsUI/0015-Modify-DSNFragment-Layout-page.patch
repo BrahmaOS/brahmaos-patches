@@ -1,0 +1,74 @@
+From c19b1bcfa7db798c7d5ea7ab06f853b7978037c2 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Fri, 28 Sep 2018 10:44:02 +0800
+Subject: [PATCH] Modify DSNFragment Layout page
+
+Change-Id: Ica55fc53f848ebc950d8e3b2f981494faad9e8e2
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ res/layout/list_item_dsn.xml | 18 ++++++++++--------
+ res/values/colors.xml        |  3 +++
+ 2 files changed, 13 insertions(+), 8 deletions(-)
+
+diff --git a/res/layout/list_item_dsn.xml b/res/layout/list_item_dsn.xml
+index fbbe2a0..fa77a61 100644
+--- a/res/layout/list_item_dsn.xml
++++ b/res/layout/list_item_dsn.xml
+@@ -37,30 +37,32 @@
+                     android:textAlignment="center"
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
++                    android:textColor="@color/color_dsn_size"
+                     android:textSize="@dimen/font_size_subheading"/>
+             </LinearLayout>
+-        <LinearLayout
++        <RelativeLayout
+                 android:layout_width="wrap_content"
+-                android:layout_height="wrap_content"
+-                android:orientation="horizontal">
++                android:layout_height="wrap_content">
+             <TextView
++		android:layout_alignParentLeft="true"
+                 android:id="@+id/tv_dsn_date"
+                 android:textAlignment="center"
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_unit"
+                 android:textSize="@dimen/font_size_caption"
+-                android:textColor="@color/color_hint_text"/>
++                android:textColor="@color/color_dsn_date"/>
+             <TextView
+                 android:id="@+id/tv_dsn_size"
+                 android:textAlignment="center"
++		android:layout_alignParentRight="true"
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+-		android:layout_marginLeft="50dp"
++		android:layout_marginRight="6dp"
+                 android:layout_marginTop="@dimen/space_unit"
+-                android:textSize="@dimen/font_size_caption"
+-                android:textColor="@color/color_hint_text"/>
+-            </LinearLayout>
++                android:textSize="14sp"
++                android:textColor="@color/color_dsn_size"/>
++            </RelativeLayout>
+         </LinearLayout>
+     </RelativeLayout>
+     <LinearLayout
+diff --git a/res/values/colors.xml b/res/values/colors.xml
+index 1976348..4092887 100644
+--- a/res/values/colors.xml
++++ b/res/values/colors.xml
+@@ -78,6 +78,9 @@
+     <color name="inspector_value">#ff939393</color>
+     <color name="inspector_section_title">#ff939393</color>
+     <color name="color_hint_text">#64000000</color>
++    <color name="color_dsn_size">#666666</color>
++    <color name="color_dsn_date">#999999</color>
++    <color name="color_dsn_name">#333333</color>
+     <color name="divider">#18000000</color>
+     <color name="horizontal_divider">@color/divider</color>
+     <color name="white">#ffffff</color>
+-- 
+2.7.4
+

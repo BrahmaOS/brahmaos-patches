@@ -1,0 +1,1063 @@
+From 0b5d0d6e09a10ddf0f0221bc664a1a9ed971a32c Mon Sep 17 00:00:00 2001
+From: martin <martin@163.com>
+Date: Wed, 12 Sep 2018 09:11:00 +0800
+Subject: [PATCH] Add fragment and loader
+
+Change-Id: I7ea39d21c0eaeaf5eda584bde07f76d1f2af64d9
+Signed-off-by: martin <martin@163.com>
+---
+ res/layout/fragment_dsn_directory.xml              |  59 +++++
+ src/com/android/documentsui/DSNObjectMeta.java     |   5 +
+ .../android/documentsui/DSNObjectMetaLoader.java   |  35 +++
+ .../android/documentsui/DecenterCloudLoader.java   | 282 +++++++++++++++++++++
+ src/com/android/documentsui/DirectoryLoader.java   |   2 +
+ src/com/android/documentsui/base/Shared.java       |   1 +
+ .../documentsui/dirlist/DSNDirectoryFragment.java  | 187 ++++++++++++++
+ .../documentsui/dirlist/DirectoryFragment.java     | 112 ++++----
+ .../android/documentsui/files/FilesActivity.java   |   4 +
+ .../documentsui/httpnetwork/HttpServer.java        |  12 +-
+ .../documentsui/httpnetwork/ObjectMeta.java        |  96 +++++++
+ src/com/android/documentsui/sidebar/RootItem.java  |   3 +-
+ 12 files changed, 747 insertions(+), 51 deletions(-)
+ create mode 100644 res/layout/fragment_dsn_directory.xml
+ create mode 100644 src/com/android/documentsui/DSNObjectMeta.java
+ create mode 100644 src/com/android/documentsui/DSNObjectMetaLoader.java
+ create mode 100644 src/com/android/documentsui/DecenterCloudLoader.java
+ create mode 100644 src/com/android/documentsui/dirlist/DSNDirectoryFragment.java
+ create mode 100644 src/com/android/documentsui/httpnetwork/ObjectMeta.java
+
+diff --git a/res/layout/fragment_dsn_directory.xml b/res/layout/fragment_dsn_directory.xml
+new file mode 100644
+index 0000000..e9db1dc
+--- /dev/null
++++ b/res/layout/fragment_dsn_directory.xml
+@@ -0,0 +1,59 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Copyright (C) 2013 The Android Open Source Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++
++<com.android.documentsui.dirlist.AnimationView
++    xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:background="@color/directory_background"
++    android:outlineProvider="bounds"
++    android:elevation="4dp"
++    android:orientation="vertical">
++
++    <ProgressBar
++        android:id="@+id/progressbar"
++        android:layout_width="match_parent"
++        android:layout_height="@dimen/progress_bar_height"
++        android:indeterminate="true"
++        style="@style/TrimmedHorizontalProgressBar"
++        android:visibility="gone"/>
++
++    <com.android.documentsui.dirlist.DocumentsSwipeRefreshLayout
++        android:id="@+id/refresh_layout"
++        android:layout_width="match_parent"
++        android:layout_height="match_parent">
++
++        <android.support.v7.widget.RecyclerView
++            android:id="@+id/dir_list"
++            android:layout_width="match_parent"
++            android:layout_height="match_parent"
++            android:paddingStart="0dp"
++            android:paddingEnd="0dp"
++            android:paddingTop="0dp"
++            android:paddingBottom="0dp"
++            android:clipToPadding="false"
++            android:scrollbars="none"
++            android:drawSelectorOnTop="true"
++            app:fastScrollEnabled="true"
++            app:fastScrollVerticalThumbDrawable="@drawable/fast_scroll_thumb_drawable"
++            app:fastScrollVerticalTrackDrawable="@drawable/fast_scroll_track_drawable"
++            app:fastScrollHorizontalThumbDrawable="@drawable/fast_scroll_thumb_drawable"
++            app:fastScrollHorizontalTrackDrawable="@drawable/fast_scroll_track_drawable"/>
++
++    </com.android.documentsui.dirlist.DocumentsSwipeRefreshLayout>
++
++</com.android.documentsui.dirlist.AnimationView>
+diff --git a/src/com/android/documentsui/DSNObjectMeta.java b/src/com/android/documentsui/DSNObjectMeta.java
+new file mode 100644
+index 0000000..5e6375c
+--- /dev/null
++++ b/src/com/android/documentsui/DSNObjectMeta.java
+@@ -0,0 +1,5 @@
++package com.android.documentsui;
++
++public class DSNObjectMeta {
++    public String hashKey;
++}
+diff --git a/src/com/android/documentsui/DSNObjectMetaLoader.java b/src/com/android/documentsui/DSNObjectMetaLoader.java
+new file mode 100644
+index 0000000..ffc1c95
+--- /dev/null
++++ b/src/com/android/documentsui/DSNObjectMetaLoader.java
+@@ -0,0 +1,35 @@
++package com.android.documentsui;
++
++import android.content.AsyncTaskLoader;
++import android.content.Context;
++import android.util.Log;
++
++public class DSNObjectMetaLoader extends AsyncTaskLoader<DSNObjectMeta>  {
++
++    public DSNObjectMetaLoader(Context context) {
++        super(context);
++    }
++
++    @Override
++    public final DSNObjectMeta loadInBackground() {
++        Log.d("---dsnLoader-----", "--------dsn load in background------");
++        final DSNObjectMeta result = new DSNObjectMeta();
++        result.hashKey = "hashKey";
++      //  HttpServer.getInstance().getHttpIpfsdata();
++        return result;
++    }
++
++    @Override
++    protected void onStartLoading() {
++        Log.d("---dsnLoader-----", "--------dsn onStartLoading------");
++        super.onStartLoading();
++        forceLoad();
++    }
++
++
++    @Override
++    protected void onStopLoading() {
++        Log.d("---dsnLoader-----", "--------dsn on stop loading------");
++
++    }
++}
+diff --git a/src/com/android/documentsui/DecenterCloudLoader.java b/src/com/android/documentsui/DecenterCloudLoader.java
+new file mode 100644
+index 0000000..b4fe40c
+--- /dev/null
++++ b/src/com/android/documentsui/DecenterCloudLoader.java
+@@ -0,0 +1,282 @@
++/*
++ * Copyright (C) 2013 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.documentsui;
++
++import static com.android.documentsui.base.Shared.VERBOSE;
++
++import android.content.AsyncTaskLoader;
++import android.content.ContentProviderClient;
++import android.content.ContentResolver;
++import android.content.Context;
++import android.content.res.Resources;
++import android.database.ContentObserver;
++import android.database.Cursor;
++import android.net.Uri;
++import android.os.Bundle;
++import android.os.CancellationSignal;
++import android.os.Handler;
++import android.os.Looper;
++import android.os.OperationCanceledException;
++import android.os.RemoteException;
++import android.provider.DocumentsContract.Document;
++import android.util.Log;
++
++import com.android.documentsui.archives.ArchivesProvider;
++import com.android.documentsui.base.DebugFlags;
++import com.android.documentsui.base.DocumentInfo;
++import com.android.documentsui.base.Features;
++import com.android.documentsui.base.FilteringCursorWrapper;
++import com.android.documentsui.base.Lookup;
++import com.android.documentsui.base.RootInfo;
++import com.android.documentsui.roots.RootCursorWrapper;
++import com.android.documentsui.sorting.SortModel;
++import android.database.MatrixCursor;
++import android.database.MatrixCursor.RowBuilder;
++
++
++import libcore.io.IoUtils;
++import android.database.MatrixCursor;
++
++
++public class DecenterCloudLoader extends AsyncTaskLoader<DirectoryResult> {
++
++    private static final String TAG = "DirectoryLoader";
++
++    private static final String[] SEARCH_REJECT_MIMES = new String[] { Document.MIME_TYPE_DIR };
++
++    private final LockingContentObserver mObserver;
++    private final RootInfo mRoot;
++    private final Uri mUri;
++    private final SortModel mModel;
++    private final Lookup<String, String> mFileTypeLookup;
++    private final boolean mSearchMode;
++
++    private DocumentInfo mDoc;
++    private CancellationSignal mSignal;
++    private DirectoryResult mResult;
++
++    private Features mFeatures;
++
++    public DecenterCloudLoader(
++            Features features,
++            Context context,
++            RootInfo root,
++            DocumentInfo doc,
++            Uri uri,
++            SortModel model,
++            Lookup<String, String> fileTypeLookup,
++            DirectoryReloadLock lock,
++            boolean inSearchMode) {
++
++        super(context, ProviderExecutor.forAuthority(root.authority));
++        mFeatures = features;
++        mRoot = root;
++        mUri = uri;
++        mModel = model;
++        mDoc = doc;
++        mFileTypeLookup = fileTypeLookup;
++        mSearchMode = inSearchMode;
++        mObserver = new LockingContentObserver(lock, this::onContentChanged);
++    }
++
++    @Override
++    public final DirectoryResult loadInBackground() {
++        synchronized (this) {
++            if (isLoadInBackgroundCanceled()) {
++                throw new OperationCanceledException();
++            }
++            mSignal = new CancellationSignal();
++        }
++        String[] DEFAULT_DOCUMENT_PROJECTION = new String[] {
++            Document.COLUMN_DOCUMENT_ID, Document.COLUMN_MIME_TYPE, Document.COLUMN_DISPLAY_NAME,
++            Document.COLUMN_SUMMARY, Document.COLUMN_LAST_MODIFIED, Document.COLUMN_FLAGS,
++            Document.COLUMN_SIZE,
++        };
++
++        final ContentResolver resolver = getContext().getContentResolver();
++        final String authority = mUri.getAuthority();
++
++        final DirectoryResult result = new DirectoryResult();
++        result.doc = mDoc;
++
++        ContentProviderClient client = null;
++        Cursor cursor;
++        try {
++            client = DocumentsApplication.acquireUnstableProviderOrThrow(resolver, authority);
++            if (mDoc.isInArchive()) {
++                ArchivesProvider.acquireArchive(client, mUri);
++            }
++            result.client = client;
++
++            MatrixCursor httpresult = new MatrixCursor(DEFAULT_DOCUMENT_PROJECTION);
++            if (mFeatures.isContentPagingEnabled()) {
++                Bundle queryArgs = new Bundle();
++                mModel.addQuerySortArgs(queryArgs);
++
++                // TODO: At some point we don't want forced flags to override real paging...
++                // and that point is when we have real paging.
++
++               // DebugFlags.addForcedPagingArgs(queryArgs);
++                Log.d("XULU_LOG","loadInBackground" + "1");
++                //cursor = client.query(mUri, null, queryArgs, mSignal);
++
++
++                final RowBuilder row1 = httpresult.newRow();
++                row1.add(Document.COLUMN_DOCUMENT_ID, "1");
++                row1.add(Document.COLUMN_DISPLAY_NAME, "xulu1");
++                row1.add(Document.COLUMN_SIZE, 1024);
++                row1.add(Document.COLUMN_MIME_TYPE, "img");
++                final RowBuilder row2 = httpresult.newRow();
++                row2.add(Document.COLUMN_DOCUMENT_ID, "2");
++                row2.add(Document.COLUMN_DISPLAY_NAME, "xulu2");
++                row2.add(Document.COLUMN_SIZE, 1024);
++                row2.add(Document.COLUMN_MIME_TYPE, "img");
++
++                final RowBuilder row3 = httpresult.newRow();
++                row2.add("account_id", "111");
++                row2.add("object_key", "ksdufiuywr234kewrs");
++                row2.add("mime_type", "image/jpeg");
++                row2.add("object_name", "brahma.jpg");
++
++                row2.add("object_size", "img");
++
++            } else {
++                Log.d("XULU_LOG","loadInBackground" + "2");
++                //cursor = client.query(
++                        //mUri, null, null, null, mModel.getDocumentSortQuery(), mSignal);
++            }
++            /*
++            if (cursor == null) {
++                throw new RemoteException("Provider returned null");
++            }
++
++            cursor.registerContentObserver(mObserver);
++
++            cursor = new RootCursorWrapper(mUri.getAuthority(), mRoot.rootId, cursor, -1);
++
++            if (mSearchMode && !mFeatures.isFoldersInSearchResultsEnabled()) {
++                // There is no findDocumentPath API. Enable filtering on folders in search mode.
++                cursor = new FilteringCursorWrapper(cursor, null, SEARCH_REJECT_MIMES);
++            }
++            */
++            // TODO: When API tweaks have landed, use ContentResolver.EXTRA_HONORED_ARGS
++            // instead of checking directly for ContentResolver.QUERY_ARG_SORT_COLUMNS (won't work)
++            /*
++            if (mFeatures.isContentPagingEnabled()
++                        && cursor.getExtras().containsKey(ContentResolver.QUERY_ARG_SORT_COLUMNS)) {
++                if (VERBOSE) Log.d(TAG, "Skipping sort of pre-sorted cursor. Booya!");
++            } else {
++                cursor = mModel.sortCursor(cursor, mFileTypeLookup);
++            }*/
++            result.cursor = httpresult;
++        } catch (Exception e) {
++            Log.w(TAG, "Failed to query", e);
++            result.exception = e;
++        } finally {
++            synchronized (this) {
++                mSignal = null;
++            }
++            // TODO: Remove this call.
++            ContentProviderClient.releaseQuietly(client);
++        }
++
++        return result;
++    }
++
++    @Override
++    public void cancelLoadInBackground() {
++        super.cancelLoadInBackground();
++
++        synchronized (this) {
++            if (mSignal != null) {
++                mSignal.cancel();
++            }
++        }
++    }
++
++    @Override
++    public void deliverResult(DirectoryResult result) {
++        if (isReset()) {
++            IoUtils.closeQuietly(result);
++            return;
++        }
++        DirectoryResult oldResult = mResult;
++        mResult = result;
++
++        if (isStarted()) {
++            super.deliverResult(result);
++        }
++
++        if (oldResult != null && oldResult != result) {
++            IoUtils.closeQuietly(oldResult);
++        }
++    }
++
++    @Override
++    protected void onStartLoading() {
++        if (mResult != null) {
++            deliverResult(mResult);
++        }
++        if (takeContentChanged() || mResult == null) {
++            forceLoad();
++        }
++    }
++
++    @Override
++    protected void onStopLoading() {
++        cancelLoad();
++    }
++
++    @Override
++    public void onCanceled(DirectoryResult result) {
++        IoUtils.closeQuietly(result);
++    }
++
++    @Override
++    protected void onReset() {
++        super.onReset();
++
++        // Ensure the loader is stopped
++        onStopLoading();
++
++        IoUtils.closeQuietly(mResult);
++        mResult = null;
++
++        getContext().getContentResolver().unregisterContentObserver(mObserver);
++    }
++
++    private static final class LockingContentObserver extends ContentObserver {
++        private final DirectoryReloadLock mLock;
++        private final Runnable mContentChangedCallback;
++
++        public LockingContentObserver(DirectoryReloadLock lock, Runnable contentChangedCallback) {
++            super(new Handler(Looper.getMainLooper()));
++            mLock = lock;
++            mContentChangedCallback = contentChangedCallback;
++        }
++
++        @Override
++        public boolean deliverSelfNotifications() {
++            return true;
++        }
++
++        @Override
++        public void onChange(boolean selfChange) {
++            mLock.tryUpdate(mContentChangedCallback);
++        }
++    }
++}
+diff --git a/src/com/android/documentsui/DirectoryLoader.java b/src/com/android/documentsui/DirectoryLoader.java
+index 30a447c..4555c42 100644
+--- a/src/com/android/documentsui/DirectoryLoader.java
++++ b/src/com/android/documentsui/DirectoryLoader.java
+@@ -97,6 +97,8 @@ public class DirectoryLoader extends AsyncTaskLoader<DirectoryResult> {
+             mSignal = new CancellationSignal();
+         }
+ 
++        Log.d("---dsn----", "-----directory loader in background-----");
++
+         final ContentResolver resolver = getContext().getContentResolver();
+         final String authority = mUri.getAuthority();
+ 
+diff --git a/src/com/android/documentsui/base/Shared.java b/src/com/android/documentsui/base/Shared.java
+index d0ee2de..dc2277c 100644
+--- a/src/com/android/documentsui/base/Shared.java
++++ b/src/com/android/documentsui/base/Shared.java
+@@ -84,6 +84,7 @@ public final class Shared {
+      * Extra flag used to store root of type RootInfo in the bundle.
+      */
+     public static final String EXTRA_ROOT = "root";
++    public static final String FRAGMENT_MARK = "fragmentmark";
+ 
+     /**
+      * Extra flag used to store document of DocumentInfo type in the bundle.
+diff --git a/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java b/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java
+new file mode 100644
+index 0000000..d31b1e0
+--- /dev/null
++++ b/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java
+@@ -0,0 +1,187 @@
++package com.android.documentsui.dirlist;
++
++import static com.android.documentsui.base.DocumentInfo.getCursorInt;
++import static com.android.documentsui.base.DocumentInfo.getCursorString;
++import static com.android.documentsui.base.Shared.DEBUG;
++import static com.android.documentsui.base.Shared.VERBOSE;
++import static com.android.documentsui.base.State.MODE_GRID;
++import static com.android.documentsui.base.State.MODE_LIST;
++
++import android.annotation.DimenRes;
++import android.annotation.FractionRes;
++import android.annotation.IntDef;
++import android.app.Activity;
++import android.app.ActivityManager;
++import android.app.Fragment;
++import android.app.FragmentManager;
++import android.app.FragmentTransaction;
++import android.app.LoaderManager;
++import android.content.Context;
++import android.content.Intent;
++import android.content.Loader;
++import android.database.Cursor;
++import android.net.Uri;
++import android.os.Build;
++import android.os.Bundle;
++import android.os.Handler;
++import android.os.Parcelable;
++import android.provider.DocumentsContract;
++import android.provider.DocumentsContract.Document;
++import android.support.v4.widget.SwipeRefreshLayout;
++import android.support.v7.widget.GridLayoutManager;
++import android.support.v7.widget.GridLayoutManager.SpanSizeLookup;
++import android.support.v7.widget.RecyclerView;
++import android.support.v7.widget.RecyclerView.RecyclerListener;
++import android.support.v7.widget.RecyclerView.ViewHolder;
++import android.util.Log;
++import android.util.SparseArray;
++import android.view.ContextMenu;
++import android.view.HapticFeedbackConstants;
++import android.view.LayoutInflater;
++import android.view.MenuInflater;
++import android.view.MenuItem;
++import android.view.MotionEvent;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.ImageView;
++import android.widget.Toast;
++
++import com.android.documentsui.AbstractActionHandler;
++import com.android.documentsui.ActionHandler;
++import com.android.documentsui.ActionModeController;
++import com.android.documentsui.BaseActivity;
++import com.android.documentsui.BaseActivity.RetainedState;
++import com.android.documentsui.DirectoryReloadLock;
++import com.android.documentsui.DocumentsApplication;
++import com.android.documentsui.FocusManager;
++import com.android.documentsui.Injector;
++import com.android.documentsui.Injector.ContentScoped;
++import com.android.documentsui.Injector.Injected;
++import com.android.documentsui.Metrics;
++import com.android.documentsui.Model;
++import com.android.documentsui.R;
++import com.android.documentsui.ThumbnailCache;
++import com.android.documentsui.base.DocumentFilters;
++import com.android.documentsui.base.DocumentInfo;
++import com.android.documentsui.base.DocumentStack;
++import com.android.documentsui.base.EventHandler;
++import com.android.documentsui.base.EventListener;
++import com.android.documentsui.base.Events.InputEvent;
++import com.android.documentsui.base.Events.MotionInputEvent;
++import com.android.documentsui.base.Features;
++import com.android.documentsui.base.RootInfo;
++import com.android.documentsui.base.Shared;
++import com.android.documentsui.base.State;
++import com.android.documentsui.base.State.ViewMode;
++import com.android.documentsui.clipping.ClipStore;
++import com.android.documentsui.clipping.DocumentClipper;
++import com.android.documentsui.clipping.UrisSupplier;
++import com.android.documentsui.dirlist.AnimationView.AnimationType;
++import com.android.documentsui.picker.PickActivity;
++import com.android.documentsui.selection.BandController;
++import com.android.documentsui.selection.GestureSelector;
++import com.android.documentsui.selection.Selection;
++import com.android.documentsui.selection.SelectionManager;
++import com.android.documentsui.selection.SelectionMetadata;
++import com.android.documentsui.services.FileOperation;
++import com.android.documentsui.services.FileOperationService;
++import com.android.documentsui.services.FileOperationService.OpType;
++import com.android.documentsui.services.FileOperations;
++import com.android.documentsui.sorting.SortDimension;
++import com.android.documentsui.sorting.SortModel;
++
++import java.io.IOException;
++import java.lang.annotation.Retention;
++import java.lang.annotation.RetentionPolicy;
++import java.util.List;
++import java.util.ArrayList;
++
++
++import javax.annotation.Nullable;
++import com.android.documentsui.DSNObjectMeta;
++import com.android.documentsui.DSNObjectMetaLoader;
++import com.android.documentsui.httpnetwork.HttpServer;
++import com.android.documentsui.httpnetwork.ObjectMeta;
++
++
++public class DSNDirectoryFragment extends DirectoryFragment {
++
++    public static List<ObjectMeta> getModel = new ArrayList();
++    private final LoaderBindings mBindings;
++
++    public DSNDirectoryFragment() {
++        super();
++        mBindings = new LoaderBindings();
++    }
++
++    @Override
++    public View onCreateView(
++            LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
++
++        mActivity = (BaseActivity) getActivity();
++        final View view = inflater.inflate(R.layout.fragment_dsn_directory, container, false);
++
++        mProgressBar = view.findViewById(R.id.progressbar);
++        assert(mProgressBar != null);
++
++        mRecView = (RecyclerView) view.findViewById(R.id.dir_list);
++        mRecView.setRecyclerListener(
++                new RecyclerListener() {
++                    @Override
++                    public void onViewRecycled(ViewHolder holder) {
++                        cancelThumbnailTask(holder.itemView);
++                    }
++                });
++
++        mRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.refresh_layout);
++        mRefreshLayout.setOnRefreshListener(this);
++        mRecView.setItemAnimator(new DirectoryItemAnimator(mActivity));
++
++        mInjector = mActivity.getInjector();
++        mModel = mInjector.getModel();
++        mModel.reset();
++       // Log.d("XULU_LOG","getHttpIpfsdata:" + getModel.get(0).get_account_id());
++        //sLog.d("XULU_LOG","getHttpIpfsdata:" + getModel.get(0).get_object_name());
++
++        mInjector.actions.registerDisplayStateChangedListener(mOnDisplayStateChanged);
++
++        mClipper = DocumentsApplication.getDocumentClipper(getContext());
++        // Make the recycler and the empty views responsive to drop events when allowed.
++        mRecView.setOnDragListener(mDragHoverListener);
++
++        return view;
++    }
++
++    @Override
++    public void onStart() {
++        super.onStart();
++        Toast.makeText(getActivity(), "dsn onStart", Toast.LENGTH_LONG).show();
++        getActivity().getLoaderManager().restartLoader(1001, null, mBindings);
++        HttpServer.getInstance().getHttpIpfsdata();
++    }
++    @Override
++    public void onRefresh() {
++        mRefreshLayout.setRefreshing(false);
++    }
++
++    private final class LoaderBindings implements LoaderManager.LoaderCallbacks<DSNObjectMeta> {
++
++        @Override
++        public Loader<DSNObjectMeta> onCreateLoader(int id, Bundle args) {
++            Context context = getActivity();
++            return new DSNObjectMetaLoader(context);
++        }
++
++        @Override
++        public void onLoadFinished(Loader<DSNObjectMeta> loader, DSNObjectMeta result) {
++            assert(result != null);
++            Toast.makeText(getActivity(), result.hashKey, Toast.LENGTH_LONG).show();
++        }
++
++        @Override
++        public void onLoaderReset(Loader<DSNObjectMeta> loader) {
++            Toast.makeText(getActivity(), "dsn onLoaderReset", Toast.LENGTH_LONG).show();
++        }
++    }
++
++}
+diff --git a/src/com/android/documentsui/dirlist/DirectoryFragment.java b/src/com/android/documentsui/dirlist/DirectoryFragment.java
+index 85370fb..4585026 100644
+--- a/src/com/android/documentsui/dirlist/DirectoryFragment.java
++++ b/src/com/android/documentsui/dirlist/DirectoryFragment.java
+@@ -58,6 +58,7 @@ import android.view.MotionEvent;
+ import android.view.View;
+ import android.view.ViewGroup;
+ import android.widget.ImageView;
++import android.widget.Toast;
+ 
+ import com.android.documentsui.ActionHandler;
+ import com.android.documentsui.ActionModeController;
+@@ -124,74 +125,74 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+     public @interface RequestCode {}
+     public static final int REQUEST_COPY_DESTINATION = 1;
+ 
+-    private static final String TAG = "DirectoryFragment";
+-    private static final int LOADER_ID = 42;
++    protected static final String TAG = "DirectoryFragment";
++    protected static final int LOADER_ID = 42;
+ 
+-    private static final int CACHE_EVICT_LIMIT = 100;
+-    private static final int REFRESH_SPINNER_TIMEOUT = 500;
++    protected static final int CACHE_EVICT_LIMIT = 100;
++    protected static final int REFRESH_SPINNER_TIMEOUT = 500;
+ 
+-    private BaseActivity mActivity;
++    protected BaseActivity mActivity;
+ 
+-    private State mState;
+-    private Model mModel;
+-    private final EventListener<Model.Update> mModelUpdateListener = new ModelUpdateListener();
+-    private final DocumentsAdapter.Environment mAdapterEnv = new AdapterEnvironment();
++    protected State mState;
++    protected Model mModel;
++    protected final EventListener<Model.Update> mModelUpdateListener = new ModelUpdateListener();
++    protected final DocumentsAdapter.Environment mAdapterEnv = new AdapterEnvironment();
+ 
+     @Injected
+     @ContentScoped
+-    private Injector<?> mInjector;
++    protected Injector<?> mInjector;
+ 
+     @Injected
+     @ContentScoped
+-    private SelectionManager mSelectionMgr;
++    protected SelectionManager mSelectionMgr;
+ 
+     @Injected
+     @ContentScoped
+-    private FocusManager mFocusManager;
++    protected FocusManager mFocusManager;
+ 
+     @Injected
+     @ContentScoped
+-    private ActionHandler mActions;
++    protected ActionHandler mActions;
+ 
+     @Injected
+     @ContentScoped
+-    private ActionModeController mActionModeController;
++    protected ActionModeController mActionModeController;
+ 
+-    private SelectionMetadata mSelectionMetadata;
+-    private UserInputHandler<InputEvent> mInputHandler;
+-    private @Nullable BandController mBandController;
+-    private @Nullable DragHoverListener mDragHoverListener;
+-    private IconHelper mIconHelper;
+-    private SwipeRefreshLayout mRefreshLayout;
+-    private RecyclerView mRecView;
++    protected SelectionMetadata mSelectionMetadata;
++    protected UserInputHandler<InputEvent> mInputHandler;
++    protected @Nullable BandController mBandController;
++    protected @Nullable DragHoverListener mDragHoverListener;
++    protected IconHelper mIconHelper;
++    protected SwipeRefreshLayout mRefreshLayout;
++    protected RecyclerView mRecView;
+ 
+-    private DocumentsAdapter mAdapter;
+-    private DocumentClipper mClipper;
+-    private GridLayoutManager mLayout;
+-    private int mColumnCount = 1;  // This will get updated when layout changes.
++    protected DocumentsAdapter mAdapter;
++    protected DocumentClipper mClipper;
++    protected GridLayoutManager mLayout;
++    protected int mColumnCount = 1;  // This will get updated when layout changes.
+ 
+-    private float mLiveScale = 1.0f;
+-    private @ViewMode int mMode;
++    protected float mLiveScale = 1.0f;
++    protected @ViewMode int mMode;
+ 
+-    private View mProgressBar;
++    protected View mProgressBar;
+ 
+-    private DirectoryState mLocalState;
+-    private DirectoryReloadLock mReloadLock = new DirectoryReloadLock();
++    protected DirectoryState mLocalState;
++    protected DirectoryReloadLock mReloadLock = new DirectoryReloadLock();
+ 
+-    private Runnable mBandSelectStarted;
++    protected Runnable mBandSelectStarted;
+ 
+     // Note, we use !null to indicate that selection was restored (from rotation).
+     // So don't fiddle with this field unless you've got the bigger picture in mind.
+-    private @Nullable Selection mRestoredSelection = null;
++    protected @Nullable Selection mRestoredSelection = null;
+ 
+-    private SortModel.UpdateListener mSortListener = (model, updateType) -> {
++    protected SortModel.UpdateListener mSortListener = (model, updateType) -> {
+         // Only when sort order has changed do we need to trigger another loading.
+         if ((updateType & SortModel.UPDATE_TYPE_SORTING) != 0) {
+             mActions.loadDocumentsForCurrentStack();
+         }
+     };
+ 
+-    private final Runnable mOnDisplayStateChanged = this::onDisplayStateChanged;
++    protected final Runnable mOnDisplayStateChanged = this::onDisplayStateChanged;
+ 
+     @Override
+     public View onCreateView(
+@@ -272,6 +273,9 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+     public void onActivityCreated(Bundle savedInstanceState) {
+         super.onActivityCreated(savedInstanceState);
+ 
++
++
++
+         mState = mActivity.getDisplayState();
+ 
+         // Read arguments when object created for the first time.
+@@ -403,6 +407,14 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+                         ? SortModel.SORT_DIMENSION_ID_DATE
+                         : SortModel.SORT_DIMENSION_ID_TITLE);
+ 
++        if(getArguments().getBoolean(Shared.FRAGMENT_MARK, true)){
++            Log.d("XULU_LOG","onActivityCreated:" + "true");
++            return;
++
++        }
++        Log.d("XULU_LOG","onActivityCreated:" + "false");
++
++
+         // Kick off loader at least once
+         mActions.loadDocumentsForCurrentStack();
+     }
+@@ -729,14 +741,14 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+         }
+     }
+ 
+-    private boolean onAccessibilityClick(View child) {
++    protected boolean onAccessibilityClick(View child) {
+         DocumentDetails doc = getDocumentHolder(child);
+         mActions.openDocument(doc, ActionHandler.VIEW_TYPE_PREVIEW,
+                 ActionHandler.VIEW_TYPE_REGULAR);
+         return true;
+     }
+ 
+-    private void cancelThumbnailTask(View view) {
++    protected void cancelThumbnailTask(View view) {
+         final ImageView iconThumb = (ImageView) view.findViewById(R.id.icon_thumb);
+         if (iconThumb != null) {
+             mIconHelper.stopLoading(iconThumb);
+@@ -744,7 +756,7 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+     }
+ 
+     // Support for opening multiple documents is currently exclusive to DocumentsActivity.
+-    private void openDocuments(final Selection selected) {
++    protected void openDocuments(final Selection selected) {
+         Metrics.logUserAction(getContext(), Metrics.USER_ACTION_OPEN);
+ 
+         // Model must be accessed in UI thread, since underlying cursor is not threadsafe.
+@@ -756,7 +768,7 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+         }
+     }
+ 
+-    private void showChooserForDoc(final Selection selected) {
++    protected void showChooserForDoc(final Selection selected) {
+         Metrics.logUserAction(getContext(), Metrics.USER_ACTION_OPEN);
+ 
+         assert(selected.size() == 1);
+@@ -765,7 +777,7 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+         mActions.showChooserForDoc(doc);
+     }
+ 
+-    private void transferDocuments(final Selection selected, @Nullable DocumentStack destination,
++    protected void transferDocuments(final Selection selected, @Nullable DocumentStack destination,
+             final @OpType int mode) {
+         switch (mode) {
+             case FileOperationService.OPERATION_COPY:
+@@ -867,7 +879,7 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+         }
+     }
+ 
+-    private static boolean hasDirectory(List<DocumentInfo> docs) {
++    protected static boolean hasDirectory(List<DocumentInfo> docs) {
+         for (DocumentInfo info : docs) {
+             if (Document.MIME_TYPE_DIR.equals(info.mimeType)) {
+                 return true;
+@@ -876,7 +888,7 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+         return false;
+     }
+ 
+-    private void renameDocuments(Selection selected) {
++    protected void renameDocuments(Selection selected) {
+         Metrics.logUserAction(getContext(), Metrics.USER_ACTION_RENAME);
+ 
+         // Batch renaming not supported
+@@ -1035,11 +1047,21 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+         final FragmentTransaction ft = fm.beginTransaction();
+         AnimationView.setupAnimations(ft, anim, args);
+ 
+-        final DirectoryFragment fragment = new DirectoryFragment();
+-        fragment.setArguments(args);
++        if (root != null && root.authority != null && root.authority.equals("com.android.providers.decentercloud.documents")) {
++            final DirectoryFragment fragment = new DSNDirectoryFragment();
++            args.putBoolean(Shared.FRAGMENT_MARK, true);
++            fragment.setArguments(args);
+ 
+-        ft.replace(getFragmentId(), fragment);
+-        ft.commitAllowingStateLoss();
++            ft.replace(getFragmentId(), fragment);
++            ft.commitAllowingStateLoss();
++        } else {
++            final DirectoryFragment fragment = new DirectoryFragment();
++            args.putBoolean(Shared.FRAGMENT_MARK, false);
++            fragment.setArguments(args);
++
++            ft.replace(getFragmentId(), fragment);
++            ft.commitAllowingStateLoss();
++        }
+     }
+ 
+     public static @Nullable DirectoryFragment get(FragmentManager fm) {
+diff --git a/src/com/android/documentsui/files/FilesActivity.java b/src/com/android/documentsui/files/FilesActivity.java
+index 50ba2ff..e5355a2 100644
+--- a/src/com/android/documentsui/files/FilesActivity.java
++++ b/src/com/android/documentsui/files/FilesActivity.java
+@@ -36,6 +36,7 @@ import android.view.KeyEvent;
+ import android.view.KeyboardShortcutGroup;
+ import android.view.Menu;
+ import android.view.MenuItem;
++import android.widget.Toast;
+ 
+ import com.android.documentsui.ActionModeController;
+ import com.android.documentsui.BaseActivity;
+@@ -66,6 +67,8 @@ import com.android.documentsui.ui.MessageBuilder;
+ import java.util.ArrayList;
+ import java.util.List;
+ 
++import com.android.documentsui.dirlist.DSNDirectoryFragment;
++
+ /**
+  * Standalone file management activity.
+  */
+@@ -331,6 +334,7 @@ public class FilesActivity extends BaseActivity implements ActionHandler.Addons
+     @Override
+     public boolean onPrepareOptionsMenu(Menu menu) {
+         super.onPrepareOptionsMenu(menu);
++
+         mInjector.menuManager.updateOptionMenu(menu);
+         return true;
+     }
+diff --git a/src/com/android/documentsui/httpnetwork/HttpServer.java b/src/com/android/documentsui/httpnetwork/HttpServer.java
+index e3338a6..ee4df89 100644
+--- a/src/com/android/documentsui/httpnetwork/HttpServer.java
++++ b/src/com/android/documentsui/httpnetwork/HttpServer.java
+@@ -22,6 +22,7 @@ import rx.Observer;
+ import rx.android.schedulers.AndroidSchedulers;
+ import rx.schedulers.Schedulers;
+ import com.android.documentsui.httpnetwork.ObjectMeta;
++import com.android.documentsui.dirlist.DSNDirectoryFragment;
+ 
+ 
+ public class HttpServer extends BaseService{
+@@ -69,11 +70,12 @@ public class HttpServer extends BaseService{
+                             if (apr.getResult() == 0 && apr.getData().containsKey(ApiConst.PARAM_QUOTES)) {
+                                 ObjectMapper objectMapper = new ObjectMapper();
+                                 try {
+-                                    List<ObjectMeta> objectlists = objectMapper.readValue(objectMapper.writeValueAsString(apr.getData().get(ApiConst.PARAM_QUOTES)), new TypeReference<List<ObjectMeta>>() {});
+-                                    ObjectMeta xx = objectlists.get(0);
+-
+-                                      Log.d("XULU_LOG","getHttpIpfsdata:" + xx.get_account_id());
+-                                      Log.d("XULU_LOG","getHttpIpfsdata:" + xx.get_object_name());
++                                    List<ObjectMeta> objectlist = objectMapper.readValue(objectMapper.writeValueAsString(apr.getData().get(ApiConst.PARAM_QUOTES)), new TypeReference<List<ObjectMeta>>() {});
++                                    ObjectMeta tmpobj = objectlist.get(0);
++                                    for(ObjectMeta getObjectMeta: objectlist)
++                                       DSNDirectoryFragment.getModel.add(getObjectMeta);
++                                      //Log.d("XULU_LOG","getHttpIpfsdata:" + xx.get_account_id());
++                                      //Log.d("XULU_LOG","getHttpIpfsdata:" + xx.get_object_name());
+                                 } catch (IOException e1) {
+                                     e1.printStackTrace();
+                                 }
+diff --git a/src/com/android/documentsui/httpnetwork/ObjectMeta.java b/src/com/android/documentsui/httpnetwork/ObjectMeta.java
+new file mode 100644
+index 0000000..c3ce97e
+--- /dev/null
++++ b/src/com/android/documentsui/httpnetwork/ObjectMeta.java
+@@ -0,0 +1,96 @@
++package com.android.documentsui.httpnetwork;
++
++import android.support.annotation.NonNull;
++
++import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
++import com.fasterxml.jackson.annotation.JsonProperty;
++
++import java.io.Serializable;
++import java.math.BigDecimal;
++
++@JsonIgnoreProperties(ignoreUnknown = true)
++public class ObjectMeta implements Serializable {
++    @JsonProperty("account_id")
++    private String accountId;
++    @JsonProperty("object_key")
++    private String objectKey;
++    @JsonProperty("mime_type")
++    private String mimeType;
++
++    @JsonProperty("object_name")
++    private String objectName;
++    @JsonProperty("object_size")
++    private int objectSize;
++    @JsonProperty("object_create_time")
++    private String objectCreateTime;
++    @JsonProperty("object_sync_time")
++    private String objectSyncTime;
++
++    //	account_id
++    public String get_account_id() {
++        return accountId;
++    }
++    public void set_account_id(String accountId) {
++        this.accountId = accountId;
++    }
++    //	object_key
++    public String get_object_key() {
++        return objectKey;
++    }
++
++    public void set_object_key(String objectKey) {
++        this.objectKey = objectKey;
++    }
++    //	mime_type
++    public String getmime_type() {
++        return mimeType;
++    }
++
++    public void set_mime_type(String mimeType) {
++        this.mimeType = mimeType;
++    }
++    // object_name
++    public String get_object_name() {
++        return objectName;
++    }
++
++    public void set_object_name(String objectName) {
++        this.objectName = objectName;
++    }
++    //	object_size
++    public int get_object_size() {
++        return objectSize;
++    }
++
++    public void set_object_size(int objectSize) {
++        this.objectSize = objectSize;
++    }
++    // object_create_time
++    public String get_object_create_time() {
++        return objectCreateTime;
++    }
++
++    public void set_object_create_time(String objectCreateTime) {
++        this.objectCreateTime = objectCreateTime;
++    }
++    // object_sync_time
++    public String get_object_sync_time() {
++        return objectSyncTime;
++    }
++
++    public void set_object_sync_time(String objectSyncTime) {
++        this.objectSyncTime = objectSyncTime;
++    }
++    public String toString() {
++        return "ObjectMetaPost{" +
++                "account_id='" + accountId + '\'' +
++                ", object_key='" + objectKey + '\'' +
++                ", mime_type='" + mimeType + '\'' +
++                ", object_name=" + objectName +
++                ", object_size=" + objectSize +
++                ", object_create_time=" + objectCreateTime +
++                ", object_sync_time=" + objectSyncTime +
++                '}';
++    }
++}
++
+diff --git a/src/com/android/documentsui/sidebar/RootItem.java b/src/com/android/documentsui/sidebar/RootItem.java
+index 4e27869..caecb3d 100644
+--- a/src/com/android/documentsui/sidebar/RootItem.java
++++ b/src/com/android/documentsui/sidebar/RootItem.java
+@@ -38,7 +38,8 @@ import com.android.documentsui.base.RootInfo;
+ /**
+  * An {@link Item} for each root provided by {@link DocumentsProvider}s.
+  */
+-class RootItem extends Item {
++class
++RootItem extends Item {
+     private static final String STRING_ID_FORMAT = "RootItem{%s/%s}";
+ 
+     public final RootInfo root;
+-- 
+2.7.4
+

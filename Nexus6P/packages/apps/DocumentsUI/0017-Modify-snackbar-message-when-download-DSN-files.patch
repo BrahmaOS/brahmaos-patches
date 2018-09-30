@@ -1,0 +1,60 @@
+From 1932e804e9eea454e35df984c3b2d0db9a760d7e Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Fri, 28 Sep 2018 14:44:35 +0800
+Subject: [PATCH] Modify snackbar message when download DSN files
+
+Change-Id: I5f44f14b22ff512dcaf4a020eef6bdc404a41e69
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ res/values/strings.xml                               | 4 ++++
+ src/com/android/documentsui/ui/DialogController.java | 2 +-
+ src/com/android/documentsui/ui/Snackbars.java        | 5 ++++-
+ 3 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index 549f052..bfd40c4 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -234,6 +234,10 @@
+         <item quantity="one">Backuping <xliff:g id="count" example="1">%1$d</xliff:g> item.</item>
+         <item quantity="other">Backuping <xliff:g id="count" example="3">%1$d</xliff:g> items.</item>
+     </plurals>
++     <plurals name="downloading">
++        <item quantity="one">Downloading <xliff:g id="count" example="1">%1$d</xliff:g> item.</item>
++        <item quantity="other">Downloading <xliff:g id="count" example="3">%1$d</xliff:g> items.</item>
++    </plurals>
+    <!-- Text shown for the undo button -->
+     <string name="undo">Undo</string>
+     <!-- Text shown on the notification while DocumentsUI performs setup in preparation for copying files [CHAR LIMIT=32] -->
+diff --git a/src/com/android/documentsui/ui/DialogController.java b/src/com/android/documentsui/ui/DialogController.java
+index e3700a9..8662290 100644
+--- a/src/com/android/documentsui/ui/DialogController.java
++++ b/src/com/android/documentsui/ui/DialogController.java
+@@ -225,7 +225,7 @@ public interface DialogController {
+                     Snackbars.showBackup(mActivity, docCount);
+                     break;
+                 case FileOperationService.OPERATION_DOWNLOADDOCUMENTSFROMDSN:
+-                    Snackbars.showBackup(mActivity, docCount);
++                    Snackbars.showDownload(mActivity, docCount);
+                     break;
+                 default:
+                     throw new UnsupportedOperationException("Unsupported Operation: " + opType);
+diff --git a/src/com/android/documentsui/ui/Snackbars.java b/src/com/android/documentsui/ui/Snackbars.java
+index 4cd644a..e937a55 100644
+--- a/src/com/android/documentsui/ui/Snackbars.java
++++ b/src/com/android/documentsui/ui/Snackbars.java
+@@ -63,7 +63,10 @@ public final class Snackbars {
+         CharSequence message = Shared.getQuantityString(activity, R.plurals.backuping, docCount);
+         makeSnackbar(activity, message, Snackbar.LENGTH_SHORT).show();
+     }
+-
++    public static final void showDownload(Activity activity, int docCount) {
++        CharSequence message = Shared.getQuantityString(activity, R.plurals.downloading, docCount);
++        makeSnackbar(activity, message, Snackbar.LENGTH_SHORT).show();
++    }
+     public static final void showOperationRejected(Activity activity) {
+         makeSnackbar(activity, R.string.file_operation_rejected, Snackbar.LENGTH_SHORT).show();
+     }
+-- 
+2.7.4
+

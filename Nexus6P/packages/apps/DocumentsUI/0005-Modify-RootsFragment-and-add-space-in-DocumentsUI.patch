@@ -1,0 +1,67 @@
+From b58cca44324be82b29647f20cdaf073a22445a8a Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Mon, 10 Sep 2018 09:36:09 +0800
+Subject: [PATCH] Modify RootsFragment and add space in DocumentsUI
+
+Change-Id: I036c2ab15481f7e0832489d6c1ca6c86a17ca5fd
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ src/com/android/documentsui/sidebar/RootsFragment.java | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/src/com/android/documentsui/sidebar/RootsFragment.java b/src/com/android/documentsui/sidebar/RootsFragment.java
+index 0fa3d85..15d0c77 100644
+--- a/src/com/android/documentsui/sidebar/RootsFragment.java
++++ b/src/com/android/documentsui/sidebar/RootsFragment.java
+@@ -230,6 +230,7 @@ public class RootsFragment extends Fragment {
+                 final String excludePackage = excludeSelf ? activity.getCallingPackage() : null;
+                 List<Item> sortedItems =
+                         sortLoadResult(roots, excludePackage, handlerAppIntent);
++
+                 mAdapter = new RootsAdapter(activity, sortedItems, mDragListener);
+                 mList.setAdapter(mAdapter);
+ 
+@@ -258,23 +259,28 @@ public class RootsFragment extends Fragment {
+ 
+         final List<RootItem> libraries = new ArrayList<>();
+         final List<RootItem> others = new ArrayList<>();
++        final List<RootItem> decenters = new ArrayList<>();
+ 
+         for (final RootInfo root : roots) {
+-            final RootItem item = new RootItem(root, mActionHandler);
++			Log.d(TAG,"sortLoadResult"+root.toString());
+ 
++            final RootItem item = new RootItem(root, mActionHandler);
+             Activity activity = getActivity();
+             if (root.isHome() && !Shared.shouldShowDocumentsRoot(activity)) {
+                 continue;
+             } else if (root.isLibrary()) {
+                 libraries.add(item);
+-            } else {
++            } else if(root.authority.equals("com.android.providers.decenterlocaldisk.documents")||
++                root.authority.equals("com.android.providers.decentercloud.documents")){
++				decenters.add(item);
++            }else {
+                 others.add(item);
+             }
+         }
+-
+         final RootComparator comp = new RootComparator();
+         Collections.sort(libraries, comp);
+         Collections.sort(others, comp);
++        Collections.sort(decenters, comp);
+ 
+         if (VERBOSE) Log.v(TAG, "Adding library roots: " + libraries);
+         result.addAll(libraries);
+@@ -285,6 +291,8 @@ public class RootsFragment extends Fragment {
+ 
+         if (VERBOSE) Log.v(TAG, "Adding plain roots: " + libraries);
+         result.addAll(others);
++        result.add(new SpacerItem());
++        result.addAll(decenters);
+ 
+         // Include apps that can handle this intent too.
+         if (handlerAppIntent != null) {
+-- 
+2.7.4
+
