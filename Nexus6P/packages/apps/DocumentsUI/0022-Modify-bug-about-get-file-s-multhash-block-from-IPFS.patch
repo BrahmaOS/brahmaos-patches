@@ -1,0 +1,27 @@
+From 6a76151cb3c50b6b000818989f1c916655af83a5 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Mon, 8 Oct 2018 11:17:04 +0800
+Subject: [PATCH] Modify bug about get file's multhash block from IPFS
+
+Change-Id: Ic8553540e0a4c25a1b59e8d82f45dcd37ee8b69a
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ src/com/android/documentsui/services/BackupJob.java | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/com/android/documentsui/services/BackupJob.java b/src/com/android/documentsui/services/BackupJob.java
+index a2966ef..c038461 100644
+--- a/src/com/android/documentsui/services/BackupJob.java
++++ b/src/com/android/documentsui/services/BackupJob.java
+@@ -226,7 +226,7 @@ final class BackupJob extends ResolvedResourcesJob {
+     public int getBlockCount(MerkleNode node)throws ResourceException {
+         try{
+             List<MerkleNode> lsResult = mhandleIPFS.ls(node.hash);
+-            return lsResult.size();
++            return lsResult.get(0).links.size();
+         }  catch (IOException e) {
+              Log.e(TAG,"Failed to get BlockCount."+ e);
+         }
+-- 
+2.7.4
+
