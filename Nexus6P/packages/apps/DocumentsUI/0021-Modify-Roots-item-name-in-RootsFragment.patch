@@ -1,0 +1,27 @@
+From 8e4f1c646abc3f11479e10328743216f8eb669dd Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Fri, 5 Oct 2018 20:30:36 +0800
+Subject: [PATCH] Modify Roots item name in RootsFragment
+
+Change-Id: I3e77471ccd2ec36a7ce5763e8906cbbc899b74eb
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ src/com/android/documentsui/sidebar/RootsFragment.java | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/com/android/documentsui/sidebar/RootsFragment.java b/src/com/android/documentsui/sidebar/RootsFragment.java
+index 05bc4b8..367e033 100644
+--- a/src/com/android/documentsui/sidebar/RootsFragment.java
++++ b/src/com/android/documentsui/sidebar/RootsFragment.java
+@@ -262,7 +262,7 @@ public class RootsFragment extends Fragment {
+         final List<RootItem> decenters = new ArrayList<>();
+ 
+         for (final RootInfo root : roots) {
+-            if(root.title.equals("AOSP on angler"))
++            if(root.derivedType == root.TYPE_LOCAL)
+                 root.title = "Internal Storage";
+             final RootItem item = new RootItem(root, mActionHandler);
+             Activity activity = getActivity();
+-- 
+2.7.4
+
