@@ -1,0 +1,1090 @@
+From 801f35d70583f364d2bee6b994aa54dabcc5c956 Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Fri, 26 Oct 2018 16:52:57 +0800
+Subject: [PATCH] [WalletManager]: implement the APIs of WalletManager
+
+Change-Id: I0f7e301e838711a7f7b8cf5022805102ddb7c935
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ Android.mk                                         |   2 +
+ api/current.txt                                    | 103 ++++++++-
+ api/system-current.txt                             | 103 ++++++++-
+ api/test-current.txt                               | 103 ++++++++-
+ core/java/android/app/IOnETHBlanceGetListener.aidl |   6 +
+ core/java/android/app/IWalletManager.aidl          |  39 ++++
+ core/java/android/app/SystemServiceRegistry.java   |   8 +
+ core/java/android/app/WalletManager.java           | 236 +++++++++++++++++++++
+ core/java/android/content/Context.java             |   9 +
+ core/java/android/content/pm/WalletData.aidl       |  20 ++
+ core/java/android/content/pm/WalletData.java       |  76 +++++++
+ core/java/android/util/BrahmaConstants.java        |  12 +-
+ .../com/android/server/WalletLoaderService.java    |  79 +++++++
+ services/java/com/android/server/SystemServer.java |  10 +
+ 14 files changed, 791 insertions(+), 15 deletions(-)
+ create mode 100644 core/java/android/app/IOnETHBlanceGetListener.aidl
+ create mode 100644 core/java/android/app/IWalletManager.aidl
+ create mode 100644 core/java/android/app/WalletManager.java
+ create mode 100644 core/java/android/content/pm/WalletData.aidl
+ create mode 100644 core/java/android/content/pm/WalletData.java
+ create mode 100644 services/core/java/com/android/server/WalletLoaderService.java
+
+diff --git a/Android.mk b/Android.mk
+index f410cbc..5c988b2 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -557,6 +557,8 @@ LOCAL_SRC_FILES += \
+ 	packages/services/Proxy/com/android/net/IProxyPortListener.aidl \
+ 	core/java/android/service/quicksettings/IQSService.aidl \
+ 	core/java/android/service/quicksettings/IQSTileService.aidl \
++    core/java/android/app/IWalletManager.aidl \
++    core/java/android/app/IOnETHBlanceGetListener.aidl \
+ 
+ # The following are native binders that need to go with the native component
+ # at system/update_engine/binder_bindings/. Use relative path to refer to them.
+diff --git a/api/current.txt b/api/current.txt
+index 6bea8b1..181ed35 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -4875,12 +4875,49 @@ package android.app {
+     field public static final int TRANSIT_UNSET = -1; // 0xffffffff
+   }
+ 
++  public abstract interface IOnETHBlanceGetListener implements android.os.IInterface {
++    method public abstract void onETHBlanceGetError() throws android.os.RemoteException;
++    method public abstract void onETHBlanceGetSuccess(java.lang.String) throws android.os.RemoteException;
++  }
++
++  public static abstract class IOnETHBlanceGetListener.Stub extends android.os.Binder implements android.app.IOnETHBlanceGetListener {
++    ctor public IOnETHBlanceGetListener.Stub();
++    method public android.os.IBinder asBinder();
++    method public static android.app.IOnETHBlanceGetListener asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public class IPFSCManager {
+     ctor public IPFSCManager(android.content.Context, android.os.IIPFSControllerManager);
+     method public int start_IPFSController(int) throws android.os.RemoteException;
+     method public int stop_IPFSController(int) throws android.os.RemoteException;
+   }
+ 
++  public abstract interface IWalletManager implements android.os.IInterface {
++    method public abstract android.content.pm.WalletData createDefaultETHWallet(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract android.content.pm.WalletData createEthereumWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<android.content.pm.WalletData> createWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String decryptMnemonics(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String decryptPrivateKey(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract int deleteWalletByAddress(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<android.content.pm.WalletData> getAllWallets() throws android.os.RemoteException;
++    method public abstract void getEthereumAccountBalanceByAddress(java.lang.String, android.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
++    method public abstract android.content.pm.WalletData getWalletDataByAddress(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<android.content.pm.WalletData> getWalletsForChainType(java.lang.String) throws android.os.RemoteException;
++    method public abstract android.content.pm.WalletData importEthereumWallet(java.lang.String, java.lang.String, java.lang.String, int) throws android.os.RemoteException;
++    method public abstract void setEthereumNetworkUrl(java.lang.String) throws android.os.RemoteException;
++    method public abstract int updateEthereumWalletPassword(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract int updateWalletAvatarForAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract int updateWalletNameForAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
++  }
++
++  public static abstract class IWalletManager.Stub extends android.os.Binder implements android.app.IWalletManager {
++    ctor public IWalletManager.Stub();
++    method public android.os.IBinder asBinder();
++    method public static android.app.IWalletManager asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public class Instrumentation {
+     ctor public Instrumentation();
+     method public android.os.TestLooperManager acquireLooperManager(android.os.Looper);
+@@ -6107,6 +6144,47 @@ package android.app {
+     method public void onDetached();
+   }
+ 
++  public class WalletManager {
++    ctor public WalletManager(android.content.Context);
++    method public android.content.pm.WalletData createEthereumWallet(java.lang.String, java.lang.String);
++    method public java.util.List<android.content.pm.WalletData> createWallet(java.lang.String, java.lang.String);
++    method public java.lang.String decryptMnemonics(java.lang.String, java.lang.String);
++    method public java.lang.String decryptPrivateKey(java.lang.String, java.lang.String);
++    method public int deleteWalletByAddress(java.lang.String);
++    method public java.util.List<android.content.pm.WalletData> getAllWallets();
++    method public void getEthereumAccountBalanceByAddress(java.lang.String, android.app.WalletManager.OnETHBlanceGetListener);
++    method public android.content.pm.WalletData getWalletDataByAddress(java.lang.String);
++    method public java.util.List<android.content.pm.WalletData> getWalletsForChainType(java.lang.String);
++    method public android.content.pm.WalletData importEthereumWallet(java.lang.String, java.lang.String, java.lang.String, int);
++    method public void setEthereumNetworkUrl(java.lang.String);
++    method public int updateEthereumWalletPassword(java.lang.String, java.lang.String, java.lang.String);
++    method public int updateWalletAvatarForAddress(java.lang.String, java.lang.String);
++    method public int updateWalletNameForAddress(java.lang.String, java.lang.String);
++    field public static final int CODE_DEFAULT_WALLET_CANNOT_DELETE = 500; // 0x1f4
++    field public static final int CODE_ERROR_PASSWORD = 200; // 0xc8
++    field public static final int CODE_NO_ERROR = 0; // 0x0
++    field public static final int CODE_OTHER_ERROR = -100; // 0xffffff9c
++    field public static final int CODE_REPEAT_NAME = 100; // 0x64
++    field public static final int CODE_WALLET_EXCEPTION = 400; // 0x190
++    field public static final int CODE_WALLET_NOT_EXIST = 300; // 0x12c
++    field public static final int IMPORT_BY_KEYSTORE = 2; // 0x2
++    field public static final int IMPORT_BY_MNEMONICS = 1; // 0x1
++    field public static final int IMPORT_BY_PRIVATE_KEY = 0; // 0x0
++    field public static final java.lang.String WALLET_CHAIN_TYPE_BTC = "M/44H/0H";
++    field public static final java.lang.String WALLET_CHAIN_TYPE_ETH = "M/44H/60H";
++  }
++
++  public static abstract interface WalletManager.OnETHBlanceGetListener {
++    method public abstract void onETHBlanceGetError();
++    method public abstract void onETHBlanceGetSuccess(java.lang.String);
++  }
++
++  public class WalletManager.OnETHBlanceGetListenerDelegate extends android.app.IOnETHBlanceGetListener.Stub {
++    ctor public WalletManager.OnETHBlanceGetListenerDelegate(android.app.WalletManager.OnETHBlanceGetListener);
++    method public void onETHBlanceGetError();
++    method public void onETHBlanceGetSuccess(java.lang.String);
++  }
++
+   public final class WallpaperColors implements android.os.Parcelable {
+     ctor public WallpaperColors(android.os.Parcel);
+     ctor public WallpaperColors(android.graphics.Color, android.graphics.Color, android.graphics.Color);
+@@ -9010,6 +9088,7 @@ package android.content {
+     field public static final java.lang.String USB_SERVICE = "usb";
+     field public static final java.lang.String USER_SERVICE = "user";
+     field public static final java.lang.String VIBRATOR_SERVICE = "vibrator";
++    field public static final java.lang.String WALLET_SERVICE = "wallet";
+     field public static final java.lang.String WALLPAPER_SERVICE = "wallpaper";
+     field public static final java.lang.String WIFI_AWARE_SERVICE = "wifiaware";
+     field public static final java.lang.String WIFI_P2P_SERVICE = "wifip2p";
+@@ -11071,6 +11150,24 @@ package android.content.pm {
+     field public static final android.os.Parcelable.Creator<android.content.pm.VersionedPackage> CREATOR;
+   }
+ 
++  public class WalletData implements android.os.Parcelable {
++    ctor public WalletData();
++    ctor public WalletData(android.content.pm.WalletData);
++    method public int describeContents();
++    method public void writeToParcel(android.os.Parcel, int);
++    field public static final android.os.Parcelable.Creator<android.content.pm.WalletData> CREATOR;
++    field public java.lang.String address;
++    field public java.lang.String avatar;
++    field public long createTime;
++    field public boolean isDefault;
++    field public java.lang.String keyPath;
++    field public java.lang.String keyStore;
++    field public long lastUpdateTime;
++    field public java.lang.String mnemonicStr;
++    field public java.lang.String name;
++    field public java.lang.String privateKeyStr;
++  }
++
+ }
+ 
+ package android.content.res {
+@@ -43243,9 +43340,9 @@ package android.util {
+   public class BrahmaConstants {
+     ctor public BrahmaConstants();
+     method public static boolean isMnemonicPathSupported(java.lang.String);
+-    field public static final java.lang.String BRM_MNEMONIC_PATH = "M/44H/60H/0H/0/1";
+-    field public static final java.lang.String DEFAULT_MNEMONIC_PATH = "M/2048H/60H/0H/0/0";
+-    field public static final java.lang.String ETH_MNEMONIC_PATH = "M/44H/60H/0H/0/0";
++    field public static final java.lang.String BIP_BRM_OS_PATH = "M/44H/2048H/0H/0/0";
++    field public static final java.lang.String BIP_BRM_PATH = "M/44H/60H/0H/0/1";
++    field public static final java.lang.String BIP_ETH_PATH = "M/44H/60H/0H/0/0";
+   }
+ 
+   public final deprecated class Config {
+diff --git a/api/system-current.txt b/api/system-current.txt
+index 8e1a2c1..1dff0b3 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -5046,12 +5046,49 @@ package android.app {
+     field public static final int TRANSIT_UNSET = -1; // 0xffffffff
+   }
+ 
++  public abstract interface IOnETHBlanceGetListener implements android.os.IInterface {
++    method public abstract void onETHBlanceGetError() throws android.os.RemoteException;
++    method public abstract void onETHBlanceGetSuccess(java.lang.String) throws android.os.RemoteException;
++  }
++
++  public static abstract class IOnETHBlanceGetListener.Stub extends android.os.Binder implements android.app.IOnETHBlanceGetListener {
++    ctor public IOnETHBlanceGetListener.Stub();
++    method public android.os.IBinder asBinder();
++    method public static android.app.IOnETHBlanceGetListener asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public class IPFSCManager {
+     ctor public IPFSCManager(android.content.Context, android.os.IIPFSControllerManager);
+     method public int start_IPFSController(int) throws android.os.RemoteException;
+     method public int stop_IPFSController(int) throws android.os.RemoteException;
+   }
+ 
++  public abstract interface IWalletManager implements android.os.IInterface {
++    method public abstract android.content.pm.WalletData createDefaultETHWallet(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract android.content.pm.WalletData createEthereumWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<android.content.pm.WalletData> createWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String decryptMnemonics(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String decryptPrivateKey(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract int deleteWalletByAddress(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<android.content.pm.WalletData> getAllWallets() throws android.os.RemoteException;
++    method public abstract void getEthereumAccountBalanceByAddress(java.lang.String, android.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
++    method public abstract android.content.pm.WalletData getWalletDataByAddress(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<android.content.pm.WalletData> getWalletsForChainType(java.lang.String) throws android.os.RemoteException;
++    method public abstract android.content.pm.WalletData importEthereumWallet(java.lang.String, java.lang.String, java.lang.String, int) throws android.os.RemoteException;
++    method public abstract void setEthereumNetworkUrl(java.lang.String) throws android.os.RemoteException;
++    method public abstract int updateEthereumWalletPassword(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract int updateWalletAvatarForAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract int updateWalletNameForAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
++  }
++
++  public static abstract class IWalletManager.Stub extends android.os.Binder implements android.app.IWalletManager {
++    ctor public IWalletManager.Stub();
++    method public android.os.IBinder asBinder();
++    method public static android.app.IWalletManager asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public abstract class InstantAppResolverService extends android.app.Service {
+     ctor public InstantAppResolverService();
+     method public final void attachBaseContext(android.content.Context);
+@@ -6318,6 +6355,47 @@ package android.app {
+     method public void setPersistentVrModeEnabled(boolean);
+   }
+ 
++  public class WalletManager {
++    ctor public WalletManager(android.content.Context);
++    method public android.content.pm.WalletData createEthereumWallet(java.lang.String, java.lang.String);
++    method public java.util.List<android.content.pm.WalletData> createWallet(java.lang.String, java.lang.String);
++    method public java.lang.String decryptMnemonics(java.lang.String, java.lang.String);
++    method public java.lang.String decryptPrivateKey(java.lang.String, java.lang.String);
++    method public int deleteWalletByAddress(java.lang.String);
++    method public java.util.List<android.content.pm.WalletData> getAllWallets();
++    method public void getEthereumAccountBalanceByAddress(java.lang.String, android.app.WalletManager.OnETHBlanceGetListener);
++    method public android.content.pm.WalletData getWalletDataByAddress(java.lang.String);
++    method public java.util.List<android.content.pm.WalletData> getWalletsForChainType(java.lang.String);
++    method public android.content.pm.WalletData importEthereumWallet(java.lang.String, java.lang.String, java.lang.String, int);
++    method public void setEthereumNetworkUrl(java.lang.String);
++    method public int updateEthereumWalletPassword(java.lang.String, java.lang.String, java.lang.String);
++    method public int updateWalletAvatarForAddress(java.lang.String, java.lang.String);
++    method public int updateWalletNameForAddress(java.lang.String, java.lang.String);
++    field public static final int CODE_DEFAULT_WALLET_CANNOT_DELETE = 500; // 0x1f4
++    field public static final int CODE_ERROR_PASSWORD = 200; // 0xc8
++    field public static final int CODE_NO_ERROR = 0; // 0x0
++    field public static final int CODE_OTHER_ERROR = -100; // 0xffffff9c
++    field public static final int CODE_REPEAT_NAME = 100; // 0x64
++    field public static final int CODE_WALLET_EXCEPTION = 400; // 0x190
++    field public static final int CODE_WALLET_NOT_EXIST = 300; // 0x12c
++    field public static final int IMPORT_BY_KEYSTORE = 2; // 0x2
++    field public static final int IMPORT_BY_MNEMONICS = 1; // 0x1
++    field public static final int IMPORT_BY_PRIVATE_KEY = 0; // 0x0
++    field public static final java.lang.String WALLET_CHAIN_TYPE_BTC = "M/44H/0H";
++    field public static final java.lang.String WALLET_CHAIN_TYPE_ETH = "M/44H/60H";
++  }
++
++  public static abstract interface WalletManager.OnETHBlanceGetListener {
++    method public abstract void onETHBlanceGetError();
++    method public abstract void onETHBlanceGetSuccess(java.lang.String);
++  }
++
++  public class WalletManager.OnETHBlanceGetListenerDelegate extends android.app.IOnETHBlanceGetListener.Stub {
++    ctor public WalletManager.OnETHBlanceGetListenerDelegate(android.app.WalletManager.OnETHBlanceGetListener);
++    method public void onETHBlanceGetError();
++    method public void onETHBlanceGetSuccess(java.lang.String);
++  }
++
+   public final class WallpaperColors implements android.os.Parcelable {
+     ctor public WallpaperColors(android.os.Parcel);
+     ctor public WallpaperColors(android.graphics.Color, android.graphics.Color, android.graphics.Color);
+@@ -9525,6 +9603,7 @@ package android.content {
+     field public static final java.lang.String USER_SERVICE = "user";
+     field public static final java.lang.String VIBRATOR_SERVICE = "vibrator";
+     field public static final java.lang.String VR_SERVICE = "vrmanager";
++    field public static final java.lang.String WALLET_SERVICE = "wallet";
+     field public static final java.lang.String WALLPAPER_SERVICE = "wallpaper";
+     field public static final java.lang.String WIFI_AWARE_SERVICE = "wifiaware";
+     field public static final java.lang.String WIFI_P2P_SERVICE = "wifip2p";
+@@ -11789,6 +11868,24 @@ package android.content.pm {
+     field public static final android.os.Parcelable.Creator<android.content.pm.VersionedPackage> CREATOR;
+   }
+ 
++  public class WalletData implements android.os.Parcelable {
++    ctor public WalletData();
++    ctor public WalletData(android.content.pm.WalletData);
++    method public int describeContents();
++    method public void writeToParcel(android.os.Parcel, int);
++    field public static final android.os.Parcelable.Creator<android.content.pm.WalletData> CREATOR;
++    field public java.lang.String address;
++    field public java.lang.String avatar;
++    field public long createTime;
++    field public boolean isDefault;
++    field public java.lang.String keyPath;
++    field public java.lang.String keyStore;
++    field public long lastUpdateTime;
++    field public java.lang.String mnemonicStr;
++    field public java.lang.String name;
++    field public java.lang.String privateKeyStr;
++  }
++
+ }
+ 
+ package android.content.pm.permission {
+@@ -46828,9 +46925,9 @@ package android.util {
+   public class BrahmaConstants {
+     ctor public BrahmaConstants();
+     method public static boolean isMnemonicPathSupported(java.lang.String);
+-    field public static final java.lang.String BRM_MNEMONIC_PATH = "M/44H/60H/0H/0/1";
+-    field public static final java.lang.String DEFAULT_MNEMONIC_PATH = "M/2048H/60H/0H/0/0";
+-    field public static final java.lang.String ETH_MNEMONIC_PATH = "M/44H/60H/0H/0/0";
++    field public static final java.lang.String BIP_BRM_OS_PATH = "M/44H/2048H/0H/0/0";
++    field public static final java.lang.String BIP_BRM_PATH = "M/44H/60H/0H/0/1";
++    field public static final java.lang.String BIP_ETH_PATH = "M/44H/60H/0H/0/0";
+   }
+ 
+   public final deprecated class Config {
+diff --git a/api/test-current.txt b/api/test-current.txt
+index e81b97c..044801a 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -4888,12 +4888,49 @@ package android.app {
+     field public static final int TRANSIT_UNSET = -1; // 0xffffffff
+   }
+ 
++  public abstract interface IOnETHBlanceGetListener implements android.os.IInterface {
++    method public abstract void onETHBlanceGetError() throws android.os.RemoteException;
++    method public abstract void onETHBlanceGetSuccess(java.lang.String) throws android.os.RemoteException;
++  }
++
++  public static abstract class IOnETHBlanceGetListener.Stub extends android.os.Binder implements android.app.IOnETHBlanceGetListener {
++    ctor public IOnETHBlanceGetListener.Stub();
++    method public android.os.IBinder asBinder();
++    method public static android.app.IOnETHBlanceGetListener asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public class IPFSCManager {
+     ctor public IPFSCManager(android.content.Context, android.os.IIPFSControllerManager);
+     method public int start_IPFSController(int) throws android.os.RemoteException;
+     method public int stop_IPFSController(int) throws android.os.RemoteException;
+   }
+ 
++  public abstract interface IWalletManager implements android.os.IInterface {
++    method public abstract android.content.pm.WalletData createDefaultETHWallet(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract android.content.pm.WalletData createEthereumWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<android.content.pm.WalletData> createWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String decryptMnemonics(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String decryptPrivateKey(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract int deleteWalletByAddress(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<android.content.pm.WalletData> getAllWallets() throws android.os.RemoteException;
++    method public abstract void getEthereumAccountBalanceByAddress(java.lang.String, android.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
++    method public abstract android.content.pm.WalletData getWalletDataByAddress(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<android.content.pm.WalletData> getWalletsForChainType(java.lang.String) throws android.os.RemoteException;
++    method public abstract android.content.pm.WalletData importEthereumWallet(java.lang.String, java.lang.String, java.lang.String, int) throws android.os.RemoteException;
++    method public abstract void setEthereumNetworkUrl(java.lang.String) throws android.os.RemoteException;
++    method public abstract int updateEthereumWalletPassword(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract int updateWalletAvatarForAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract int updateWalletNameForAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
++  }
++
++  public static abstract class IWalletManager.Stub extends android.os.Binder implements android.app.IWalletManager {
++    ctor public IWalletManager.Stub();
++    method public android.os.IBinder asBinder();
++    method public static android.app.IWalletManager asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public class Instrumentation {
+     ctor public Instrumentation();
+     method public android.os.TestLooperManager acquireLooperManager(android.os.Looper);
+@@ -6128,6 +6165,47 @@ package android.app {
+     method public void onDetached();
+   }
+ 
++  public class WalletManager {
++    ctor public WalletManager(android.content.Context);
++    method public android.content.pm.WalletData createEthereumWallet(java.lang.String, java.lang.String);
++    method public java.util.List<android.content.pm.WalletData> createWallet(java.lang.String, java.lang.String);
++    method public java.lang.String decryptMnemonics(java.lang.String, java.lang.String);
++    method public java.lang.String decryptPrivateKey(java.lang.String, java.lang.String);
++    method public int deleteWalletByAddress(java.lang.String);
++    method public java.util.List<android.content.pm.WalletData> getAllWallets();
++    method public void getEthereumAccountBalanceByAddress(java.lang.String, android.app.WalletManager.OnETHBlanceGetListener);
++    method public android.content.pm.WalletData getWalletDataByAddress(java.lang.String);
++    method public java.util.List<android.content.pm.WalletData> getWalletsForChainType(java.lang.String);
++    method public android.content.pm.WalletData importEthereumWallet(java.lang.String, java.lang.String, java.lang.String, int);
++    method public void setEthereumNetworkUrl(java.lang.String);
++    method public int updateEthereumWalletPassword(java.lang.String, java.lang.String, java.lang.String);
++    method public int updateWalletAvatarForAddress(java.lang.String, java.lang.String);
++    method public int updateWalletNameForAddress(java.lang.String, java.lang.String);
++    field public static final int CODE_DEFAULT_WALLET_CANNOT_DELETE = 500; // 0x1f4
++    field public static final int CODE_ERROR_PASSWORD = 200; // 0xc8
++    field public static final int CODE_NO_ERROR = 0; // 0x0
++    field public static final int CODE_OTHER_ERROR = -100; // 0xffffff9c
++    field public static final int CODE_REPEAT_NAME = 100; // 0x64
++    field public static final int CODE_WALLET_EXCEPTION = 400; // 0x190
++    field public static final int CODE_WALLET_NOT_EXIST = 300; // 0x12c
++    field public static final int IMPORT_BY_KEYSTORE = 2; // 0x2
++    field public static final int IMPORT_BY_MNEMONICS = 1; // 0x1
++    field public static final int IMPORT_BY_PRIVATE_KEY = 0; // 0x0
++    field public static final java.lang.String WALLET_CHAIN_TYPE_BTC = "M/44H/0H";
++    field public static final java.lang.String WALLET_CHAIN_TYPE_ETH = "M/44H/60H";
++  }
++
++  public static abstract interface WalletManager.OnETHBlanceGetListener {
++    method public abstract void onETHBlanceGetError();
++    method public abstract void onETHBlanceGetSuccess(java.lang.String);
++  }
++
++  public class WalletManager.OnETHBlanceGetListenerDelegate extends android.app.IOnETHBlanceGetListener.Stub {
++    ctor public WalletManager.OnETHBlanceGetListenerDelegate(android.app.WalletManager.OnETHBlanceGetListener);
++    method public void onETHBlanceGetError();
++    method public void onETHBlanceGetSuccess(java.lang.String);
++  }
++
+   public final class WallpaperColors implements android.os.Parcelable {
+     ctor public WallpaperColors(android.os.Parcel);
+     ctor public WallpaperColors(android.graphics.Color, android.graphics.Color, android.graphics.Color);
+@@ -9044,6 +9122,7 @@ package android.content {
+     field public static final java.lang.String USB_SERVICE = "usb";
+     field public static final java.lang.String USER_SERVICE = "user";
+     field public static final java.lang.String VIBRATOR_SERVICE = "vibrator";
++    field public static final java.lang.String WALLET_SERVICE = "wallet";
+     field public static final java.lang.String WALLPAPER_SERVICE = "wallpaper";
+     field public static final java.lang.String WIFI_AWARE_SERVICE = "wifiaware";
+     field public static final java.lang.String WIFI_P2P_SERVICE = "wifip2p";
+@@ -11114,6 +11193,24 @@ package android.content.pm {
+     field public static final android.os.Parcelable.Creator<android.content.pm.VersionedPackage> CREATOR;
+   }
+ 
++  public class WalletData implements android.os.Parcelable {
++    ctor public WalletData();
++    ctor public WalletData(android.content.pm.WalletData);
++    method public int describeContents();
++    method public void writeToParcel(android.os.Parcel, int);
++    field public static final android.os.Parcelable.Creator<android.content.pm.WalletData> CREATOR;
++    field public java.lang.String address;
++    field public java.lang.String avatar;
++    field public long createTime;
++    field public boolean isDefault;
++    field public java.lang.String keyPath;
++    field public java.lang.String keyStore;
++    field public long lastUpdateTime;
++    field public java.lang.String mnemonicStr;
++    field public java.lang.String name;
++    field public java.lang.String privateKeyStr;
++  }
++
+ }
+ 
+ package android.content.res {
+@@ -43520,9 +43617,9 @@ package android.util {
+   public class BrahmaConstants {
+     ctor public BrahmaConstants();
+     method public static boolean isMnemonicPathSupported(java.lang.String);
+-    field public static final java.lang.String BRM_MNEMONIC_PATH = "M/44H/60H/0H/0/1";
+-    field public static final java.lang.String DEFAULT_MNEMONIC_PATH = "M/2048H/60H/0H/0/0";
+-    field public static final java.lang.String ETH_MNEMONIC_PATH = "M/44H/60H/0H/0/0";
++    field public static final java.lang.String BIP_BRM_OS_PATH = "M/44H/2048H/0H/0/0";
++    field public static final java.lang.String BIP_BRM_PATH = "M/44H/60H/0H/0/1";
++    field public static final java.lang.String BIP_ETH_PATH = "M/44H/60H/0H/0/0";
+   }
+ 
+   public final deprecated class Config {
+diff --git a/core/java/android/app/IOnETHBlanceGetListener.aidl b/core/java/android/app/IOnETHBlanceGetListener.aidl
+new file mode 100644
+index 0000000..1b0ce93
+--- /dev/null
++++ b/core/java/android/app/IOnETHBlanceGetListener.aidl
+@@ -0,0 +1,6 @@
++package android.app;
++
++oneway interface IOnETHBlanceGetListener {
++    void onETHBlanceGetError();
++    void onETHBlanceGetSuccess(String blance);
++}
+\ No newline at end of file
+diff --git a/core/java/android/app/IWalletManager.aidl b/core/java/android/app/IWalletManager.aidl
+new file mode 100644
+index 0000000..49ddeab
+--- /dev/null
++++ b/core/java/android/app/IWalletManager.aidl
+@@ -0,0 +1,39 @@
++/*
++**
++** Copyright 2012, The Android Open Source Project
++**
++** Licensed under the Apache License, Version 2.0 (the "License");
++** you may not use this file except in compliance with the License.
++** You may obtain a copy of the License at
++**
++**     http://www.apache.org/licenses/LICENSE-2.0
++**
++** Unless required by applicable law or agreed to in writing, software
++** distributed under the License is distributed on an "AS IS" BASIS,
++** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++** See the License for the specific language governing permissions and
++** limitations under the License.
++*/
++
++package android.app;
++
++import android.content.pm.WalletData;
++import android.app.IOnETHBlanceGetListener;
++
++interface IWalletManager {
++    WalletData createDefaultETHWallet(String name, String mnemonics, String password);
++    List<WalletData> createWallet(String name, String password);
++    WalletData createEthereumWallet(String name,String password);
++    int deleteWalletByAddress(String address);
++    int updateWalletNameForAddress(String newName, String address);
++    int updateWalletAvatarForAddress(String newAvatar, String address);
++    int updateEthereumWalletPassword(String address, String oldPassword, String newPassword);
++    WalletData importEthereumWallet(String name, String password, String data, int dataType);
++    void getEthereumAccountBalanceByAddress(String address, in IOnETHBlanceGetListener listener);
++    List<WalletData> getAllWallets();
++    List<WalletData> getWalletsForChainType(String chainType);
++    WalletData getWalletDataByAddress(String address);
++    void setEthereumNetworkUrl(String networkUrl);
++    String decryptMnemonics(String mnemonicHexStr, String password);
++    String decryptPrivateKey(String privateKeyHexStr, String password);
++}
+diff --git a/core/java/android/app/SystemServiceRegistry.java b/core/java/android/app/SystemServiceRegistry.java
+index 4f35110..9140268 100644
+--- a/core/java/android/app/SystemServiceRegistry.java
++++ b/core/java/android/app/SystemServiceRegistry.java
+@@ -107,6 +107,7 @@ import android.os.IHardwarePropertiesManager;
+ import android.os.IPowerManager;
+ import android.os.IRecoverySystem;
+ import android.os.IUserManager;
++import android.app.IWalletManager;
+ import android.os.IncidentManager;
+ import android.os.PowerManager;
+ import android.os.Process;
+@@ -908,6 +909,13 @@ final class SystemServiceRegistry {
+             public RulesManager createService(ContextImpl ctx) {
+                 return new RulesManager(ctx.getOuterContext());
+             }});
++
++        registerService(Context.WALLET_SERVICE, WalletManager.class,
++                new CachedServiceFetcher<WalletManager>() {
++                    @Override
++                    public WalletManager createService(ContextImpl ctx) {
++                        return new WalletManager(ctx.getOuterContext());
++                    }});
+     }
+ 
+     /**
+diff --git a/core/java/android/app/WalletManager.java b/core/java/android/app/WalletManager.java
+new file mode 100644
+index 0000000..f24501a
+--- /dev/null
++++ b/core/java/android/app/WalletManager.java
+@@ -0,0 +1,236 @@
++package android.app;
++
++import android.annotation.SystemService;
++import android.content.Context;
++import android.app.IWalletManager;
++import android.content.pm.WalletData;
++import android.os.RemoteException;
++import android.os.ServiceManager;
++import android.util.Log;
++
++import java.math.BigInteger;
++import java.util.HashMap;
++import java.util.List;
++
++@SystemService(Context.WALLET_SERVICE)
++public class WalletManager {
++    private final static String TAG = "WalletManager";
++
++    private final Context mContext;
++    /**define the way to import wallet**/
++    public static final int IMPORT_BY_PRIVATE_KEY = 0;
++    public static final int IMPORT_BY_MNEMONICS = 1;
++    public static final int IMPORT_BY_KEYSTORE = 2; //keystore is for Ethereum only
++
++    /**define the brahma os supported chain type**/
++    public static final String WALLET_CHAIN_TYPE_BTC = "M/44H/0H";
++    public static final String WALLET_CHAIN_TYPE_ETH = "M/44H/60H";
++
++    /**define the error code in WalletData**/
++    public static final int CODE_NO_ERROR = 0;
++    public static final int CODE_REPEAT_NAME = 100;
++    public static final int CODE_ERROR_PASSWORD = 200;
++    public static final int CODE_WALLET_NOT_EXIST = 300;
++    public static final int CODE_WALLET_EXCEPTION = 400;
++    public static final int CODE_DEFAULT_WALLET_CANNOT_DELETE = 500;
++    public static final int CODE_OTHER_ERROR = -100;
++
++    /*
++     ** The second param of function getEthereumAccountBalanceByAddress.
++     **
++     ** onETHBlanceGetError and onETHBlanceGetSuccess should be implement in client,
++     ** and they will be recalled in function getEthereumAccountBalanceByAddress.
++
++     */
++    public interface OnETHBlanceGetListener {
++        public void onETHBlanceGetError();
++        public void onETHBlanceGetSuccess(String blance);
++    }
++
++    public class OnETHBlanceGetListenerDelegate extends IOnETHBlanceGetListener.Stub {
++        private OnETHBlanceGetListener mListener;
++        public OnETHBlanceGetListenerDelegate(OnETHBlanceGetListener listener) {
++            mListener = listener;
++        }
++        @Override
++        public void onETHBlanceGetError() {
++            mListener.onETHBlanceGetError();
++        }
++
++        @Override
++        public void onETHBlanceGetSuccess(String blance) {
++            mListener.onETHBlanceGetSuccess(blance);
++        }
++    }
++
++    public WalletManager(Context ctx) {
++        mContext = ctx;
++    }
++    private IWalletManager getWalletService() {
++        return IWalletManager.Stub.asInterface(ServiceManager.getService(Context.WALLET_SERVICE));
++    }
++
++    /**
++     *
++     * @hide
++     */
++    public WalletData createDefaultETHWallet(String name, String mnemonics, String password) {
++        try {
++            return getWalletService().createDefaultETHWallet(name, mnemonics, password);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#createDefaultETHWallet", re);
++        }
++        return null;
++    }
++
++    public List<WalletData> createWallet(String name, String password) {
++        try {
++            return getWalletService().createWallet(name, password);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#createWallet", re);
++        }
++        return null;
++    }
++
++    public WalletData createEthereumWallet(String name,String password) {
++        try {
++            return getWalletService().createEthereumWallet(name, password);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#createEthereumWallet", re);
++        }
++        return null;
++    }
++
++    /**
++     * @param address should be with prefix 0x
++     **/
++    public int deleteWalletByAddress(String address) {
++        try {
++            return getWalletService().deleteWalletByAddress(address);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#deleteWalletByAddress", re);
++        }
++        return CODE_OTHER_ERROR;
++    }
++
++    public int updateWalletNameForAddress(String newName, String address) {
++        try {
++            return getWalletService().updateWalletNameForAddress(newName, address);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#updateEthereumWalletUserInfo", re);
++        }
++        return CODE_OTHER_ERROR;
++    }
++
++    public int updateWalletAvatarForAddress(String newAvatar, String address) {
++        try {
++            return getWalletService().updateWalletAvatarForAddress(newAvatar, address);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#updateEthereumWalletUserInfo", re);
++        }
++        return CODE_OTHER_ERROR;
++    }
++
++    public int updateEthereumWalletPassword(String address, String oldPassword, String newPassword) {
++        try {
++            return getWalletService().updateEthereumWalletPassword(address, oldPassword, newPassword);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#updateEthereumWalletPassword", re);
++        }
++        return CODE_OTHER_ERROR;
++    }
++
++    /**
++     * @param data the content used to generate wallet, for Ethereum it will be
++     *             private key (hex string without 0x)
++     *             OR mnemonics string
++     *             OR keyStore string
++     * @param dataType the value of WalletManager.IMPORT_BY_PRIVATE_KEY,
++     *            WalletManager.IMPORT_BY_MNEMONICS,
++     *            WalletManager.IMPORT_BY_KEYSTORE
++     * @return the object of WalletData, if null means failed to import the wallet.
++     **/
++    public WalletData importEthereumWallet(String name, String password, String data, int dataType) {
++        try {
++            return getWalletService().importEthereumWallet(name, password, data, dataType);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#importEthereumWallet", re);
++        }
++        return null;
++    }
++
++    /**
++     * result returned in onETHBlanceGetError() and onETHBlanceGetSuccess(String blance)
++     *  of {@link OnETHBlanceGetListener}. Correct result value is the param in onETHBlanceGetSuccess
++     *  which means the BigInteger's string value.
++     **/
++    public void getEthereumAccountBalanceByAddress(String address, OnETHBlanceGetListener listener) {
++        try {
++            OnETHBlanceGetListenerDelegate delegate = new OnETHBlanceGetListenerDelegate(listener);
++            getWalletService().getEthereumAccountBalanceByAddress(address, delegate);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getEthereumAccountBalanceByAddress", re);
++        }
++    }
++
++    public List<WalletData> getAllWallets() {
++        try {
++            return getWalletService().getAllWallets();
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getWalletsForChainType", re);
++        }
++        return null;
++    }
++
++    /**
++     * @param chainType public value defined in this {@link WalletManager},
++     *                 such as WALLET_CHAIN_TYPE_BTC, WALLET_CHAIN_TYPE_ETH
++     * @return the WalletData list for the chainType
++     **/
++    public List<WalletData> getWalletsForChainType(String chainType) {
++        try {
++            return getWalletService().getWalletsForChainType(chainType);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getWalletsForChainType", re);
++        }
++        return null;
++    }
++
++    public WalletData getWalletDataByAddress(String address) {
++        try {
++            return getWalletService().getWalletDataByAddress(address);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getWalletDataByAddress", re);
++        }
++        return null;
++    }
++
++    /**
++     * Used for app to set the test chain network for testing
++     **/
++    public void setEthereumNetworkUrl(String networkUrl) {
++        try {
++            getWalletService().setEthereumNetworkUrl(networkUrl);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#setEthereumNetworkUrl", re);
++        }
++    }
++
++    public String decryptMnemonics(String mnemonicHexStr, String password) {
++        try {
++            return getWalletService().decryptMnemonics(mnemonicHexStr, password);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getWalletDataByAddress", re);
++        }
++        return null;
++    }
++
++    public String decryptPrivateKey(String privateKeyHexStr, String password) {
++        try {
++            return getWalletService().decryptMnemonics(privateKeyHexStr, password);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getWalletDataByAddress", re);
++        }
++        return null;
++    }
++}
+diff --git a/core/java/android/content/Context.java b/core/java/android/content/Context.java
+index 792e8f3..b0f17e6 100644
+--- a/core/java/android/content/Context.java
++++ b/core/java/android/content/Context.java
+@@ -4050,6 +4050,15 @@ public abstract class Context {
+     public static final String TIME_ZONE_RULES_MANAGER_SERVICE = "timezone";
+ 
+     /**
++     * Use with {@link #getSystemService} to retrieve a
++     * {@link android.app.WalletManager} for managing wallet accounts on devices.
++     *
++     * @see #getSystemService
++     * @see android.app.WalletManager
++     */
++    public static final String WALLET_SERVICE = "wallet";
++
++    /**
+      * Determine whether the given permission is allowed for a particular
+      * process and user ID running in the system.
+      *
+diff --git a/core/java/android/content/pm/WalletData.aidl b/core/java/android/content/pm/WalletData.aidl
+new file mode 100644
+index 0000000..e7b0817
+--- /dev/null
++++ b/core/java/android/content/pm/WalletData.aidl
+@@ -0,0 +1,20 @@
++/*
++**
++** Copyright 2011, The Android Open Source Project
++**
++** Licensed under the Apache License, Version 2.0 (the "License"); 
++** you may not use this file except in compliance with the License. 
++** You may obtain a copy of the License at 
++**
++**     http://www.apache.org/licenses/LICENSE-2.0 
++**
++** Unless required by applicable law or agreed to in writing, software 
++** distributed under the License is distributed on an "AS IS" BASIS, 
++** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
++** See the License for the specific language governing permissions and 
++** limitations under the License.
++*/
++
++package android.content.pm;
++
++parcelable WalletData;
+diff --git a/core/java/android/content/pm/WalletData.java b/core/java/android/content/pm/WalletData.java
+new file mode 100644
+index 0000000..8d85e07
+--- /dev/null
++++ b/core/java/android/content/pm/WalletData.java
+@@ -0,0 +1,76 @@
++package android.content.pm;
++
++import android.os.Parcel;
++import android.os.Parcelable;
++
++public class WalletData implements Parcelable {
++    public long createTime;
++    public long lastUpdateTime;
++    public String name;
++    public String avatar;
++    public boolean isDefault;
++    public String keyPath;
++    public String address;
++    public String keyStore;
++    public String privateKeyStr;
++    public String mnemonicStr;
++
++    public WalletData() {
++    }
++
++    public WalletData(WalletData orig) {
++        createTime = orig.createTime;
++        lastUpdateTime = orig.lastUpdateTime;
++        name = orig.name;
++        avatar = orig.avatar;
++        isDefault = orig.isDefault;
++        keyPath = orig.keyPath;
++        address = orig.address;
++        keyStore = orig.keyStore;
++        privateKeyStr = orig.privateKeyStr;
++        mnemonicStr = orig.mnemonicStr;
++    }
++
++    @Override
++    public int describeContents() {
++        return 0;
++    }
++
++    @Override
++    public void writeToParcel(Parcel dest, int flags) {
++        dest.writeLong(createTime);
++        dest.writeLong(lastUpdateTime);
++        dest.writeString(name);
++        dest.writeString(avatar);
++        dest.writeBoolean(isDefault);
++        dest.writeString(keyPath);
++        dest.writeString(address);
++        dest.writeString(keyStore);
++        dest.writeString(privateKeyStr);
++        dest.writeString(mnemonicStr);
++    }
++
++    public static final Parcelable.Creator<WalletData> CREATOR
++            = new Parcelable.Creator<WalletData>() {
++        public WalletData createFromParcel(Parcel source) {
++            return new WalletData(source);
++        }
++        public WalletData[] newArray(int size) {
++            return new WalletData[size];
++        }
++    };
++
++    private WalletData(Parcel source) {
++        createTime = source.readLong();
++        lastUpdateTime = source.readLong();
++        name = source.readString();
++        avatar = source.readString();
++        isDefault = source.readBoolean();
++        keyPath = source.readString();
++        address = source.readString();
++        keyStore = source.readString();
++        privateKeyStr = source.readString();
++        mnemonicStr = source.readString();
++    }
++
++}
+diff --git a/core/java/android/util/BrahmaConstants.java b/core/java/android/util/BrahmaConstants.java
+index ada9124..c7321e2 100644
+--- a/core/java/android/util/BrahmaConstants.java
++++ b/core/java/android/util/BrahmaConstants.java
+@@ -6,15 +6,15 @@ import java.util.Arrays;
+ public class BrahmaConstants {
+ 
+     /** Used to generating private key for the different key path by mnemonics**/
+-    public static final String ETH_MNEMONIC_PATH = "M/44H/60H/0H/0/0";
+-    public static final String BRM_MNEMONIC_PATH = "M/44H/60H/0H/0/1";
+-    public static final String DEFAULT_MNEMONIC_PATH = "M/2048H/60H/0H/0/0";
++    public static final String BIP_ETH_PATH = "M/44H/60H/0H/0/0";
++    public static final String BIP_BRM_PATH = "M/44H/60H/0H/0/1";
++    public static final String BIP_BRM_OS_PATH = "M/44H/2048H/0H/0/0";
+     private static String[] mMnemonicPaths = new String[]{
+-            ETH_MNEMONIC_PATH};
++            BIP_ETH_PATH};
+ 
+     /** Judge whether support generate mnemonics by the PATH**/
+-    public static boolean isMnemonicPathSupported(String path) {
+-        if (Arrays.asList(mMnemonicPaths).contains(path)) {
++    public static boolean isMnemonicPathSupported(String chainPath) {
++        if (Arrays.asList(mMnemonicPaths).contains(chainPath)) {
+             return true;
+         } else {
+             return false;
+diff --git a/services/core/java/com/android/server/WalletLoaderService.java b/services/core/java/com/android/server/WalletLoaderService.java
+new file mode 100644
+index 0000000..8911ea0
+--- /dev/null
++++ b/services/core/java/com/android/server/WalletLoaderService.java
+@@ -0,0 +1,79 @@
++package com.android.server;
++
++import android.content.ComponentName;
++import android.content.Context;
++import android.content.Intent;
++import android.content.ServiceConnection;
++import android.os.IBinder;
++import android.os.ServiceManager;
++import android.os.UserHandle;
++import android.util.Log;
++
++import com.android.internal.annotations.GuardedBy;
++
++/**
++ * Starts the wallet component by binding to its IWalletManager implementation. Wallet is setup
++ * to run in the system-server process so once it is loaded into memory it will stay running.
++ * @hide
++ */
++public class WalletLoaderService extends SystemService {
++    private static final String TAG = "WalletLoaderService";
++
++    private class WalletServiceConnection implements ServiceConnection {
++        @Override
++        public void onServiceConnected(ComponentName name, IBinder service) {
++            Log.d(TAG, "WalletServiceConnection onServiceConnected.");
++            ServiceManager.addService(Context.WALLET_SERVICE, service);
++        }
++
++        @Override
++        public void onServiceDisconnected(ComponentName name) {
++            connectToWallet();
++        }
++    }
++    private final Object mLock = new Object();
++    private static final ComponentName SERVICE_COMPONENT = new ComponentName(
++            "com.android.server.wallet",
++            "com.android.server.wallet.WalletService");
++
++    @GuardedBy("mLock")
++    private WalletServiceConnection mServiceConnection;
++    private Context mContext;
++
++    public WalletLoaderService (Context context) {
++        super(context);
++        mContext = context;
++    }
++
++    @Override
++    public void onStart() {
++    }
++
++    @Override
++    public void onBootPhase(int phase) {
++        Log.d(TAG, "onBootPhase--" + phase);
++        if (phase == PHASE_ACTIVITY_MANAGER_READY) {
++            connectToWallet();
++        }
++    }
++
++    private void connectToWallet() {
++        synchronized (mLock) {
++            Log.d(TAG, "begin connectToWallet");
++            if (mServiceConnection != null) {
++                // TODO: Is unbinding worth doing or wait for system to rebind?
++                mContext.unbindService(mServiceConnection);
++                mServiceConnection = null;
++            }
++            WalletServiceConnection serviceConnection = new WalletServiceConnection();
++            Intent intent = new Intent("android.wallet.IWalletManager");
++            intent.setComponent(SERVICE_COMPONENT);
++            int flags = Context.BIND_IMPORTANT | Context.BIND_FOREGROUND_SERVICE
++                    | Context.BIND_AUTO_CREATE;
++            // Bind to Wallet and register the service
++            if (mContext.bindServiceAsUser(intent, serviceConnection, flags, UserHandle.SYSTEM)) {
++                mServiceConnection = serviceConnection;
++            }
++        }
++    }
++}
+diff --git a/services/java/com/android/server/SystemServer.java b/services/java/com/android/server/SystemServer.java
+index 6d47c98..4fc04d3 100644
+--- a/services/java/com/android/server/SystemServer.java
++++ b/services/java/com/android/server/SystemServer.java
+@@ -45,6 +45,7 @@ import android.os.SystemProperties;
+ import android.os.Trace;
+ import android.os.UserHandle;
+ import android.os.storage.IStorageManager;
++import android.util.Log;
+ import android.util.TimingsTraceLog;
+ import android.util.DisplayMetrics;
+ import android.util.EventLog;
+@@ -770,6 +771,11 @@ public final class SystemServer {
+             mSystemServiceManager.startService(TelecomLoaderService.class);
+             traceEnd();
+ 
++            traceBeginAndSlog("StartWalletLoaderService");
++            Log.d(TAG, "start WalletLoaderService");
++            mSystemServiceManager.startService(WalletLoaderService.class);
++            traceEnd();
++
+             traceBeginAndSlog("StartTelephonyRegistry");
+             telephonyRegistry = new TelephonyRegistry(context);
+             ServiceManager.addService("telephony.registry", telephonyRegistry);
+@@ -886,6 +892,10 @@ public final class SystemServer {
+             traceBeginAndSlog("PinnerService");
+             mSystemServiceManager.startService(PinnerService.class);
+             traceEnd();
++
++//            traceBeginAndSlog("WalletManagerService");
++//            ServiceManager.addService(Context.WALLET_SERVICE, new WalletManagerService());
++//            traceEnd();//Azalea1018
+         } catch (RuntimeException e) {
+             Slog.e("System", "******************************************");
+             Slog.e("System", "************ Failure starting core service", e);
+-- 
+2.7.4
+
