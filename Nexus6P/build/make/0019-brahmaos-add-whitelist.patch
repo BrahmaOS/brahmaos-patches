@@ -1,0 +1,28 @@
+From e3e4c22b54ea41ab353eef01d22bcafc064ba4da Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Tue, 6 Nov 2018 19:52:05 +0800
+Subject: [PATCH] [brahmaos]: add whitelist
+
+Change-Id: I96e162b9d0988c4d95ee575d2a5eefba361340c4
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ core/tasks/check_boot_jars/package_whitelist.txt | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/core/tasks/check_boot_jars/package_whitelist.txt b/core/tasks/check_boot_jars/package_whitelist.txt
+index 597e236..b9a01da 100644
+--- a/core/tasks/check_boot_jars/package_whitelist.txt
++++ b/core/tasks/check_boot_jars/package_whitelist.txt
+@@ -213,6 +213,9 @@ org\.ccil\.cowan\.tagsoup\.jaxp
+ # framework.jar
+ javax\.microedition\.khronos\.opengles
+ javax\.microedition\.khronos\.egl
++brahmaos\.app.*
++brahmaos\.content.*
++brahmaos\.util.*
+ 
+ android
+ 
+-- 
+2.7.4
+
