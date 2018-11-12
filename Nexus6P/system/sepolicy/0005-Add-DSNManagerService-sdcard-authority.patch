@@ -1,0 +1,68 @@
+From 7bfc89ac053508f0b9b8255b1ee2dc813043f5c8 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Wed, 7 Nov 2018 09:36:48 +0800
+Subject: [PATCH] Add DSNManagerService sdcard authority
+
+Change-Id: Ib0415c5db3a90f8663d4d827429650477c1a1e90
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ private/service_contexts |  1 +
+ private/system_server.te | 13 +++++++++++--
+ public/service.te        |  1 +
+ 3 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/private/service_contexts b/private/service_contexts
+index 7ce4800..1f6a707 100644
+--- a/private/service_contexts
++++ b/private/service_contexts
+@@ -169,6 +169,7 @@ wifip2p                                   u:object_r:wifip2p_service:s0
+ wifiscanner                               u:object_r:wifiscanner_service:s0
+ wifi                                      u:object_r:wifi_service:s0
+ IPFSControllerManagerService              u:object_r:IPFSControllerManagerService:s0
++DSNManager_service                        u:object_r:DSNManager_service:s0
+ wificond                                  u:object_r:wificond_service:s0
+ wifiaware                                 u:object_r:wifiaware_service:s0
+ window                                    u:object_r:window_service:s0
+diff --git a/private/system_server.te b/private/system_server.te
+index 40c5382..cfc82ff 100644
+--- a/private/system_server.te
++++ b/private/system_server.te
+@@ -704,8 +704,9 @@ with_asan(`
+ 
+ # Do not allow opening files from external storage as unsafe ejection
+ # could cause the kernel to kill the system_server.
+-neverallow system_server sdcard_type:dir { open read write };
+-neverallow system_server sdcard_type:file rw_file_perms;
++allow system_server sdcard_type:dir { open read write };
++allow system_server sdcard_type:file rw_file_perms;
++
+ 
+ # system server should never be operating on zygote spawned app data
+ # files directly. Rather, they should always be passed via a
+@@ -769,3 +770,11 @@ neverallow system_server { domain -system_server }:process ptrace;
+ # file read access. However, that is now unnecessary (b/34951864)
+ # This neverallow can be removed after b/34951864 is fixed.
+ neverallow system_server system_server:capability sys_resource;
++
++allow system_server sdcardfs:file getattr;
++allow system_server media_rw_data_file:file open;
++allow system_server media_rw_data_file:dir write;
++allow system_server media_rw_data_file:dir add_name;
++allow system_server media_rw_data_file:file create;
++allow system_server sdcardfs:dir add_name;
++allow system_server sdcardfs:file create;
+diff --git a/public/service.te b/public/service.te
+index b1af697..6d65eb2 100644
+--- a/public/service.te
++++ b/public/service.te
+@@ -146,6 +146,7 @@ type wifip2p_service, app_api_service, system_server_service, service_manager_ty
+ type wifiscanner_service, system_api_service, system_server_service, service_manager_type;
+ type wifi_service, app_api_service, system_server_service, service_manager_type;
+ type IPFSControllerManagerService, system_api_service, system_server_service, service_manager_type;
++type DSNManager_service, system_api_service, system_server_service, service_manager_type;
+ type wificond_service, service_manager_type;
+ type wifiaware_service, app_api_service, system_server_service, service_manager_type;
+ type window_service, system_api_service, system_server_service, service_manager_type;
+-- 
+2.7.4
+
