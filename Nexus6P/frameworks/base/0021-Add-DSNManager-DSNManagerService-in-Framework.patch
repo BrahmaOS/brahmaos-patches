@@ -1,0 +1,2185 @@
+From 3ce3cd7414abe6a81eb04cf8953ab160b99c4bec Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Fri, 9 Nov 2018 20:14:37 +0800
+Subject: [PATCH] Add DSNManager DSNManagerService in Framework
+
+- add addFile interface to service
+- add getFile interface to service
+- add listFile interface to service
+- add getDSNManagerStatus interface to service
+- produce api file by make api-update
+
+Change-Id: I72c67c075c8a84087d1fd5cfd4b07ca25fd70bed
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ Android.mk                                         |   4 +
+ api/current.txt                                    |  73 +++++
+ api/system-current.txt                             |  73 +++++
+ api/test-current.txt                               |  73 +++++
+ core/java/android/app/SystemServiceRegistry.java   |  15 +-
+ core/java/android/content/Context.java             |   2 +
+ core/java/android/net/TrafficStats.java            |   8 +
+ core/java/brahmaos/app/AddFileCallback.java        |  40 +++
+ .../java/brahmaos/app/AddFileCallbackListener.java |  17 +
+ core/java/brahmaos/app/DSNManager.java             | 122 +++++++
+ core/java/brahmaos/app/DSNMateObjectData.aidl      |   3 +
+ core/java/brahmaos/app/DSNMateObjectData.java      |  95 ++++++
+ core/java/brahmaos/app/GetFileCallback.java        |  23 ++
+ .../java/brahmaos/app/GetFileCallbackListener.java |   9 +
+ core/java/brahmaos/app/IAddFileCallback.aidl       |  15 +
+ core/java/brahmaos/app/IDSNManager.aidl            |  21 ++
+ core/java/brahmaos/app/IGetFileCallback.aidl       |   8 +
+ core/java/brahmaos/app/IListFileCallback.aidl      |  14 +
+ core/java/brahmaos/app/ListFileCallback.java       |  34 ++
+ .../brahmaos/app/ListFileCallbackListener.java     |  16 +
+ core/java/com/android/internal/os/ZygoteInit.java  |   2 +-
+ .../server/NetworkManagementSocketTagger.java      |   2 +
+ core/java/io/ipfs/api/IPFS.java                    |  22 +-
+ core/java/io/ipfs/api/Multipart.java               |  45 ++-
+ core/java/io/ipfs/api/NamedStreamable.java         |  14 +
+ services/core/Android.mk                           |  20 +-
+ .../brahmaos/app/server/DSNManagerService.java     | 356 +++++++++++++++++++++
+ .../brahmaos/app/server/retrofit/ApiConst.java     |  18 ++
+ .../app/server/retrofit/ApiRespResult.java         |  61 ++++
+ .../brahmaos/app/server/retrofit/BuildConfig.java  |  17 +
+ .../app/server/retrofit/GetRequestInterface.java   |  25 ++
+ .../brahmaos/app/server/retrofit/ObjectMeta.java   | 115 +++++++
+ .../app/server/retrofit/PostRequestInterface.java  |  23 ++
+ .../app/server/retrofit/RetrofitNetwork.java       | 146 +++++++++
+ .../java/brahmaos/app/server/util/CommonUtil.java  | 141 ++++++++
+ services/java/com/android/server/SystemServer.java |  19 +-
+ 36 files changed, 1671 insertions(+), 20 deletions(-)
+ create mode 100644 core/java/brahmaos/app/AddFileCallback.java
+ create mode 100644 core/java/brahmaos/app/AddFileCallbackListener.java
+ create mode 100644 core/java/brahmaos/app/DSNManager.java
+ create mode 100644 core/java/brahmaos/app/DSNMateObjectData.aidl
+ create mode 100644 core/java/brahmaos/app/DSNMateObjectData.java
+ create mode 100644 core/java/brahmaos/app/GetFileCallback.java
+ create mode 100644 core/java/brahmaos/app/GetFileCallbackListener.java
+ create mode 100644 core/java/brahmaos/app/IAddFileCallback.aidl
+ create mode 100644 core/java/brahmaos/app/IDSNManager.aidl
+ create mode 100644 core/java/brahmaos/app/IGetFileCallback.aidl
+ create mode 100644 core/java/brahmaos/app/IListFileCallback.aidl
+ create mode 100644 core/java/brahmaos/app/ListFileCallback.java
+ create mode 100644 core/java/brahmaos/app/ListFileCallbackListener.java
+ create mode 100644 services/core/java/brahmaos/app/server/DSNManagerService.java
+ create mode 100644 services/core/java/brahmaos/app/server/retrofit/ApiConst.java
+ create mode 100644 services/core/java/brahmaos/app/server/retrofit/ApiRespResult.java
+ create mode 100644 services/core/java/brahmaos/app/server/retrofit/BuildConfig.java
+ create mode 100644 services/core/java/brahmaos/app/server/retrofit/GetRequestInterface.java
+ create mode 100644 services/core/java/brahmaos/app/server/retrofit/ObjectMeta.java
+ create mode 100644 services/core/java/brahmaos/app/server/retrofit/PostRequestInterface.java
+ create mode 100644 services/core/java/brahmaos/app/server/retrofit/RetrofitNetwork.java
+ create mode 100644 services/core/java/brahmaos/app/server/util/CommonUtil.java
+
+diff --git a/Android.mk b/Android.mk
+index e8d2808..33fe5aa 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -443,6 +443,10 @@ LOCAL_SRC_FILES += \
+ 	location/java/com/android/internal/location/ILocationProvider.aidl \
+ 	media/java/android/media/IAudioService.aidl \
+ 	core/java/android/os/IIPFSControllerManager.aidl \
++	core/java/brahmaos/app/IDSNManager.aidl \
++	core/java/brahmaos/app/IGetFileCallback.aidl \
++	core/java/brahmaos/app/IAddFileCallback.aidl \
++	core/java/brahmaos/app/IListFileCallback.aidl \
+ 	media/java/android/media/IAudioFocusDispatcher.aidl \
+ 	media/java/android/media/IAudioRoutesObserver.aidl \
+ 	media/java/android/media/IMediaHTTPConnection.aidl \
+diff --git a/api/current.txt b/api/current.txt
+index 7362926..d4efd36 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -8965,6 +8965,7 @@ package android.content {
+     field public static final java.lang.String DISPLAY_SERVICE = "display";
+     field public static final java.lang.String DOWNLOAD_SERVICE = "download";
+     field public static final java.lang.String DROPBOX_SERVICE = "dropbox";
++    field public static final java.lang.String DSNMANAGER_SERVICE = "DSNManager_service";
+     field public static final java.lang.String FINGERPRINT_SERVICE = "fingerprint";
+     field public static final java.lang.String HARDWARE_PROPERTIES_SERVICE = "hardware_properties";
+     field public static final java.lang.String INPUT_METHOD_SERVICE = "input_method";
+@@ -51999,6 +52000,78 @@ package android.widget {
+ 
+ package brahmaos.app {
+ 
++  public class DSNMateObjectData implements android.os.Parcelable {
++    ctor public DSNMateObjectData();
++    ctor public DSNMateObjectData(int, java.util.Map<java.lang.String, java.lang.Object>, java.lang.String);
++    method public int describeContents();
++    method public java.util.Map<java.lang.String, java.lang.Object> getData();
++    method public java.lang.String getMsg();
++    method public int getResult();
++    method public void readFromParcel(android.os.Parcel);
++    method public void setData(java.util.Map<java.lang.String, java.lang.Object>);
++    method public void setMsg(java.lang.String);
++    method public void setResult(int);
++    method public void writeToParcel(android.os.Parcel, int);
++    field public static final android.os.Parcelable.Creator<brahmaos.app.DSNMateObjectData> CREATOR;
++  }
++
++  public abstract interface IAddFileCallback implements android.os.IInterface {
++    method public abstract void onCallbackComplete(boolean, java.util.Map) throws android.os.RemoteException;
++    method public abstract void onCompleted(java.lang.String) throws android.os.RemoteException;
++    method public abstract void onError(java.lang.String) throws android.os.RemoteException;
++    method public abstract void onNext(java.lang.String) throws android.os.RemoteException;
++    method public abstract void onUploadProcess(long, long) throws android.os.RemoteException;
++  }
++
++  public static abstract class IAddFileCallback.Stub extends android.os.Binder implements brahmaos.app.IAddFileCallback {
++    ctor public IAddFileCallback.Stub();
++    method public android.os.IBinder asBinder();
++    method public static brahmaos.app.IAddFileCallback asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
++  public abstract interface IDSNManager implements android.os.IInterface {
++    method public abstract void addFile(java.lang.String, java.lang.String, brahmaos.app.IAddFileCallback) throws android.os.RemoteException;
++    method public abstract int getDSNManagerStatus() throws android.os.RemoteException;
++    method public abstract void getFile(java.lang.String, java.lang.String, brahmaos.app.IGetFileCallback) throws android.os.RemoteException;
++    method public abstract void listFile(java.lang.String, int, int, brahmaos.app.IListFileCallback) throws android.os.RemoteException;
++    method public abstract void startIPFSController() throws android.os.RemoteException;
++    method public abstract void stopIPFSController() throws android.os.RemoteException;
++  }
++
++  public static abstract class IDSNManager.Stub extends android.os.Binder implements brahmaos.app.IDSNManager {
++    ctor public IDSNManager.Stub();
++    method public android.os.IBinder asBinder();
++    method public static brahmaos.app.IDSNManager asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
++  public abstract interface IGetFileCallback implements android.os.IInterface {
++    method public abstract void onCallbackComplete(boolean) throws android.os.RemoteException;
++    method public abstract void onGetFileProcess(long, long) throws android.os.RemoteException;
++  }
++
++  public static abstract class IGetFileCallback.Stub extends android.os.Binder implements brahmaos.app.IGetFileCallback {
++    ctor public IGetFileCallback.Stub();
++    method public android.os.IBinder asBinder();
++    method public static brahmaos.app.IGetFileCallback asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
++  public abstract interface IListFileCallback implements android.os.IInterface {
++    method public abstract void onCallbackComplete(boolean) throws android.os.RemoteException;
++    method public abstract void onCompleted(java.lang.String) throws android.os.RemoteException;
++    method public abstract void onError(java.lang.String) throws android.os.RemoteException;
++    method public abstract void onNext(brahmaos.app.DSNMateObjectData) throws android.os.RemoteException;
++  }
++
++  public static abstract class IListFileCallback.Stub extends android.os.Binder implements brahmaos.app.IListFileCallback {
++    ctor public IListFileCallback.Stub();
++    method public android.os.IBinder asBinder();
++    method public static brahmaos.app.IListFileCallback asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public abstract interface IOnETHBlanceGetListener implements android.os.IInterface {
+     method public abstract void onETHBlanceGetError() throws android.os.RemoteException;
+     method public abstract void onETHBlanceGetSuccess(java.lang.String) throws android.os.RemoteException;
+diff --git a/api/system-current.txt b/api/system-current.txt
+index a568d07..94635a6 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -9475,6 +9475,7 @@ package android.content {
+     field public static final java.lang.String DISPLAY_SERVICE = "display";
+     field public static final java.lang.String DOWNLOAD_SERVICE = "download";
+     field public static final java.lang.String DROPBOX_SERVICE = "dropbox";
++    field public static final java.lang.String DSNMANAGER_SERVICE = "DSNManager_service";
+     field public static final java.lang.String FINGERPRINT_SERVICE = "fingerprint";
+     field public static final java.lang.String HARDWARE_PROPERTIES_SERVICE = "hardware_properties";
+     field public static final java.lang.String HDMI_CONTROL_SERVICE = "hdmi_control";
+@@ -55957,6 +55958,78 @@ package android.widget {
+ 
+ package brahmaos.app {
+ 
++  public class DSNMateObjectData implements android.os.Parcelable {
++    ctor public DSNMateObjectData();
++    ctor public DSNMateObjectData(int, java.util.Map<java.lang.String, java.lang.Object>, java.lang.String);
++    method public int describeContents();
++    method public java.util.Map<java.lang.String, java.lang.Object> getData();
++    method public java.lang.String getMsg();
++    method public int getResult();
++    method public void readFromParcel(android.os.Parcel);
++    method public void setData(java.util.Map<java.lang.String, java.lang.Object>);
++    method public void setMsg(java.lang.String);
++    method public void setResult(int);
++    method public void writeToParcel(android.os.Parcel, int);
++    field public static final android.os.Parcelable.Creator<brahmaos.app.DSNMateObjectData> CREATOR;
++  }
++
++  public abstract interface IAddFileCallback implements android.os.IInterface {
++    method public abstract void onCallbackComplete(boolean, java.util.Map) throws android.os.RemoteException;
++    method public abstract void onCompleted(java.lang.String) throws android.os.RemoteException;
++    method public abstract void onError(java.lang.String) throws android.os.RemoteException;
++    method public abstract void onNext(java.lang.String) throws android.os.RemoteException;
++    method public abstract void onUploadProcess(long, long) throws android.os.RemoteException;
++  }
++
++  public static abstract class IAddFileCallback.Stub extends android.os.Binder implements brahmaos.app.IAddFileCallback {
++    ctor public IAddFileCallback.Stub();
++    method public android.os.IBinder asBinder();
++    method public static brahmaos.app.IAddFileCallback asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
++  public abstract interface IDSNManager implements android.os.IInterface {
++    method public abstract void addFile(java.lang.String, java.lang.String, brahmaos.app.IAddFileCallback) throws android.os.RemoteException;
++    method public abstract int getDSNManagerStatus() throws android.os.RemoteException;
++    method public abstract void getFile(java.lang.String, java.lang.String, brahmaos.app.IGetFileCallback) throws android.os.RemoteException;
++    method public abstract void listFile(java.lang.String, int, int, brahmaos.app.IListFileCallback) throws android.os.RemoteException;
++    method public abstract void startIPFSController() throws android.os.RemoteException;
++    method public abstract void stopIPFSController() throws android.os.RemoteException;
++  }
++
++  public static abstract class IDSNManager.Stub extends android.os.Binder implements brahmaos.app.IDSNManager {
++    ctor public IDSNManager.Stub();
++    method public android.os.IBinder asBinder();
++    method public static brahmaos.app.IDSNManager asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
++  public abstract interface IGetFileCallback implements android.os.IInterface {
++    method public abstract void onCallbackComplete(boolean) throws android.os.RemoteException;
++    method public abstract void onGetFileProcess(long, long) throws android.os.RemoteException;
++  }
++
++  public static abstract class IGetFileCallback.Stub extends android.os.Binder implements brahmaos.app.IGetFileCallback {
++    ctor public IGetFileCallback.Stub();
++    method public android.os.IBinder asBinder();
++    method public static brahmaos.app.IGetFileCallback asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
++  public abstract interface IListFileCallback implements android.os.IInterface {
++    method public abstract void onCallbackComplete(boolean) throws android.os.RemoteException;
++    method public abstract void onCompleted(java.lang.String) throws android.os.RemoteException;
++    method public abstract void onError(java.lang.String) throws android.os.RemoteException;
++    method public abstract void onNext(brahmaos.app.DSNMateObjectData) throws android.os.RemoteException;
++  }
++
++  public static abstract class IListFileCallback.Stub extends android.os.Binder implements brahmaos.app.IListFileCallback {
++    ctor public IListFileCallback.Stub();
++    method public android.os.IBinder asBinder();
++    method public static brahmaos.app.IListFileCallback asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public abstract interface IOnETHBlanceGetListener implements android.os.IInterface {
+     method public abstract void onETHBlanceGetError() throws android.os.RemoteException;
+     method public abstract void onETHBlanceGetSuccess(java.lang.String) throws android.os.RemoteException;
+diff --git a/api/test-current.txt b/api/test-current.txt
+index 89ed793..d1de44c 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -8999,6 +8999,7 @@ package android.content {
+     field public static final java.lang.String DISPLAY_SERVICE = "display";
+     field public static final java.lang.String DOWNLOAD_SERVICE = "download";
+     field public static final java.lang.String DROPBOX_SERVICE = "dropbox";
++    field public static final java.lang.String DSNMANAGER_SERVICE = "DSNManager_service";
+     field public static final java.lang.String FINGERPRINT_SERVICE = "fingerprint";
+     field public static final java.lang.String HARDWARE_PROPERTIES_SERVICE = "hardware_properties";
+     field public static final java.lang.String INPUT_METHOD_SERVICE = "input_method";
+@@ -52481,6 +52482,78 @@ package android.widget {
+ 
+ package brahmaos.app {
+ 
++  public class DSNMateObjectData implements android.os.Parcelable {
++    ctor public DSNMateObjectData();
++    ctor public DSNMateObjectData(int, java.util.Map<java.lang.String, java.lang.Object>, java.lang.String);
++    method public int describeContents();
++    method public java.util.Map<java.lang.String, java.lang.Object> getData();
++    method public java.lang.String getMsg();
++    method public int getResult();
++    method public void readFromParcel(android.os.Parcel);
++    method public void setData(java.util.Map<java.lang.String, java.lang.Object>);
++    method public void setMsg(java.lang.String);
++    method public void setResult(int);
++    method public void writeToParcel(android.os.Parcel, int);
++    field public static final android.os.Parcelable.Creator<brahmaos.app.DSNMateObjectData> CREATOR;
++  }
++
++  public abstract interface IAddFileCallback implements android.os.IInterface {
++    method public abstract void onCallbackComplete(boolean, java.util.Map) throws android.os.RemoteException;
++    method public abstract void onCompleted(java.lang.String) throws android.os.RemoteException;
++    method public abstract void onError(java.lang.String) throws android.os.RemoteException;
++    method public abstract void onNext(java.lang.String) throws android.os.RemoteException;
++    method public abstract void onUploadProcess(long, long) throws android.os.RemoteException;
++  }
++
++  public static abstract class IAddFileCallback.Stub extends android.os.Binder implements brahmaos.app.IAddFileCallback {
++    ctor public IAddFileCallback.Stub();
++    method public android.os.IBinder asBinder();
++    method public static brahmaos.app.IAddFileCallback asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
++  public abstract interface IDSNManager implements android.os.IInterface {
++    method public abstract void addFile(java.lang.String, java.lang.String, brahmaos.app.IAddFileCallback) throws android.os.RemoteException;
++    method public abstract int getDSNManagerStatus() throws android.os.RemoteException;
++    method public abstract void getFile(java.lang.String, java.lang.String, brahmaos.app.IGetFileCallback) throws android.os.RemoteException;
++    method public abstract void listFile(java.lang.String, int, int, brahmaos.app.IListFileCallback) throws android.os.RemoteException;
++    method public abstract void startIPFSController() throws android.os.RemoteException;
++    method public abstract void stopIPFSController() throws android.os.RemoteException;
++  }
++
++  public static abstract class IDSNManager.Stub extends android.os.Binder implements brahmaos.app.IDSNManager {
++    ctor public IDSNManager.Stub();
++    method public android.os.IBinder asBinder();
++    method public static brahmaos.app.IDSNManager asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
++  public abstract interface IGetFileCallback implements android.os.IInterface {
++    method public abstract void onCallbackComplete(boolean) throws android.os.RemoteException;
++    method public abstract void onGetFileProcess(long, long) throws android.os.RemoteException;
++  }
++
++  public static abstract class IGetFileCallback.Stub extends android.os.Binder implements brahmaos.app.IGetFileCallback {
++    ctor public IGetFileCallback.Stub();
++    method public android.os.IBinder asBinder();
++    method public static brahmaos.app.IGetFileCallback asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
++  public abstract interface IListFileCallback implements android.os.IInterface {
++    method public abstract void onCallbackComplete(boolean) throws android.os.RemoteException;
++    method public abstract void onCompleted(java.lang.String) throws android.os.RemoteException;
++    method public abstract void onError(java.lang.String) throws android.os.RemoteException;
++    method public abstract void onNext(brahmaos.app.DSNMateObjectData) throws android.os.RemoteException;
++  }
++
++  public static abstract class IListFileCallback.Stub extends android.os.Binder implements brahmaos.app.IListFileCallback {
++    ctor public IListFileCallback.Stub();
++    method public android.os.IBinder asBinder();
++    method public static brahmaos.app.IListFileCallback asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public abstract interface IOnETHBlanceGetListener implements android.os.IInterface {
+     method public abstract void onETHBlanceGetError() throws android.os.RemoteException;
+     method public abstract void onETHBlanceGetSuccess(java.lang.String) throws android.os.RemoteException;
+diff --git a/core/java/android/app/SystemServiceRegistry.java b/core/java/android/app/SystemServiceRegistry.java
+index 3d8f9bd..d3dd275 100644
+--- a/core/java/android/app/SystemServiceRegistry.java
++++ b/core/java/android/app/SystemServiceRegistry.java
+@@ -156,8 +156,9 @@ import com.android.internal.policy.PhoneLayoutInflater;
+ 
+ import java.util.HashMap;
+ import android.os.IIPFSControllerManager;
+-
+-
++import brahmaos.app.IDSNManager;
++import brahmaos.app.DSNManager;
++import static android.content.Context.DSNMANAGER_SERVICE;
+ /**
+  * Manages all of the system services that can be returned by {@link Context#getSystemService}.
+  * Used by {@link ContextImpl}.
+@@ -191,7 +192,7 @@ final class SystemServiceRegistry {
+                 return new CaptioningManager(ctx);
+             }});
+ 
+-	registerService("IPFSControllerManagerService", IPFSCManager.class,
++        registerService("IPFSControllerManagerService", IPFSCManager.class,
+                 new CachedServiceFetcher<IPFSCManager>() {
+                     @Override
+                     public IPFSCManager createService(ContextImpl ctx) {
+@@ -199,6 +200,14 @@ final class SystemServiceRegistry {
+                         IIPFSControllerManager service = IIPFSControllerManager.Stub.asInterface(b);
+                         return new IPFSCManager(ctx,service);
+             }});
++        registerService(DSNMANAGER_SERVICE, DSNManager.class,
++                new CachedServiceFetcher<DSNManager>() {
++                    @Override
++                    public DSNManager createService(ContextImpl ctx) {
++                        IBinder b = ServiceManager.getService(DSNMANAGER_SERVICE);
++                        IDSNManager service = IDSNManager.Stub.asInterface(b);
++                        return new DSNManager(ctx,service);
++            }});
+ 
+         registerService(Context.ACCOUNT_SERVICE, AccountManager.class,
+                 new CachedServiceFetcher<AccountManager>() {
+diff --git a/core/java/android/content/Context.java b/core/java/android/content/Context.java
+index 792e8f3..2051c37 100644
+--- a/core/java/android/content/Context.java
++++ b/core/java/android/content/Context.java
+@@ -4049,6 +4049,8 @@ public abstract class Context {
+      */
+     public static final String TIME_ZONE_RULES_MANAGER_SERVICE = "timezone";
+ 
++    public static final String DSNMANAGER_SERVICE = "DSNManager_service";
++
+     /**
+      * Determine whether the given permission is allowed for a particular
+      * process and user ID running in the system.
+diff --git a/core/java/android/net/TrafficStats.java b/core/java/android/net/TrafficStats.java
+index c339856..81fdb3c 100644
+--- a/core/java/android/net/TrafficStats.java
++++ b/core/java/android/net/TrafficStats.java
+@@ -117,6 +117,14 @@ public class TrafficStats {
+      */
+     public static final int TAG_SYSTEM_APP = 0xFFFFFF05;
+ 
++    /**
++     * Default tag value for DSNManagerService
++     *
++     * @hide
++     */
++    public static final int TAG_SYSTEM_DSN = 0xFFFFFF06;
++
++
+     /** @hide */
+     public static final int TAG_SYSTEM_DHCP = 0xFFFFFF40;
+     /** @hide */
+diff --git a/core/java/brahmaos/app/AddFileCallback.java b/core/java/brahmaos/app/AddFileCallback.java
+new file mode 100644
+index 0000000..7764259
+--- /dev/null
++++ b/core/java/brahmaos/app/AddFileCallback.java
+@@ -0,0 +1,40 @@
++package brahmaos.app;
++
++import brahmaos.app.IAddFileCallback;
++import brahmaos.app.AddFileCallbackListener;
++
++import java.util.Map;
++
++public class AddFileCallback extends IAddFileCallback.Stub {
++    private AddFileCallbackListener listener;
++
++    public AddFileCallback(AddFileCallbackListener addFileListenerCallback){
++         listener = addFileListenerCallback;
++     }
++
++    @Override
++    public void onUploadProcess(long filesize, long uploadsize){
++        listener.onUploadProcess(filesize,uploadsize);
++    }
++
++    @Override
++    public void onCompleted(String status){
++        listener.onCompleted(status);
++    }
++
++    @Override
++    public void onError(String status){
++        listener.onError(status);
++    }
++
++    @Override
++    public void onNext(String status){
++        listener.onNext(status);
++    }
++
++    @Override
++    public void onCallbackComplete(boolean result, Map resultMap){
++        listener.onCallbackComplete(result,resultMap);
++    }
++
++}
+diff --git a/core/java/brahmaos/app/AddFileCallbackListener.java b/core/java/brahmaos/app/AddFileCallbackListener.java
+new file mode 100644
+index 0000000..f2f047e
+--- /dev/null
++++ b/core/java/brahmaos/app/AddFileCallbackListener.java
+@@ -0,0 +1,17 @@
++package brahmaos.app;
++
++import java.util.Map;
++
++public interface AddFileCallbackListener {
++
++    void onUploadProcess(long filesize, long uploadsize);
++
++    void onCompleted(String status);
++
++    void onError(String status);
++
++    void onNext(String status);
++
++    void onCallbackComplete(boolean result, Map resultMap);
++
++}
+diff --git a/core/java/brahmaos/app/DSNManager.java b/core/java/brahmaos/app/DSNManager.java
+new file mode 100644
+index 0000000..89678f2
+--- /dev/null
++++ b/core/java/brahmaos/app/DSNManager.java
+@@ -0,0 +1,122 @@
++package brahmaos.app;
++import android.content.Context;
++import android.os.RemoteException;
++import android.util.Log;
++public class DSNManager {
++    Context mContext;
++    IDSNManager mService;
++
++    public DSNManager(Context context, IDSNManager service) {
++        mContext = context;
++        mService = service; }
++
++    public String getVersion() {
++        if (mService != null) {
++            /*
++            try {
++                return mService.getVersion();
++            } catch (RemoteException e) {
++                Log.e("SystemStatus", "RemoteException " + e); return null;
++            }*/
++            return null;
++        }
++        return null;
++    }
++
++    /**
++     * @param void
++     * @return int, 0 the DSNManager is stop.1 the DSNManager is running.
++     **/
++    public int getDSNManagerStatus(){
++        int status = 0;
++        if (mService != null) {
++            try {
++              status = mService.getDSNManagerStatus();
++            } catch (RemoteException e) {
++                Log.e("SystemStatus", "RemoteException " + e);
++                }
++            return status;
++        } else
++            return -1;
++    }
++
++    public void startIPFSController(){
++        if (mService != null) {
++            try {
++                    mService.startIPFSController();
++            } catch (RemoteException e) {
++                Log.e("SystemStatus", "RemoteException " + e);
++                }
++        }
++        return;
++    }
++
++    public void stopIPFSController(){
++        if (mService != null) {
++            try {
++                    mService.stopIPFSController();
++            } catch (RemoteException e) {
++                Log.e("SystemStatus", "RemoteException " + e);
++                }
++        }
++        return;
++    }
++
++    /**
++     * @param path th file path add to DSN
++     * @param password the password to encrypt the file.
++     * @param AddFileCallbackListener callback to client.
++     * @return void.
++     **/
++
++    public void addFile(String path, String password, AddFileCallbackListener cb) {
++        if (mService != null) {
++            try {
++                AddFileCallback callback = new AddFileCallback(cb);
++                mService.addFile(path, password,callback);
++            } catch (RemoteException e) {
++                    Log.e("SystemStatus", "RemoteException " + e);
++                }
++        }
++        return;
++    }
++
++    /**
++     * @param cid file hashkey get form DSN
++     * @param password the password to decrypt the file.
++     * @param GetFileCallbackListener callback to client.
++     * @return void.
++     **/
++
++    public void getFile(String cid, String password, GetFileCallbackListener cb) {
++        if (mService != null) {
++            try {
++                GetFileCallback callback = new GetFileCallback(cb);
++                mService.getFile(cid, password, callback);
++            } catch (RemoteException e) {
++                Log.e("SystemStatus", "RemoteException " + e);
++                }
++        }
++        return;
++    }
++
++    /**
++     * @param cid (Required) CID of directory that will be loaded from blockchain.
++     * @param page the page number.
++     * @param count the count every page.
++     * @param ListFileCallbackListener callback to client.
++     * @return void.
++     **/
++    public void listFile(String cid, int page, int count, ListFileCallbackListener cb){
++        if (mService != null) {
++            try {
++                ListFileCallback callback = new ListFileCallback(cb);
++                mService.listFile(cid, page, count,callback);
++            } catch (RemoteException e) {
++                Log.e("SystemStatus", "RemoteException " + e);
++            }
++        }
++        return;
++    }
++}
++
+diff --git a/core/java/brahmaos/app/DSNMateObjectData.aidl b/core/java/brahmaos/app/DSNMateObjectData.aidl
+new file mode 100644
+index 0000000..302aae6
+--- /dev/null
++++ b/core/java/brahmaos/app/DSNMateObjectData.aidl
+@@ -0,0 +1,3 @@
++package brahmaos.app;
++
++parcelable DSNMateObjectData;
+diff --git a/core/java/brahmaos/app/DSNMateObjectData.java b/core/java/brahmaos/app/DSNMateObjectData.java
+new file mode 100644
+index 0000000..cdde50b
+--- /dev/null
++++ b/core/java/brahmaos/app/DSNMateObjectData.java
+@@ -0,0 +1,95 @@
++package brahmaos.app;
++
++import java.util.Map;
++import java.util.HashMap;
++
++import android.os.Parcel;
++import android.os.Parcelable;
++
++
++/**
++ * Unified API response object
++ * The response structure returned by all owned services is unified
++ */
++public class DSNMateObjectData implements Parcelable {
++
++    private int result;
++
++    private Map<String, Object> data;
++
++    private String msg;
++
++    public static final Parcelable.Creator<DSNMateObjectData> CREATOR = new Parcelable.Creator<DSNMateObjectData>() {
++        @Override public DSNMateObjectData createFromParcel(Parcel source) {
++            return new DSNMateObjectData(source);
++        }
++        @Override public DSNMateObjectData[] newArray(int size) {
++            return new DSNMateObjectData[size];
++        }
++    };
++    public DSNMateObjectData(){
++
++    }
++
++    private DSNMateObjectData(Parcel source) {
++        readFromParcel(source);
++    }
++
++    public DSNMateObjectData(int result, Map<String, Object> data, String msg){
++        this.result = result;
++        this.data = data;
++        this.msg = msg;
++    }
++
++    @Override
++    public void writeToParcel(Parcel dest, int flags) {
++        dest.writeInt(result);
++        dest.writeMap(data);
++        dest.writeString(msg);
++    }
++
++    public void readFromParcel(Parcel source) {
++        result = source.readInt();
++        data = source.readHashMap(HashMap.class.getClassLoader());
++        msg = source.readString();
++    }
++
++    @Override
++    public int describeContents() {
++        return 0;
++    }
++
++    @Override
++    public String toString() {
++        return "ApiRespResult{" +
++                "result=" + result +
++                ", data=" + data +
++                ", msg='" + msg + '\'' +
++                '}';
++    }
++
++    public int getResult() {
++        return result;
++    }
++
++    public void setResult(int result) {
++        this.result = result;
++    }
++
++    public Map<String, Object> getData() {
++        return data;
++    }
++
++    public void setData(Map<String, Object> data) {
++        this.data = data;
++    }
++
++    public String getMsg() {
++        return msg;
++    }
++
++    public void setMsg(String msg) {
++        this.msg = msg;
++    }
++}
++
+diff --git a/core/java/brahmaos/app/GetFileCallback.java b/core/java/brahmaos/app/GetFileCallback.java
+new file mode 100644
+index 0000000..84ae6e4
+--- /dev/null
++++ b/core/java/brahmaos/app/GetFileCallback.java
+@@ -0,0 +1,23 @@
++package brahmaos.app;
++
++import brahmaos.app.IGetFileCallback;
++import brahmaos.app.GetFileCallbackListener;
++
++public class GetFileCallback extends IGetFileCallback.Stub {
++    private GetFileCallbackListener listener;
++
++    public GetFileCallback(GetFileCallbackListener getFileListenerCallback){
++         listener = getFileListenerCallback;
++     }
++
++    @Override
++    public void onGetFileProcess(long filesize, long uploadsize){
++        listener.onGetFileProcess(filesize, uploadsize);
++    };
++
++    @Override
++    public void onCallbackComplete(boolean per){
++        listener.onCallbackComplete(per);
++    };
++
++}
+diff --git a/core/java/brahmaos/app/GetFileCallbackListener.java b/core/java/brahmaos/app/GetFileCallbackListener.java
+new file mode 100644
+index 0000000..9e9a9f4
+--- /dev/null
++++ b/core/java/brahmaos/app/GetFileCallbackListener.java
+@@ -0,0 +1,9 @@
++package brahmaos.app;
++
++public interface GetFileCallbackListener {
++
++    void onGetFileProcess(long filesize, long uploadsize);
++
++    void onCallbackComplete(boolean status);
++
++}
+diff --git a/core/java/brahmaos/app/IAddFileCallback.aidl b/core/java/brahmaos/app/IAddFileCallback.aidl
+new file mode 100644
+index 0000000..36a8b2e
+--- /dev/null
++++ b/core/java/brahmaos/app/IAddFileCallback.aidl
+@@ -0,0 +1,15 @@
++package brahmaos.app;
++import java.util.Map;
++
++interface IAddFileCallback{
++
++    oneway void onUploadProcess(long fileSize, long hasUpload);
++
++    oneway void onCompleted(String status);
++
++    oneway void onError(String status);
++
++    oneway void onNext(String status);
++
++    oneway void onCallbackComplete(boolean result, in Map resultMap);
++}
+diff --git a/core/java/brahmaos/app/IDSNManager.aidl b/core/java/brahmaos/app/IDSNManager.aidl
+new file mode 100644
+index 0000000..4519423
+--- /dev/null
++++ b/core/java/brahmaos/app/IDSNManager.aidl
+@@ -0,0 +1,21 @@
++package brahmaos.app;
++import brahmaos.app.IAddFileCallback;
++import brahmaos.app.IGetFileCallback;
++import brahmaos.app.IListFileCallback;
++
++//IDSNManager.aidl
++interface IDSNManager {
++
++    int getDSNManagerStatus();
++
++    oneway void startIPFSController();
++
++    oneway void stopIPFSController();
++
++    oneway void addFile(String path, String password, IAddFileCallback cb);
++
++    oneway void getFile(String cid, String password, IGetFileCallback cb);
++
++    oneway void listFile(String cid, int page, int count, IListFileCallback cb);
++
++}
+diff --git a/core/java/brahmaos/app/IGetFileCallback.aidl b/core/java/brahmaos/app/IGetFileCallback.aidl
+new file mode 100644
+index 0000000..ccb9a82
+--- /dev/null
++++ b/core/java/brahmaos/app/IGetFileCallback.aidl
+@@ -0,0 +1,8 @@
++package brahmaos.app;
++
++oneway interface IGetFileCallback{
++
++    void onGetFileProcess(long filesize, long uploadsize);
++
++    void onCallbackComplete(boolean result);
++}
+diff --git a/core/java/brahmaos/app/IListFileCallback.aidl b/core/java/brahmaos/app/IListFileCallback.aidl
+new file mode 100644
+index 0000000..7a9fda9
+--- /dev/null
++++ b/core/java/brahmaos/app/IListFileCallback.aidl
+@@ -0,0 +1,14 @@
++package brahmaos.app;
++
++import brahmaos.app.DSNMateObjectData;
++
++interface IListFileCallback{
++
++    oneway void onCompleted(String status);
++
++    oneway void onError(String status);
++
++    oneway void onNext(in DSNMateObjectData mateObjectData);
++
++    oneway void onCallbackComplete(boolean result);
++}
+diff --git a/core/java/brahmaos/app/ListFileCallback.java b/core/java/brahmaos/app/ListFileCallback.java
+new file mode 100644
+index 0000000..8a96bd8
+--- /dev/null
++++ b/core/java/brahmaos/app/ListFileCallback.java
+@@ -0,0 +1,34 @@
++package brahmaos.app;
++
++import brahmaos.app.IListFileCallback;
++import brahmaos.app.ListFileCallbackListener;
++import brahmaos.app.DSNMateObjectData;
++
++public class ListFileCallback extends IListFileCallback.Stub {
++    private ListFileCallbackListener listener;
++
++    public ListFileCallback(ListFileCallbackListener listFileListenerCallback){
++         listener = listFileListenerCallback;
++     }
++
++    @Override
++    public void onCompleted(String status){
++        listener.onCompleted(status);
++    }
++
++    @Override
++    public void onError(String status){
++        listener.onError(status);
++    }
++
++    @Override
++    public void onNext(DSNMateObjectData mateObjectData){
++        listener.onNext(mateObjectData);
++    }
++
++    @Override
++    public void onCallbackComplete(boolean result){
++        listener.onCallbackComplete(result);
++    }
++
++}
+diff --git a/core/java/brahmaos/app/ListFileCallbackListener.java b/core/java/brahmaos/app/ListFileCallbackListener.java
+new file mode 100644
+index 0000000..30fe038
+--- /dev/null
++++ b/core/java/brahmaos/app/ListFileCallbackListener.java
+@@ -0,0 +1,16 @@
++package brahmaos.app;
++
++import brahmaos.app.DSNMateObjectData;
++
++
++public interface ListFileCallbackListener {
++
++    void onCompleted(String status);
++
++    void onError(String status);
++
++    void onNext(DSNMateObjectData mateObjectData);
++
++    void onCallbackComplete(boolean result);
++
++}
+diff --git a/core/java/com/android/internal/os/ZygoteInit.java b/core/java/com/android/internal/os/ZygoteInit.java
+index 25e90ad..aa77732 100644
+--- a/core/java/com/android/internal/os/ZygoteInit.java
++++ b/core/java/com/android/internal/os/ZygoteInit.java
+@@ -641,7 +641,7 @@ public class ZygoteInit {
+         String args[] = {
+             "--setuid=1000",
+             "--setgid=1000",
+-            "--setgroups=1001,1002,1003,1004,1005,1006,1007,1008,1009,1010,1018,1021,1023,1032,3001,3002,3003,3006,3007,3009,3010",
++            "--setgroups=1001,1002,1003,1004,1005,1006,1007,1008,1009,1010,1018,1021,1023,1032,3001,3002,3003,3006,3007,3009,3010,1015",
+             "--capabilities=" + capabilities + "," + capabilities,
+             "--nice-name=system_server",
+             "--runtime-args",
+diff --git a/core/java/com/android/server/NetworkManagementSocketTagger.java b/core/java/com/android/server/NetworkManagementSocketTagger.java
+index 03f2bc1..74356cf 100644
+--- a/core/java/com/android/server/NetworkManagementSocketTagger.java
++++ b/core/java/com/android/server/NetworkManagementSocketTagger.java
+@@ -74,9 +74,11 @@ public final class NetworkManagementSocketTagger extends SocketTagger {
+             Log.d(TAG, "tagSocket(" + fd.getInt$() + ") with statsTag=0x"
+                     + Integer.toHexString(options.statsTag) + ", statsUid=" + options.statsUid);
+         }
++
+         if (options.statsTag == -1 && StrictMode.vmUntaggedSocketEnabled()) {
+             StrictMode.onUntaggedSocket();
+         }
++
+         // TODO: skip tagging when options would be no-op
+         tagSocketFd(fd, options.statsTag, options.statsUid);
+     }
+diff --git a/core/java/io/ipfs/api/IPFS.java b/core/java/io/ipfs/api/IPFS.java
+index 7f66298..61419ea 100755
+--- a/core/java/io/ipfs/api/IPFS.java
++++ b/core/java/io/ipfs/api/IPFS.java
+@@ -11,6 +11,11 @@ import java.util.*;
+ import java.util.concurrent.*;
+ import java.util.function.*;
+ import java.util.stream.*;
++import io.ipfs.api.Multipart.AddFileMultipartCallback;
++import android.net.TrafficStats;
++
++import static android.net.TrafficStats.TAG_SYSTEM_DSN;
++
+ 
+ public class IPFS {
+ 
+@@ -66,25 +71,25 @@ public class IPFS {
+         }
+     }
+ 
+-    public List<MerkleNode> add(NamedStreamable file) throws IOException {
+-        return add(file, false);
++    public List<MerkleNode> add(NamedStreamable file, AddFileMultipartCallback cb) throws IOException {
++        return add(file, false, cb);
+     }
+ 
+-    public List<MerkleNode> add(NamedStreamable file, boolean wrap) throws IOException {
+-        return add(file, wrap, false);
++    public List<MerkleNode> add(NamedStreamable file, boolean wrap, AddFileMultipartCallback cb) throws IOException {
++        return add(file, wrap, false, cb);
+     }
+ 
+-    public List<MerkleNode> add(NamedStreamable file, boolean wrap, boolean hashOnly) throws IOException {
+-        return add(Collections.singletonList(file), wrap, hashOnly);
++    public List<MerkleNode> add(NamedStreamable file, boolean wrap, boolean hashOnly, AddFileMultipartCallback cb) throws IOException {
++        return add(Collections.singletonList(file), wrap, hashOnly, cb);
+     }
+ 
+-    public List<MerkleNode> add(List<NamedStreamable> files, boolean wrap, boolean hashOnly) throws IOException {
++    public List<MerkleNode> add(List<NamedStreamable> files, boolean wrap, boolean hashOnly, AddFileMultipartCallback cb) throws IOException {
+         Multipart m = new Multipart("http://" + host + ":" + port + version + "add?w="+wrap + "&n="+hashOnly, "UTF-8");
+         for (NamedStreamable file: files) {
+             if (file.isDirectory()) {
+                 m.addSubtree(Paths.get(""), file);
+             } else
+-                m.addFilePart("file", Paths.get(""), file);
++                m.addFilePart("file", Paths.get(""), file, cb);
+         };
+         String res = m.finish();
+         return JSONParser.parseStream(res).stream()
+@@ -637,6 +642,7 @@ public class IPFS {
+         HttpURLConnection conn = (HttpURLConnection) target.openConnection();
+         conn.setRequestMethod("GET");
+         conn.setRequestProperty("Content-Type", "application/json");
++        TrafficStats.setThreadStatsTag(TAG_SYSTEM_DSN);
+ 
+         try {
+             InputStream in = conn.getInputStream();
+diff --git a/core/java/io/ipfs/api/Multipart.java b/core/java/io/ipfs/api/Multipart.java
+index ab779bc..9891b23 100755
+--- a/core/java/io/ipfs/api/Multipart.java
++++ b/core/java/io/ipfs/api/Multipart.java
+@@ -4,6 +4,10 @@ import java.io.*;
+ import java.net.*;
+ import java.nio.file.*;
+ import java.util.*;
++import android.net.TrafficStats;
++
++import static android.net.TrafficStats.TAG_SYSTEM_DSN;
++
+ 
+ public class Multipart {
+     private final String boundary;
+@@ -26,7 +30,9 @@ public class Multipart {
+             httpConn.setDoInput(true);
+             httpConn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+             httpConn.setRequestProperty("User-Agent", "Java IPFS CLient");
++            httpConn.setChunkedStreamingMode(1024 * 1024 * 10);
+             out = httpConn.getOutputStream();
++            TrafficStats.setThreadStatsTag(TAG_SYSTEM_DSN);
+             writer = new PrintWriter(new OutputStreamWriter(out, charset), true);
+         } catch (IOException e) {
+             throw new RuntimeException(e.getMessage(), e);
+@@ -97,8 +103,41 @@ public class Multipart {
+             InputStream inputStream = uploadFile.getInputStream();
+             byte[] buffer = new byte[4096];
+             int r;
+-            while ((r = inputStream.read(buffer)) != -1)
++            while ((r = inputStream.read(buffer)) != -1) {
+                 out.write(buffer, 0, r);
++            }
++            out.flush();
++            inputStream.close();
++        } catch (IOException e) {
++            throw new RuntimeException(e.getMessage(), e);
++        }
++
++        writer.append(LINE_FEED);
++        writer.flush();
++    }
++    public void addFilePart(String fieldName, Path parent, NamedStreamable uploadFile, AddFileMultipartCallback cb) {
++        Optional<String> fileName = uploadFile.getName().map(n -> encode(parent.resolve(n).toString().replace('\\','/')));
++        writer.append("--").append(boundary).append(LINE_FEED);
++        if (!fileName.isPresent())
++            writer.append("Content-Disposition: file; name=\"").append(fieldName).append("\";").append(LINE_FEED);
++        else
++            writer.append("Content-Disposition: file; filename=\"").append(fileName.get()).append("\";").append(LINE_FEED);
++        writer.append("Content-Type: application/octet-stream").append(LINE_FEED);
++        writer.append("Content-Transfer-Encoding: binary").append(LINE_FEED);
++        writer.append(LINE_FEED);
++        writer.flush();
++
++        try {
++            InputStream inputStream = uploadFile.getInputStream();
++            long fileSize = uploadFile.getFileLength();
++            long hasUpload = 0;
++            byte[] buffer = new byte[4096];
++            int r;
++            while ((r = inputStream.read(buffer)) != -1) {
++                out.write(buffer, 0, r);
++                hasUpload = hasUpload + r;
++                cb.onUploadProcess(fileSize,hasUpload);
++            }
+             out.flush();
+             inputStream.close();
+         } catch (IOException e) {
+@@ -149,5 +188,9 @@ public class Multipart {
+         } catch (IOException e) {
+             throw new RuntimeException(e.getMessage(), e);
+         }
++
++    }
++    public interface AddFileMultipartCallback{
++        void onUploadProcess(long fileSize, long hasUpload);
+     }
+ }
+diff --git a/core/java/io/ipfs/api/NamedStreamable.java b/core/java/io/ipfs/api/NamedStreamable.java
+index 6ae5f34..7c66408 100755
+--- a/core/java/io/ipfs/api/NamedStreamable.java
++++ b/core/java/io/ipfs/api/NamedStreamable.java
+@@ -25,6 +25,8 @@ public interface NamedStreamable
+         return bout.toByteArray();
+     }
+ 
++    long getFileLength();
++
+     class FileWrapper implements NamedStreamable {
+         private final File source;
+ 
+@@ -56,6 +58,10 @@ public interface NamedStreamable
+                 throw new RuntimeException(e);
+             }
+         }
++
++        public long getFileLength() {
++            return source.length();
++        }
+     }
+ 
+     class ByteArrayWrapper implements NamedStreamable {
+@@ -91,6 +97,10 @@ public interface NamedStreamable
+         public Optional<String> getName() {
+             return name;
+         }
++
++        public long getFileLength() {
++            return 0;
++        }
+     }
+ 
+     class DirWrapper implements NamedStreamable {
+@@ -122,5 +132,9 @@ public interface NamedStreamable
+         public boolean isDirectory() {
+             return true;
+         }
++
++        public long getFileLength() {
++            return 0;
++        }
+     }
+ }
+diff --git a/services/core/Android.mk b/services/core/Android.mk
+index c90b402..ca1f434 100644
+--- a/services/core/Android.mk
++++ b/services/core/Android.mk
+@@ -33,7 +33,25 @@ LOCAL_STATIC_JAVA_LIBRARIES := \
+     android.hardware.oemlock-V1.0-java-static \
+     android.hardware.tetheroffload.control-V1.0-java-static \
+     android.hardware.vibrator-V1.0-java-constants \
+-    android.hardware.configstore-V1.0-java-static
++    android.hardware.configstore-V1.0-java-static \
++    android-support-annotations \
++    retrofit2-converter \
++    okhttp-logging \
++    retrofit2-adapter \
++    jackson-core \
++    jackson \
++    jackson-databind \
++    retrofit2-adapter \
++    okhttp-3 \
++    retrofit \
++    reactivex-rxjava \
++    retrofit2-converter \
++    jackson-core \
++    okhttp-logging \
++    okio \
++    reactivex-rxandroid \
++    retrofit-gson \
++    gson
+ 
+ ifneq ($(INCREMENTAL_BUILDS),)
+     LOCAL_PROGUARD_ENABLED := disabled
+diff --git a/services/core/java/brahmaos/app/server/DSNManagerService.java b/services/core/java/brahmaos/app/server/DSNManagerService.java
+new file mode 100644
+index 0000000..e729243
+--- /dev/null
++++ b/services/core/java/brahmaos/app/server/DSNManagerService.java
+@@ -0,0 +1,356 @@
++package brahmaos.app.server;
++
++import brahmaos.app.IDSNManager;
++import brahmaos.app.IAddFileCallback;
++import brahmaos.app.IGetFileCallback;
++import brahmaos.app.IListFileCallback;
++import brahmaos.app.DSNMateObjectData;
++import barhmaos.app.server.util.CommonUtil;
++
++import io.ipfs.api.MerkleNode;
++import io.ipfs.api.NamedStreamable;
++import io.ipfs.multihash.Multihash;
++import io.ipfs.api.IPFS;
++import io.ipfs.api.NamedStreamable;
++import io.ipfs.api.Multipart.AddFileMultipartCallback;
++
++import java.text.SimpleDateFormat;
++import java.lang.String.*;
++import java.util.Date;
++import java.util.List;
++import java.util.concurrent.ExecutorService;
++import java.util.concurrent.Executors;
++import java.util.Map;
++import java.util.HashMap;
++import java.util.LinkedHashMap;
++import java.io.File;
++import java.io.IOException;
++import java.io.FileInputStream;
++import java.io.FileOutputStream;
++import java.io.InputStream;
++import java.util.concurrent.TimeUnit;
++
++import android.os.UserHandle;
++import android.os.UserManager;
++import android.os.RemoteException;
++import android.os.SystemProperties;
++
++import android.content.Context;
++import brahmaos.util.DataCryptoUtils;
++import android.util.Log;
++import android.provider.Settings;
++
++import rx.Completable;
++import rx.Observable;
++import rx.Observer;
++import rx.android.schedulers.AndroidSchedulers;
++import rx.schedulers.Schedulers;
++import brahmaos.app.server.retrofit.RetrofitNetwork;
++import brahmaos.app.server.retrofit.GetRequestInterface;
++import brahmaos.app.server.retrofit.PostRequestInterface;
++import brahmaos.app.server.retrofit.ApiRespResult;
++
++import retrofit2.Call;
++import retrofit2.Response;
++
++
++
++import static android.provider.Settings.System.IPFSCONTLLER_STATUS;
++
++public class DSNManagerService extends IDSNManager.Stub {
++    private static final String TAG = "DSNManagerService";
++    private final String PATH_PREFIX = "/sdcard/LocalHD";
++
++    private static final String IPFSCONTROLLER_NAME = "ipfsd";
++    private static final String CTL_STARTNAME = "ctl.start";
++    private static final String CTL_STOPNAME = "ctl.stop";
++    private static final int SLEEP_ITME = 5;
++
++    private static final int IPFSCONTROLLER_STOP = 0;
++    private static final int IPFSCONTROLLER_START = 1;
++
++    /*default is close*/
++    private final int DEFAULT_VALUE = 0;
++    private final int STOP_VALUE = 1;
++    private final int START_VALUE = 2;
++
++    private final Context mContext;
++    private IPFS mDSNManagerHandle;
++    private String accountStr;
++    private ExecutorService executor;
++    private static final int POOL_SIZE = 2;
++    private final String SYSTEM_KEY = IPFSCONTLLER_STATUS;
++    private static int PthreadNum = 1;
++    private static int DSNMANAGER_STATUS = 0;
++
++    public int systemReady() {
++        Log.d(TAG, "systemReady");
++        int status = Settings.System.getInt(mContext.getContentResolver(),
++                SYSTEM_KEY, DEFAULT_VALUE);
++        if (status == START_VALUE) {
++            Log.d(TAG, "systemReady START_VALUE");
++            SystemProperties.set(CTL_STARTNAME, IPFSCONTROLLER_NAME);
++            //executor.submit(new ThreadRunner((PthreadNum)));
++            //PthreadNum ++;
++            int userId = UserHandle.myUserId();
++            final UserManager um = (UserManager)mContext.getSystemService(Context.USER_SERVICE);
++            accountStr = um.getUserBrahmaAccount(userId);
++            DSNMANAGER_STATUS = 1;
++        }
++        return 0;
++    }
++
++    public DSNManagerService(Context context) {
++        Log.d(TAG,"DSNManagerService");
++        mContext = context;
++        if (executor == null) {
++            executor = Executors.newFixedThreadPool(POOL_SIZE);
++        }
++    }
++
++    public void startIPFSController() {
++        Log.d("KOALA_LOG","startIPFSController2");
++        SystemProperties.set(CTL_STARTNAME, IPFSCONTROLLER_NAME);
++        //executor.submit(new ThreadRunner((PthreadNum)));
++        DSNMANAGER_STATUS = 1;
++        return;
++    }
++
++    public void stopIPFSController() {
++        Log.d("KOALA_LOG","stopIPFSController2");
++        SystemProperties.set(CTL_STOPNAME, IPFSCONTROLLER_NAME);
++        DSNMANAGER_STATUS = 0;
++        return;
++    }
++
++    public int getDSNManagerStatus() {
++        return DSNMANAGER_STATUS;
++    }
++
++    /**
++     * Get the DSN IPFS version.
++     * getVersion().
++     */
++    public String getVersion() {
++        String version = "v1.0";
++        return version;
++    }
++
++    /**
++     * addFile to DSN.
++     * addFile().
++     */
++    @Override
++    public void addFile(String path, String password, IAddFileCallback cb) {
++        Log.d(TAG, "start DSNManagerService addFile");
++        if (path == null | CommonUtil.judgeFileExist(path) == false ) {
++            Log.e(TAG, "exit DSNManagerService addFile path is null or not exits");
++            return;
++        }
++        /*
++        if(mDSNManagerHandle == null){
++            Log.e(TAG,"exit DSNManagerService is not running or start ");
++            return;
++        }
++        */
++        File srcFile = new File(path);
++        File fileEncrypt = null;
++        File destFile = null;
++        if (password != null) {
++            DataCryptoUtils dc = new DataCryptoUtils();
++            int cipherResult = dc.encryptWithDefaultPublicKey(mContext, srcFile , fileEncrypt, 64);
++            if (cipherResult == 0)
++                destFile = fileEncrypt;
++            else
++                destFile = srcFile;
++        } else
++            destFile = srcFile;
++
++        String fileModifiedTime = CommonUtil.getFileModifiedTime(destFile,null);
++        String fileCreateTime = CommonUtil.getNowTime(null);
++        String fileType = CommonUtil.getMimeType(path);
++        String accountStr = getSystemAccountId();
++        NamedStreamable.FileWrapper fileWrapper = new NamedStreamable.FileWrapper(destFile);
++        mDSNManagerHandle = new IPFS("/ip4/127.0.0.1/tcp/5001");
++        List<MerkleNode> addResult = null;
++        int blockCount = 0;
++
++        try{
++            addResult = mDSNManagerHandle.add(fileWrapper, new AddFileMultipartCallback(){
++                @Override
++                public void onUploadProcess(long fileSize, long hasUpload){
++                    try{
++                        cb.onUploadProcess(fileSize,hasUpload);
++                        }catch(RemoteException e){
++                            Log.e(TAG,"IPFS getFileUploadPercent:" + e);
++                        }
++
++                }
++            } );
++            blockCount = getBlockCount(addResult.get(0), mDSNManagerHandle);
++        }catch(IOException e){
++            Log.e(TAG,"IPFS add file:" + e);
++        }
++        Map<String,Object> body = getObjectMetaMap(addResult.get(0), accountStr,
++            fileModifiedTime, fileCreateTime, fileType, blockCount);
++
++        PostRequestInterface request = RetrofitNetwork.getInstance().postRequest();
++        Call<LinkedHashMap<String, Object>> call = request.postSmartcontract(body);
++
++        try{
++            Response<LinkedHashMap<String, Object>> response = call.execute();
++            try{
++                cb.onNext("onNext:"+response.body().toString());
++            }catch(RemoteException e){
++                Log.d(TAG,"onNext:"+ e);
++            }
++        }catch (IOException e){
++            try{
++                cb.onCompleted("onError");
++            }catch(RemoteException e1){
++                Log.d(TAG,"onError:"+ e1);
++            }
++        }
++        try{
++            cb.onCompleted("onCompleted");
++            cb.onCallbackComplete(true,body);
++        }catch(RemoteException e){
++            Log.d(TAG,"onCallbackComplete:"+ e);
++        }
++        return;
++    }
++
++    /**
++     * listFile from DSN.
++     * listFile().
++     */
++
++    @Override
++    public void listFile(String cid, int page, int count, IListFileCallback cb) {
++        Log.d(TAG, "DSNManagerService/listFile:");
++        String accountStr = getSystemAccountId();
++
++        GetRequestInterface request = RetrofitNetwork.getInstance().getRequest();
++
++        Call<ApiRespResult> call = request.getSmartcontract(accountStr, page, count);
++
++        try {
++            Response<ApiRespResult> response = call.execute();
++            Log.d(TAG, response.body().toString());
++            DSNMateObjectData mDSNMateObjectData = new DSNMateObjectData(response.body().getResult(),
++                response.body().getData(), response.body().getMsg());
++            try {
++                cb.onNext(mDSNMateObjectData);
++            } catch (RemoteException e) {
++                Log.d(TAG,"onError:"+ e);
++            }
++        } catch(IOException e) {
++            //Log.d(TAG,"DSNManagerService/onError:" + throwable);
++            try {
++                cb.onError("onError");
++            } catch (RemoteException e1){
++                Log.d(TAG,"onError:"+ e1);
++            }
++        }
++        try{
++            cb.onCompleted("onCompleted");
++        }catch(RemoteException e){
++            Log.d(TAG,"onCompleted:"+ e);
++        }
++
++    }
++
++    @Override
++    public void getFile(String cid, String password, IGetFileCallback cb) {
++        StringBuffer fileNameBuffer = new StringBuffer();
++        fileNameBuffer.append(PATH_PREFIX);
++        fileNameBuffer.append("/");
++        fileNameBuffer.append(cid);
++        String fileNameBufferString = fileNameBuffer.toString();
++        mDSNManagerHandle = new IPFS("/ip4/127.0.0.1/tcp/5001");
++       // File filePath = new File(PATH_PREFIX);
++       // createDirToStoreage(filePath);
++        Log.d(TAG,  ":" + "getFile");
++        try {
++            int len;
++            byte[] buffer = new byte[4096];
++            InputStream in = mDSNManagerHandle.catStream(Multihash.fromBase58(cid));
++            long getFileSize = 0;
++            try{
++                    FileOutputStream fileOutput = new FileOutputStream(fileNameBufferString);
++                    while ((len = in.read(buffer)) >= 0){
++                        fileOutput.write(buffer, 0, len);
++                        getFileSize = getFileSize + len;
++                        cb.onGetFileProcess(0,getFileSize);
++                    }
++
++            } catch(IOException | RemoteException e) {
++                    e.printStackTrace();
++            }
++            fileNameBuffer.append("-decrypt");
++            File fileOutput = new File(fileNameBufferString);
++            String fileNameDecrypt = fileNameBuffer.toString();
++            File fileDest = new File(fileNameDecrypt);
++            if (password != null) {
++                    DataCryptoUtils dc = new DataCryptoUtils();
++                    int decryptResult = dc.decryptWithDefaultPrivateKey(mContext, fileOutput, fileDest, password, 64);
++            }
++
++        } catch(IOException e) {
++            e.printStackTrace();
++        }
++        try {
++            cb.onCallbackComplete(true);
++        } catch(RemoteException e) {
++            Log.d(TAG,"onError:"+ e);
++        }
++
++    }
++
++    private String getSystemAccountId() {
++        final UserManager um = (UserManager)mContext.getSystemService(Context.USER_SERVICE);
++        int userId = UserHandle.myUserId();
++        return um.getUserBrahmaAccount(userId);
++    }
++
++    private int getBlockCount(MerkleNode node, IPFS mIPFS)throws IOException {
++        List<MerkleNode> lsResult = mIPFS.ls(node.hash);
++        return lsResult.get(0).links.size();
++    }
++
++    private Map<String,Object> getObjectMetaMap(MerkleNode node, String accountStr, String modifyTime, String createTime,  String fileType, int blockCnt){
++        Map<String,Object> body = new HashMap<String, Object>();
++        body.put("account_id", accountStr);
++        body.put("object_key", node.hash.toString());
++        body.put("mime_type", fileType);
++        body.put("object_name", node.name.get());
++        if(node.size.isPresent())
++            body.put("object_size", node.size.get());
++        else
++            body.put("object_size", node.largeSize.get());
++        body.put("object_create_time", modifyTime);
++        body.put("object_sync_time", createTime);
++        body.put("object_block_cnt", blockCnt);
++        return body;
++    }
++
++    public class ThreadRunner implements Runnable {
++        private Integer num;
++        public ThreadRunner(Integer num) {
++            this.num = num;
++            }
++        @Override
++        public void run() {
++            try {
++                while(mDSNManagerHandle == null) {
++                    TimeUnit.SECONDS.sleep(SLEEP_ITME);
++                   // mDSNManagerHandle = new IPFS("/ip4/127.0.0.1/tcp/5001");
++                    Log.d("KOALA_LOG","DSNManagerService ThreadRunner!");
++                }
++
++            } catch (InterruptedException e) {
++                e.printStackTrace();
++            }
++        }
++   }
++}
+diff --git a/services/core/java/brahmaos/app/server/retrofit/ApiConst.java b/services/core/java/brahmaos/app/server/retrofit/ApiConst.java
+new file mode 100644
+index 0000000..f211f22
+--- /dev/null
++++ b/services/core/java/brahmaos/app/server/retrofit/ApiConst.java
+@@ -0,0 +1,18 @@
++/**
++ * Copyright 2018 BRAHMACARIYA FOUNDATION LTD
++ */
++
++package brahmaos.app.server.retrofit;
++
++/**
++ * Define API const
++ */
++public class ApiConst {
++
++    public static final String PARAM_QUOTES = "objects";
++    public static final int OSTYPE_ANDROID = 0;
++    public static final String PARAM_VER_INFO = "v";
++    public static final int TOKEN_TYPE_ERC20 = 1;
++    public static final String PARAM_TRANSACTIONS = "transactions";
++    public static final String CLOUD_AUTHORITIES = "com.android.providers.decentercloud.documents";
++}
+diff --git a/services/core/java/brahmaos/app/server/retrofit/ApiRespResult.java b/services/core/java/brahmaos/app/server/retrofit/ApiRespResult.java
+new file mode 100644
+index 0000000..b6d9385
+--- /dev/null
++++ b/services/core/java/brahmaos/app/server/retrofit/ApiRespResult.java
+@@ -0,0 +1,61 @@
++package brahmaos.app.server.retrofit;
++import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
++import com.fasterxml.jackson.annotation.JsonProperty;
++
++import java.io.Serializable;
++import java.math.BigDecimal;
++
++import java.util.Map;
++
++/**
++ * Copyright 2018 BRAHMACARIYA FOUNDATION LTD
++ */
++
++@JsonIgnoreProperties(ignoreUnknown = true)
++public class ApiRespResult {
++
++    // Response result code
++    @JsonProperty("ret")
++    private int result;
++
++    // Response data
++    @JsonProperty("data")
++    private Map<String, Object> data;
++
++    // Response message, mainly returned on failure
++    @JsonProperty("msg")
++    private String msg;
++
++    @Override
++    public String toString() {
++        return "ApiRespResult{" +
++                "result=" + result +
++                ", data=" + data +
++                ", msg='" + msg + '\'' +
++                '}';
++    }
++
++    public int getResult() {
++        return result;
++    }
++
++    public void setResult(int result) {
++        this.result = result;
++    }
++
++    public Map<String, Object> getData() {
++        return data;
++    }
++
++    public void setData(Map<String, Object> data) {
++        this.data = data;
++    }
++
++    public String getMsg() {
++        return msg;
++    }
++
++    public void setMsg(String msg) {
++        this.msg = msg;
++    }
++}
+diff --git a/services/core/java/brahmaos/app/server/retrofit/BuildConfig.java b/services/core/java/brahmaos/app/server/retrofit/BuildConfig.java
+new file mode 100644
+index 0000000..15a977d
+--- /dev/null
++++ b/services/core/java/brahmaos/app/server/retrofit/BuildConfig.java
+@@ -0,0 +1,17 @@
++package brahmaos.app.server.retrofit;
++
++/**
++ * Copyright 2018 BRAHMACARIYA FOUNDATION LTD
++ */
++
++public final class BuildConfig {
++    public static final boolean DEBUG = Boolean.parseBoolean("true");
++    public static final String BUILD_TYPE = "debug";
++    public static final String FLAVOR = "";
++    public static final int VERSION_CODE = 6002;
++    public static final String VERSION_NAME = "Jupiter (v0.6.2)";
++    // Fields from build type: debug
++    public static final boolean LOG_DEBUG = true;
++    // Fields from default config.
++    public static final String OBJECTMETA_API_URL = "http://dev.brahmaos.io:20001";
++}
+diff --git a/services/core/java/brahmaos/app/server/retrofit/GetRequestInterface.java b/services/core/java/brahmaos/app/server/retrofit/GetRequestInterface.java
+new file mode 100644
+index 0000000..eba78ab
+--- /dev/null
++++ b/services/core/java/brahmaos/app/server/retrofit/GetRequestInterface.java
+@@ -0,0 +1,25 @@
++package brahmaos.app.server.retrofit;
++import retrofit2.Call;
++import retrofit2.http.GET;
++import retrofit2.http.POST;
++import retrofit2.http.Path;
++import retrofit2.http.Body;
++import retrofit2.http.DELETE;
++import retrofit2.http.Query;
++
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++
++/**
++ * Copyright 2018 BRAHMACARIYA FOUNDATION LTD
++ */
++
++public interface GetRequestInterface {
++
++    @GET("/metas/{accountId}")
++    Call<ApiRespResult> getSmartcontract(@Path("accountId") String accountId, @Query("page") int page, @Query("count") int count);
++
++    @DELETE("/metas/{accountID}/{objectKey}")
++    Call<LinkedHashMap<String, Object>> deleteSmartcontract(@Path("accountId") String accountId, @Path("objectKey") String objectKey);
++}
+diff --git a/services/core/java/brahmaos/app/server/retrofit/ObjectMeta.java b/services/core/java/brahmaos/app/server/retrofit/ObjectMeta.java
+new file mode 100644
+index 0000000..3424e80
+--- /dev/null
++++ b/services/core/java/brahmaos/app/server/retrofit/ObjectMeta.java
+@@ -0,0 +1,115 @@
++package brahmaos.app.server.retrofit;
++
++import android.support.annotation.NonNull;
++
++import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
++import com.fasterxml.jackson.annotation.JsonProperty;
++
++import java.io.Serializable;
++import java.math.BigDecimal;
++
++@JsonIgnoreProperties(ignoreUnknown = true)
++public class ObjectMeta implements Serializable {
++    @JsonProperty("account_id")
++    private String accountId;
++    @JsonProperty("object_key")
++    private String objectKey;
++    @JsonProperty("mime_type")
++    private String mimeType;
++
++    @JsonProperty("object_name")
++    private String objectName;
++    @JsonProperty("object_size")
++    private int objectSize;
++    @JsonProperty("object_create_time")
++    private String objectCreateTime;
++    @JsonProperty("object_sync_time")
++    private String objectSyncTime;
++    @JsonProperty("object_block_cnt")
++    private String objectBlockCnt;
++
++    //	account_id
++    public String getAccountid() {
++        return accountId;
++    }
++    public void setAccountid(String accountId) {
++        this.accountId = accountId;
++    }
++    //	object_key
++    public String getobjectkey() {
++        return objectKey;
++    }
++
++    public void setObjectKey(String objectKey) {
++        this.objectKey = objectKey;
++    }
++    //	mime_type
++    public String getMimeType() {
++        return mimeType;
++    }
++
++    public void setMimeType(String mimeType) {
++        this.mimeType = mimeType;
++    }
++    // object_name
++    public String getobjectname() {
++        return objectName;
++    }
++
++    public void setObjectName(String objectName) {
++        this.objectName = objectName;
++    }
++    //	object_size
++    public int getObjectSize() {
++        return objectSize;
++    }
++
++    public void setObjectSize(int objectSize) {
++        this.objectSize = objectSize;
++    }
++    // object_create_time
++    public String getObjectCreateTime() {
++        return objectCreateTime;
++    }
++
++    public void setObjectCreateTime(String objectCreateTime) {
++        this.objectCreateTime = objectCreateTime;
++    }
++    // object_sync_time
++    public String getObjectSyncTime() {
++        return objectSyncTime;
++    }
++
++    public void setObjectSyncTime(String objectSyncTime) {
++        this.objectSyncTime = objectSyncTime;
++    }
++    // object_block_cnt
++    public String getObjectBlockCnt() {
++        return objectBlockCnt;
++    }
++
++    public void setObjectBlockCnt(String objectBlockCnt) {
++        this.objectBlockCnt = objectBlockCnt;
++    }
++    public String toString() {
++        return "ObjectMetaPost{" +
++                "account_id='" + accountId + '\'' +
++                ", object_key='" + objectKey + '\'' +
++                ", mime_type='" + mimeType + '\'' +
++                ", object_name=" + objectName +
++                ", object_size=" + objectSize +
++                ", object_create_time=" + objectCreateTime +
++                ", object_sync_time=" + objectSyncTime +
++                '}';
++    }
++    public String toJsonString() {
++        return '{' +
++               // "\"account_id\":" + '\"' + accountId + '\"' +
++                "\"object_key\":" + '\"' + objectKey + '\"' +
++                ",\"mime_type\":" + '\"' + mimeType + '\"' +
++                ",\"object_name\":" +'\"' + objectName + '\"' +
++                ",\"object_size\":" + objectSize +
++                '}';
++    }
++}
++
+diff --git a/services/core/java/brahmaos/app/server/retrofit/PostRequestInterface.java b/services/core/java/brahmaos/app/server/retrofit/PostRequestInterface.java
+new file mode 100644
+index 0000000..6b6609a
+--- /dev/null
++++ b/services/core/java/brahmaos/app/server/retrofit/PostRequestInterface.java
+@@ -0,0 +1,23 @@
++package brahmaos.app.server.retrofit;
++
++import retrofit2.Call;
++import retrofit2.http.Field;
++import retrofit2.http.FormUrlEncoded;
++import retrofit2.http.POST;
++import retrofit2.http.Body;
++
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++
++/**
++ * Copyright 2018 BRAHMACARIYA FOUNDATION LTD
++ */
++
++public interface PostRequestInterface {
++
++    @POST("/metas")
++    Call<LinkedHashMap<String, Object>> postSmartcontract(@Body Map<String, Object> body);
++
++}
++
+diff --git a/services/core/java/brahmaos/app/server/retrofit/RetrofitNetwork.java b/services/core/java/brahmaos/app/server/retrofit/RetrofitNetwork.java
+new file mode 100644
+index 0000000..392d709
+--- /dev/null
++++ b/services/core/java/brahmaos/app/server/retrofit/RetrofitNetwork.java
+@@ -0,0 +1,146 @@
++package brahmaos.app.server.retrofit;
++
++import android.os.Bundle;
++import android.support.annotation.NonNull;
++import okhttp3.Interceptor;
++import okhttp3.OkHttpClient;
++import okhttp3.Request;
++//import okhttp3.Response;
++import okhttp3.ResponseBody;
++import okhttp3.logging.HttpLoggingInterceptor;
++import retrofit2.Call;
++import retrofit2.Callback;
++import retrofit2.Response;
++import retrofit2.Retrofit;
++import retrofit2.converter.gson.GsonConverterFactory;
++import java.io.IOException;
++import java.util.concurrent.TimeUnit;
++import android.util.Log;
++import okio.BufferedSource;
++import android.net.TrafficStats;
++
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++
++import static android.net.TrafficStats.TAG_SYSTEM_DSN;
++
++/**
++ * Copyright 2018 BRAHMACARIYA FOUNDATION LTD
++ */
++
++public class RetrofitNetwork  {
++
++    public final String TAG = "RetrofitNetwork" ;
++    public int response;
++
++    private static RetrofitNetwork instance = new RetrofitNetwork();
++    public static RetrofitNetwork getInstance() {
++        return instance;
++    }
++
++    private GetRequestInterface mgetRequest;
++    public GetRequestInterface getRequest() {
++        if (mgetRequest == null) {
++            mgetRequest = getRetroftiRequest();
++        }
++        return mgetRequest;
++    }
++
++    public GetRequestInterface getRetroftiRequest() {
++
++        Retrofit retrofit = new Retrofit.Builder()
++                .baseUrl("http://dev.brahmaos.io:20001")
++                .client(configClient(false))
++                .addConverterFactory(GsonConverterFactory.create())
++                .build();
++        TrafficStats.setThreadStatsTag(TAG_SYSTEM_DSN);
++        return retrofit.create(GetRequestInterface.class);
++        //Call<ApiRespResult> call = request.getSmartcontract(accountStr, page, count);
++        /*
++        call.enqueue(new Callback<ApiRespResult>() {
++            @Override
++            public void onResponse(Call<ApiRespResult> call, Response<ApiRespResult> response) {
++                Log.d("RetrofitNetwork_LOG", response.body().toString());
++            }
++
++            @Override
++            public void onFailure(Call<ApiRespResult> call, Throwable throwable) {
++                Log.d("RetrofitNetwork_LOG","error");
++            }
++        });
++        */
++    }
++
++    private PostRequestInterface mpostRequest;
++    public PostRequestInterface postRequest() {
++        if (mpostRequest == null) {
++            mpostRequest = postRetrofitRequest();
++        }
++        return mpostRequest;
++    }
++
++    public PostRequestInterface postRetrofitRequest() {
++
++        Retrofit retrofit = new Retrofit.Builder()
++                .baseUrl("http://dev.brahmaos.io:20001")
++                .client(configClient(false))
++                .addConverterFactory(GsonConverterFactory.create())
++                .build();
++        TrafficStats.setThreadStatsTag(TAG_SYSTEM_DSN);
++        return retrofit.create(PostRequestInterface.class);
++       // Call<LinkedHashMap<String, Object>> call = request.postSmartcontract(map);
++        /*
++        call.enqueue(new Callback<Translation1>() {
++
++            @Override
++            public void onResponse(Call<Translation1> call, Response<Translation1> response) {
++
++            }
++
++            @Override
++            public void onFailure(Call<Translation1> call, Throwable throwable) {
++
++                System.out.println(throwable.getMessage());
++            }
++        });
++        */
++    }
++    private OkHttpClient configClient(final boolean isAddCommonParam) {
++        OkHttpClient.Builder okHttpClient = new OkHttpClient.Builder();
++
++        // Add header configuration interceptors for all requests
++        Interceptor headerIntercept = new Interceptor() {
++            @Override
++            public okhttp3.Response intercept(Chain chain) throws IOException {
++                Request.Builder builder = chain.request().newBuilder();
++                builder.addHeader("X-Client-Platform", "BrahmaOS");
++                builder.addHeader("Content-Type", "application/json; charset=utf-8");
++                builder.addHeader("X-Client-Version", "Jupiter (v0.6.2)");
++                builder.addHeader("X-Client-Build", String.valueOf(6002));
++                Request request = builder.build();
++                return chain.proceed(request);
++            }
++        };
++        okHttpClient.addNetworkInterceptor(headerIntercept);
++
++        // Response Interceptor
++        Interceptor responseInterceptor = new Interceptor() {
++            @Override
++            public okhttp3.Response intercept(Chain chain) throws IOException {
++                Request request = chain.request();
++                okhttp3.Response response = chain.proceed(request);
++                ResponseBody responseBody = response.body();
++                BufferedSource source = responseBody.source();
++                source.request(Long.MAX_VALUE);  // Buffer the entire body.
++                return response;
++            }
++        };
++        okHttpClient.addNetworkInterceptor(responseInterceptor);
++        okHttpClient.connectTimeout(15, TimeUnit.SECONDS);
++
++        return okHttpClient.build();
++    }
++
++}
++
+diff --git a/services/core/java/brahmaos/app/server/util/CommonUtil.java b/services/core/java/brahmaos/app/server/util/CommonUtil.java
+new file mode 100644
+index 0000000..73f03c6
+--- /dev/null
++++ b/services/core/java/brahmaos/app/server/util/CommonUtil.java
+@@ -0,0 +1,141 @@
++package barhmaos.app.server.util;
++
++import android.Manifest;
++import android.app.Activity;
++import android.app.KeyguardManager;
++import android.content.Context;
++import android.content.pm.PackageManager;
++import android.hardware.fingerprint.FingerprintManager;
++import android.os.Build;
++import android.util.DisplayMetrics;
++import android.util.Log;
++
++import java.io.ByteArrayInputStream;
++import java.io.ByteArrayOutputStream;
++import java.io.ObjectInputStream;
++import java.io.ObjectOutputStream;
++
++import java.math.BigDecimal;
++import java.math.BigInteger;
++import java.text.SimpleDateFormat;
++import java.util.Date;
++import java.util.List;
++import java.io.File;
++
++import java.net.FileNameMap;
++import java.net.URLConnection;
++
++
++
++public class CommonUtil {
++    public static int MNEMONIC_WORD_LENGTH = 12;
++
++    public static String generateSimpleAddress(String fullAddress) {
++        String simpleName = fullAddress;
++        if (fullAddress.length() > 18) {
++            simpleName = fullAddress.substring(0, 10) + "..." + fullAddress.substring(fullAddress.length() - 8);
++        }
++        return simpleName;
++    }
++
++    public static BigDecimal getAccountFromWei(BigInteger value) {
++        BigDecimal bigDecimal = new BigDecimal(value);
++        return bigDecimal.divide(new BigDecimal(Math.pow(10, 18)), 4, BigDecimal.ROUND_HALF_UP);
++    }
++
++    public static String parseAccountContent(String value) {
++        return value.replaceAll("\\s*", "");
++    }
++
++    public static BigInteger convertWeiFromEther(BigDecimal value) {
++        return value.multiply(new BigDecimal(Math.pow(10, 18))).toBigInteger();
++    }
++
++    public static boolean isPasswordValid(String password) {
++        return password.length() > 4;
++    }
++
++    // Return network name base of url
++    public static String generateNetworkName(String url) {
++        if (url.contains("mainnet")) {
++            return "Mainnet";
++        } else if (url.contains("ropsten")) {
++            return "Ropsten";
++        } else if (url.contains("infuranet")) {
++            return "INFURAnet";
++        } else if (url.contains("kovan")) {
++            return "Kovan";
++        } else if (url.contains("rinkeby")) {
++            return "Rinkeby";
++        } else {
++            return "";
++        }
++    }
++    public static boolean judgeFileExist(String filePath){
++        if(filePath == null)
++            return false;
++        File file=new File(filePath);
++        if(file.exists())
++            return true;
++        else
++            return false;
++    }
++
++    public static String getFileModifiedTime(File file,String format){
++        String formatDefault = null;
++        if (format == null || format.isEmpty()){
++            formatDefault = "yyyy/MM/dd HH:mm:ss";
++        }
++        SimpleDateFormat dateFormat = new SimpleDateFormat(formatDefault);
++        return dateFormat.format(new Date(file.lastModified()));
++    }
++    public static String getNowTime(String format){
++        String formatDefault = null;
++        if (format == null || format.isEmpty()){
++            formatDefault = "yyyy/MM/dd HH:mm:ss";
++        }
++        Date nowDate = new Date();
++        SimpleDateFormat dateFormat = new SimpleDateFormat(formatDefault);
++        return dateFormat.format(nowDate);
++    }
++    /**
++     * unit：px
++     */
++    public static int getScreenWidth(Activity context) {
++        DisplayMetrics dm = new DisplayMetrics();
++        context.getWindowManager().getDefaultDisplay().getMetrics(dm);
++        return dm.widthPixels;
++    }
++
++    /**
++     * unit：px
++     */
++    public static int getScreenHeight(Activity context) {
++        DisplayMetrics dm = new DisplayMetrics();
++        context.getWindowManager().getDefaultDisplay().getMetrics(dm);
++        return dm.heightPixels;
++    }
++
++    public static int dip2px(Context context, float dpValue) {
++        final float scale = context.getResources().getDisplayMetrics().density;
++        return (int) (dpValue * scale + 0.5f);
++    }
++
++
++
++    public static boolean isValidMnemonics(String mnemonics) {
++        String[] mnemonicList = mnemonics.split(" ");
++        return mnemonicList.length == MNEMONIC_WORD_LENGTH;
++    }
++
++    public static String getMimeType(String fileUrl) {
++        String type = null;
++        try {
++            FileNameMap fileNameMap = URLConnection.getFileNameMap();
++            type = fileNameMap.getContentTypeFor(fileUrl);
++        }catch(Exception e){
++            Log.e("CommonUtil","getMimeType:" + e);
++        }
++        return type;
++    }
++}
+diff --git a/services/java/com/android/server/SystemServer.java b/services/java/com/android/server/SystemServer.java
+index 4fc04d3..90bf473 100644
+--- a/services/java/com/android/server/SystemServer.java
++++ b/services/java/com/android/server/SystemServer.java
+@@ -126,6 +126,7 @@ import java.util.concurrent.CountDownLatch;
+ import java.util.concurrent.Future;
+ 
+ import static android.view.Display.DEFAULT_DISPLAY;
++import brahmaos.app.server.DSNManagerService;
+ 
+ public final class SystemServer {
+     private static final String TAG = "SystemServer";
+@@ -693,7 +694,8 @@ public final class SystemServer {
+         CommonTimeManagementService commonTimeMgmtService = null;
+         InputManagerService inputManager = null;
+         TelephonyRegistry telephonyRegistry = null;
+-		IPFSCManagerService  mIPFSCManagerService = null;
++        IPFSCManagerService  mIPFSCManagerService = null;
++        DSNManagerService  mDSNManagerService = null;
+         ConsumerIrService consumerIr = null;
+         MmsServiceBroker mmsService = null;
+         HardwarePropertiesManagerService hardwarePropertiesService = null;
+@@ -755,10 +757,15 @@ public final class SystemServer {
+             traceEnd();
+ 
+             traceBeginAndSlog("IPFSControllerManagerService");
+-			mIPFSCManagerService = new IPFSCManagerService(context);
++            mIPFSCManagerService = new IPFSCManagerService(context);
+             ServiceManager.addService("IPFSControllerManagerService",mIPFSCManagerService);
+             traceEnd();
+ 
++            traceBeginAndSlog("DSNManagerService");
++            mDSNManagerService = new DSNManagerService(context);
++            ServiceManager.addService(Context.DSNMANAGER_SERVICE,mDSNManagerService);
++            traceEnd();
++
+             traceBeginAndSlog("StartKeyChainSystemService");
+             mSystemServiceManager.startService(KeyChainSystemService.class);
+             traceEnd();
+@@ -1600,12 +1607,12 @@ public final class SystemServer {
+         }
+         traceEnd();
+ 
+-        traceBeginAndSlog("MakeIPFSCMangerServiceReady");
+-        if (mIPFSCManagerService != null) {
++        traceBeginAndSlog("MakeDSNMangerServiceReady");
++        if (mDSNManagerService != null) {
+             try {
+-                mIPFSCManagerService.systemReady();
++                mDSNManagerService.systemReady();
+             } catch (Throwable e) {
+-                reportWtf("making IPFSCManger Service ready", e);
++                reportWtf("making DSNCManger Service ready", e);
+             }
+         }
+         traceEnd();
+-- 
+2.7.4
+
