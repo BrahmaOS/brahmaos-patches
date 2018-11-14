@@ -35,6 +35,7 @@ to enter fastboot mode.
 ``` shell
 $ sudo fastboot flash vendor out/target/product/angler/vendor.img
 $ sudo fastboot flash system out/target/product/angler/system.img
+$ sudo fastboot flash boot out/target/product/angler/boot.img
 ```
 
 
