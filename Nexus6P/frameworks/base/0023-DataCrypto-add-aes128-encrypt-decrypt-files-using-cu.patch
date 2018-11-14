@@ -1,0 +1,280 @@
+From ac9a1a1d1c45050c4b81158ae78631ccf0c216a4 Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Wed, 14 Nov 2018 09:27:58 +0800
+Subject: [PATCH] [DataCrypto]: add aes128 encrypt/decrypt files using custom
+ password
+
+Change-Id: I33adaa26d20021f33fc60756286075f76b787716
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ core/java/brahmaos/util/DataCryptoUtils.java | 171 +++++++++++++++++++++++++--
+ 1 file changed, 162 insertions(+), 9 deletions(-)
+
+diff --git a/core/java/brahmaos/util/DataCryptoUtils.java b/core/java/brahmaos/util/DataCryptoUtils.java
+index a669edb..3ec7d06 100644
+--- a/core/java/brahmaos/util/DataCryptoUtils.java
++++ b/core/java/brahmaos/util/DataCryptoUtils.java
+@@ -7,6 +7,7 @@ import android.util.Log;
+ 
+ import java.io.File;
+ import java.io.FileInputStream;
++import java.io.FileNotFoundException;
+ import java.io.FileOutputStream;
+ import java.math.BigInteger;
+ import java.security.Security;
+@@ -74,6 +75,7 @@ public class DataCryptoUtils {
+      *
+      * @param fileSrc the input file with clear-text
+      * @param fileCipher the output file with cipher-text
++     * @param blockSize better be multiples of 8.
+      *
+      * @return 0 means success, otherwise see the error code
+      */
+@@ -135,7 +137,7 @@ public class DataCryptoUtils {
+                     }
+                 } catch (Exception ioe) {
+                     result = RESULT_CRYPTO_FAIL;
+-                    Log.d(TAG, "" + ioe.toString());
++                    Log.e(TAG, "" + ioe.toString());
+                 } finally {
+                     cos.close();
+                     fos.close();
+@@ -150,7 +152,7 @@ public class DataCryptoUtils {
+                 fileCipher.mkdir();
+                 String list[] = fileSrc.list();
+                 if (null == list || list.length <= 0) {
+-                    return result;
++                    return RESULT_FILE_ERROR;
+                 }
+                 for (String tempSrcStr : list) {
+                     File tempSrcFile = new File(fileSrc, tempSrcStr);
+@@ -163,7 +165,7 @@ public class DataCryptoUtils {
+                     }
+                 }
+             } catch (SecurityException e) {
+-                Log.d(TAG, "list files error: " + e.toString());
++                Log.e(TAG, "list files error: " + e.toString());
+                 return RESULT_FILE_ERROR;
+             }
+         }
+@@ -179,6 +181,7 @@ public class DataCryptoUtils {
+      * @param fileCipher the input file with cipher-text
+      * @param fileDst the output file with decrypted clear-text
+      * @param password the right password of the Brahma OS account
++     * @param blockSize better be multiples of 8.
+      *
+      * @return 0 means success, otherwise see the error code
+      */
+@@ -244,14 +247,14 @@ public class DataCryptoUtils {
+                 }
+             } catch (Exception e) {
+                 result = RESULT_CRYPTO_FAIL;
+-                Log.d(TAG, "decryptWithDefaultPrivateKey fail! " + e.toString());
++                Log.e(TAG, "decryptWithDefaultPrivateKey fail! " + e.toString());
+             }
+         } else {//list each sub dir and sub file
+             try {
+                 fileDst.mkdir();
+                 String list[] = fileCipher.list();
+                 if (null == list || list.length <= 0) {
+-                    return result;
++                    return RESULT_FILE_ERROR;
+                 }
+                 for (String tempCipherStr : list) {
+                     File tempCipherFile = new File(fileCipher, tempCipherStr);
+@@ -264,7 +267,7 @@ public class DataCryptoUtils {
+                     }
+                 }
+             } catch (SecurityException e) {
+-                Log.d(TAG, "list files error: " + e.toString());
++                Log.e(TAG, "list files error: " + e.toString());
+                 return RESULT_FILE_ERROR;
+             }
+         }
+@@ -272,6 +275,156 @@ public class DataCryptoUtils {
+         return result;
+     }
+ 
++    /**
++     * Encrypt file with the password defined by user.
++     *
++     * @param fileSrc the input file with clear-text
++     * @param fileCipher the output file with cipher-text
++     * @param password the password defined by user
++     * @param blockSize better be multiples of 8.
++     *
++     * @return 0 means success, otherwise see the error code
++     **/
++    public static int aes128EncryptFiles(File fileSrc, File fileCipher,
++                                         String password, int blockSize) {
++        if (!fileSrc.exists()) {
++            return RESULT_FILE_ERROR;
++        }
++        if (blockSize <= 0) {
++            blockSize = DEFAULT_BLOCK_SIZE;
++        }
++        int result = RESULT_CRYPTO_SUCCESS;
++        if (!fileSrc.isDirectory()) {
++            try {
++                Cipher cipher = Cipher.getInstance("AES");
++                cipher.init(Cipher.ENCRYPT_MODE, genKey(password));
++
++                byte[] block = new byte[blockSize/*64*/];
++                FileInputStream fis = new FileInputStream(fileSrc);
++                FileOutputStream fos = new FileOutputStream(fileCipher);
++                CipherOutputStream cos = new CipherOutputStream(fos, cipher);
++                try {
++                    int i;
++                    while ((i = fis.read(block)) != -1) {
++                        cos.write(block, 0, i);
++                    }
++                } catch (Exception ioe) {
++                    result = RESULT_CRYPTO_FAIL;
++                    Log.e(TAG, "aes128EncryptFiles: " + ioe.toString());
++                } finally {
++                    cos.close();
++                    fos.close();
++                    fis.close();
++                }
++            } catch (Exception e) {
++                Log.e(TAG, "aes128EncryptFiles: " + e.toString());
++                if (e instanceof FileNotFoundException) {
++                    result = RESULT_FILE_ERROR;
++                } else {
++                    result = RESULT_CRYPTO_FAIL;
++                }
++            }
++        } else {
++            try {
++                String list[] = fileSrc.list();
++                if (null == list || list.length <= 0) {
++                    return RESULT_FILE_ERROR;
++                }
++                fileCipher.mkdir();
++                for (String tempSrcStr : list) {
++                    File tempSrcFile = new File(fileSrc, tempSrcStr);
++                    File tempCipherFile = new File(fileCipher, tempSrcStr);
++
++                    /** Recursively call decrypt, if any file fail, finish encrypting **/
++                    int tempResult = aes128EncryptFiles(tempSrcFile, tempCipherFile, password, blockSize);
++                    if (tempResult != 0) {
++                        return tempResult;
++                    }
++                }
++            } catch (SecurityException e) {
++                Log.e(TAG, "aes128EncryptFiles: list files error: " + e.toString());
++                return RESULT_FILE_ERROR;
++            }
++        }
++        return result;
++    }
++
++    /**
++     *Encrypt file with the password defined by user.
++     *
++     * @param fileCipher the input file with cipher-text
++     * @param fileDst the output file with decrypted clear-text
++     * @param password the password defined by user
++     * @param blockSize better be multiples of 8.
++     *
++     * @return 0 means success, otherwise see the error code
++     **/
++    public static int aes128DecryptFiles(File fileCipher, File fileDst,
++                                         String password, int blockSize) {
++        if (!fileCipher.exists()) {
++            return RESULT_FILE_ERROR;
++        }
++        if (blockSize <= 0) {
++            blockSize = DEFAULT_BLOCK_SIZE;
++        }
++        int result = RESULT_CRYPTO_SUCCESS;
++        if (!fileCipher.isDirectory()) {
++            try {
++                Cipher cipher = Cipher.getInstance("AES");
++                cipher.init(Cipher.DECRYPT_MODE, genKey(password));
++
++                FileInputStream fis = new FileInputStream(fileCipher);
++                if (fis.available() <= 0) {
++                    return RESULT_FILE_ERROR;
++                }
++                CipherInputStream cis = new CipherInputStream(fis, cipher);
++                FileOutputStream fos = new FileOutputStream(fileDst);
++                int i;
++                byte[] block = new byte[blockSize/*64*/];
++                try {
++                    while ((i = cis.read(block)) != -1) {
++                        fos.write(block, 0, i);
++                    }
++                } catch (Exception ioe) {
++                    result = RESULT_CRYPTO_FAIL;
++                    Log.e(TAG, "aes128DecryptFiles: " + ioe.toString());
++                } finally {
++                    cis.close();
++                    fos.close();
++                    fis.close();
++                }
++            } catch (Exception e) {
++                Log.e(TAG, "aes128DecryptFiles: " + e.toString());
++                if (e instanceof FileNotFoundException) {
++                    result = RESULT_FILE_ERROR;
++                } else {
++                    result = RESULT_CRYPTO_FAIL;
++                }
++            }
++        } else {
++            try {
++                String list[] = fileCipher.list();
++                if (null == list || list.length <= 0) {
++                    return RESULT_FILE_ERROR;
++                }
++                fileDst.mkdir();
++                for (String tempCipherStr : list) {
++                    File tempCipherFile = new File(fileCipher, tempCipherStr);
++                    File tempDstFile = new File(fileDst, tempCipherStr);
++
++                    /** Recursively call decrypt, if any file fail, finish encrypting **/
++                    int tempResult = aes128DecryptFiles(tempCipherFile, tempDstFile, password, blockSize);
++                    if (tempResult != 0) {
++                        return tempResult;
++                    }
++                }
++            } catch (SecurityException e) {
++                Log.e(TAG, "aes128DecryptFiles: list files error: " + e.toString());
++                return RESULT_FILE_ERROR;
++            }
++        }
++        return result;
++    }
+ 
+     /**
+      * AES 128 Encrypt
+@@ -288,7 +441,7 @@ public class DataCryptoUtils {
+             byte[] result = cipher.doFinal(content.getBytes());
+             return parseByte2HexStr(result);
+         } catch (Exception e) {
+-            e.printStackTrace();
++            Log.e(TAG, "aes128Encrypt: " + e.toString());
+         }
+         return null;
+ 
+@@ -310,7 +463,7 @@ public class DataCryptoUtils {
+             byte[] result = cipher.doFinal(decryptFrom);
+             return new String(result);
+         } catch (Exception e) {
+-            Log.d(TAG, "" + e.toString());
++            Log.e(TAG, "aes128Decrypt: " + e.toString());
+         }
+         return null;
+     }
+@@ -327,7 +480,7 @@ public class DataCryptoUtils {
+             SecretKeySpec key = new SecretKeySpec(tmp.getEncoded(), "AES");
+             return key;
+         } catch (Exception e) {
+-            e.printStackTrace();
++            Log.e(TAG, "genKey: " + e.toString());
+         }
+         return null;
+     }
+-- 
+2.7.4
+
