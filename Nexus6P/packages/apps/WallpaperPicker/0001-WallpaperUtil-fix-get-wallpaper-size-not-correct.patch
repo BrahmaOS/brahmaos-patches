@@ -1,0 +1,45 @@
+From 9b4a706a9a4804537acf73d909c4760d53e9a821 Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Thu, 15 Nov 2018 16:08:40 +0800
+Subject: [PATCH] WallpaperUtil: fix get wallpaper size not correct
+
+use display size as wallpaper size
+
+Change-Id: If4d4629a7c1a2537ebe691c0ba126d886b215719
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ src/com/android/wallpaperpicker/WallpaperUtils.java | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/src/com/android/wallpaperpicker/WallpaperUtils.java b/src/com/android/wallpaperpicker/WallpaperUtils.java
+index 1532190..96c5166 100644
+--- a/src/com/android/wallpaperpicker/WallpaperUtils.java
++++ b/src/com/android/wallpaperpicker/WallpaperUtils.java
+@@ -138,13 +138,17 @@ public final class WallpaperUtils {
+             // We need to ensure that there is enough extra space in the wallpaper
+             // for the intended parallax effects
+             final int defaultWidth, defaultHeight;
+-            if (res.getConfiguration().smallestScreenWidthDp >= 720) {
+-                defaultWidth = (int) (maxDim * wallpaperTravelToScreenWidthRatio(maxDim, minDim));
+-                defaultHeight = maxDim;
+-            } else {
+-                defaultWidth = Math.max((int) (minDim * WALLPAPER_SCREENS_SPAN), maxDim);
+-                defaultHeight = maxDim;
+-            }
++//            if (res.getConfiguration().smallestScreenWidthDp >= 720) {
++//                defaultWidth = (int) (maxDim * wallpaperTravelToScreenWidthRatio(maxDim, minDim));
++//                defaultHeight = maxDim;
++//            } else {
++//                defaultWidth = Math.max((int) (minDim * WALLPAPER_SCREENS_SPAN), maxDim);
++//                defaultHeight = maxDim;
++//            }
++
++            //              Fix Wallpaper size not correct
++            defaultWidth = minDim;
++            defaultHeight = maxDim;
+             sDefaultWallpaperSize = new Point(defaultWidth, defaultHeight);
+         }
+         return sDefaultWallpaperSize;
+-- 
+2.7.4
+
