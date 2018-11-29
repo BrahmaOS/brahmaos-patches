@@ -1,0 +1,118 @@
+From 8303d7ece3a34dd58a70a594f2161dd20933b983 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Mon, 8 Oct 2018 15:38:36 +0800
+Subject: [PATCH] Add en zh language support
+
+Change-Id: Ic80430b735ab37f826c1be125ec24bf6df59a55e
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ res/layout/dsn_drawer_layout.xml | 14 +++++++-------
+ res/values-en-rGB/strings.xml    |  9 +++++++++
+ res/values-zh-rCN/strings.xml    |  8 ++++++++
+ 3 files changed, 24 insertions(+), 7 deletions(-)
+
+diff --git a/res/layout/dsn_drawer_layout.xml b/res/layout/dsn_drawer_layout.xml
+index 1d8a50b..68022f8 100644
+--- a/res/layout/dsn_drawer_layout.xml
++++ b/res/layout/dsn_drawer_layout.xml
+@@ -63,7 +63,7 @@
+ 		    android:layout_width="match_parent"
+ 		    android:layout_height="wrap_content"
+ 		    android:textSize="@dimen/font_subtitle"
+-		    android:text="对象的 Hash Key"
++		    android:text="@string/dsn_hashkey_title"
+ 		    android:textColor="@color/colorSubTitle"
+ 		    />
+ 
+@@ -90,7 +90,7 @@
+ 		    android:id="@+id/tv_mimetype_title"
+ 		    android:layout_width="wrap_content"
+ 		    android:layout_height="wrap_content"
+-		    android:text="文件的 MIME-TYPE"
++		    android:text="@string/dsn_mimetype_title"
+ 		    android:textSize="@dimen/font_subtitle"
+ 		    android:textColor="@color/colorSubTitle"
+ 		    />
+@@ -120,7 +120,7 @@
+ 		    android:id="@+id/tv_size_title"
+ 		    android:layout_width="wrap_content"
+ 		    android:layout_height="wrap_content"
+-		    android:text="文件大小"
++		    android:text="@string/dsn_size_title"
+ 		    android:textSize="@dimen/font_subtitle"
+ 		    android:textColor="@color/colorSubTitle"
+ 		 />
+@@ -150,7 +150,7 @@
+ 		    android:id="@+id/tv_name_title"
+ 		    android:layout_width="wrap_content"
+ 		    android:layout_height="wrap_content"
+-		    android:text="原始文件名"
++		    android:text="@string/dsn_name_content"
+ 		    android:textSize="@dimen/font_subtitle"
+ 		    android:textColor="@color/colorSubTitle"
+ 		    />
+@@ -179,7 +179,7 @@
+ 		    android:id="@+id/tv_createtime_title"
+ 		    android:layout_width="wrap_content"
+ 		    android:layout_height="wrap_content"
+-		    android:text="文件创建时间"
++		    android:text="@string/dsn_createtime_title"
+ 		    android:textSize="@dimen/font_subtitle"
+ 		    android:textColor="@color/colorSubTitle"
+ 		    />
+@@ -207,7 +207,7 @@
+ 		    android:id="@+id/tv_synctime_title"
+ 		    android:layout_width="wrap_content"
+ 		    android:layout_height="wrap_content"
+-		    android:text="文件同步时间"
++		    android:text="@string/dsn_synctime_title"
+ 		    android:textSize="@dimen/font_subtitle"
+ 		    android:textColor="@color/colorSubTitle"
+ 		    />
+@@ -236,7 +236,7 @@
+ 		    android:id="@+id/tv_blockcount_tilte"
+ 		    android:layout_width="wrap_content"
+ 		    android:layout_height="wrap_content"
+-		    android:text="分开的区块数目"
++		    android:text="@string/dsn_blockcount_title"
+ 		    android:textSize="@dimen/font_subtitle"
+ 		    android:textColor="@color/colorSubTitle"
+ 		    />
+diff --git a/res/values-en-rGB/strings.xml b/res/values-en-rGB/strings.xml
+index 9008852..c459cfa 100644
+--- a/res/values-en-rGB/strings.xml
++++ b/res/values-en-rGB/strings.xml
+@@ -214,4 +214,13 @@
+     <string name="overwrite_file_confirmation_message" msgid="2496109652768222716">"Overwrite <xliff:g id="NAME">%1$s</xliff:g>?"</string>
+     <string name="continue_in_background" msgid="1974214559047793331">"Continue in background"</string>
+     <string name="inspector_debug_section" msgid="3447621501565766900">"Debug info (dev only)"</string>
++
++
++    <string name="dsn_hashkey_title" msgid="3447621501565766956">"Object Hash-Key"</string>
++    <string name="dsn_mimetype_title" msgid="3447621501565766957">"File MIME-TYPE"</string>
++    <string name="dsn_size_title" msgid="3447621501565766958">"File Size"</string>
++    <string name="dsn_name_content" msgid="3447621501565766959">"Original File Name"</string>
++    <string name="dsn_createtime_title" msgid="3447621501565766960">"File CreatTime"</string>
++    <string name="dsn_synctime_title" msgid="3447621501565766961">"File SyncTime"</string>
++    <string name="dsn_blockcount_title" msgid="3447621501565766962">"Block Count"</string>
+ </resources>
+diff --git a/res/values-zh-rCN/strings.xml b/res/values-zh-rCN/strings.xml
+index 67f3164..1298be8 100644
+--- a/res/values-zh-rCN/strings.xml
++++ b/res/values-zh-rCN/strings.xml
+@@ -214,4 +214,12 @@
+     <string name="overwrite_file_confirmation_message" msgid="2496109652768222716">"要覆盖 <xliff:g id="NAME">%1$s</xliff:g> 吗？"</string>
+     <string name="continue_in_background" msgid="1974214559047793331">"继续在后台执行"</string>
+     <string name="inspector_debug_section" msgid="3447621501565766900">"调试信息（仅限开发者）"</string>
++
++    <string name="dsn_hashkey_title" msgid="3447621501565766956">"对象 Hash-Key"</string>
++    <string name="dsn_mimetype_title" msgid="3447621501565766957">"文件 MIME-TYPE"</string>
++    <string name="dsn_size_title" msgid="3447621501565766958">"文件大小"</string>
++    <string name="dsn_name_content" msgid="3447621501565766959">"原始文件名"</string>
++    <string name="dsn_createtime_title" msgid="3447621501565766960">"文件创建时间"</string>
++    <string name="dsn_synctime_title" msgid="3447621501565766961">"文件同步时间"</string>
++    <string name="dsn_blockcount_title" msgid="3447621501565766962">"分开的区块数目"</string>
+ </resources>
+-- 
+2.7.4
+

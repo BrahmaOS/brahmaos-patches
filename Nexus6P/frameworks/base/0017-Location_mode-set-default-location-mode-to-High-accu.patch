@@ -1,0 +1,29 @@
+From ea591406718316f56583c487aa662bf2176e893f Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Wed, 17 Oct 2018 15:41:55 +0800
+Subject: [PATCH] Location_mode: set default location mode to "High accuracy"
+
+set location_mode to 'gps,network' to support NetworkLocation Provider
+
+Change-Id: I8be83651fe49abc2ac818851fdf56e010d75a515
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ packages/SettingsProvider/res/values/defaults.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/packages/SettingsProvider/res/values/defaults.xml b/packages/SettingsProvider/res/values/defaults.xml
+index 4007cc9..20b028b 100644
+--- a/packages/SettingsProvider/res/values/defaults.xml
++++ b/packages/SettingsProvider/res/values/defaults.xml
+@@ -44,7 +44,7 @@
+          Network location is off by default because it requires
+          user opt-in via Setup Wizard or Settings.
+     -->
+-    <string name="def_location_providers_allowed" translatable="false">gps</string>
++    <string name="def_location_providers_allowed" translatable="false">gps,network</string>
+     <bool name="assisted_gps_enabled">true</bool>
+     <bool name="def_netstats_enabled">true</bool>
+     <bool name="def_usb_mass_storage_enabled">true</bool>
+-- 
+2.7.4
+

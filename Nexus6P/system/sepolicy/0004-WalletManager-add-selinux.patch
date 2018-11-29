@@ -1,0 +1,55 @@
+From 8fce79e40be4e0ebac2274c5518cbd6effdeccb1 Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Fri, 26 Oct 2018 16:48:50 +0800
+Subject: [PATCH] [WalletManager]: add selinux
+
+Change-Id: I3c9b034d5dc255461b3fc5749617e55e755ec74b
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ prebuilts/api/26.0/private/service_contexts | 1 +
+ prebuilts/api/26.0/public/service.te        | 1 +
+ private/service_contexts                    | 1 +
+ public/service.te                           | 1 +
+ 4 files changed, 4 insertions(+)
+
+diff --git a/prebuilts/api/26.0/private/service_contexts b/prebuilts/api/26.0/private/service_contexts
+index dc77cb9..616cec8 100644
+--- a/prebuilts/api/26.0/private/service_contexts
++++ b/prebuilts/api/26.0/private/service_contexts
+@@ -169,4 +169,5 @@ wifi                                      u:object_r:wifi_service:s0
+ wificond                                  u:object_r:wificond_service:s0
+ wifiaware                                 u:object_r:wifiaware_service:s0
+ window                                    u:object_r:window_service:s0
++wallet                                    u:object_r:wallet_service:s0
+ *                                         u:object_r:default_android_service:s0
+diff --git a/prebuilts/api/26.0/public/service.te b/prebuilts/api/26.0/public/service.te
+index da540db..860a268 100644
+--- a/prebuilts/api/26.0/public/service.te
++++ b/prebuilts/api/26.0/public/service.te
+@@ -145,3 +145,4 @@ type wifi_service, app_api_service, system_server_service, service_manager_type;
+ type wificond_service, service_manager_type;
+ type wifiaware_service, app_api_service, system_server_service, service_manager_type;
+ type window_service, system_api_service, system_server_service, service_manager_type;
++type wallet_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
+diff --git a/private/service_contexts b/private/service_contexts
+index 7ce4800..6c789bf 100644
+--- a/private/service_contexts
++++ b/private/service_contexts
+@@ -172,4 +172,5 @@ IPFSControllerManagerService              u:object_r:IPFSControllerManagerServic
+ wificond                                  u:object_r:wificond_service:s0
+ wifiaware                                 u:object_r:wifiaware_service:s0
+ window                                    u:object_r:window_service:s0
++wallet                                    u:object_r:wallet_service:s0
+ *                                         u:object_r:default_android_service:s0
+diff --git a/public/service.te b/public/service.te
+index b1af697..eec02a8 100644
+--- a/public/service.te
++++ b/public/service.te
+@@ -149,3 +149,4 @@ type IPFSControllerManagerService, system_api_service, system_server_service, se
+ type wificond_service, service_manager_type;
+ type wifiaware_service, app_api_service, system_server_service, service_manager_type;
+ type window_service, system_api_service, system_server_service, service_manager_type;
++type wallet_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;
+-- 
+2.7.4
+

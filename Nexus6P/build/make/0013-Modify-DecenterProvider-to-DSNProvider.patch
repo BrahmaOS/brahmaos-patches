@@ -1,0 +1,27 @@
+From aca0e5a0ff8fd2a7c2ea17a257851d01da1db76f Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Sun, 30 Sep 2018 14:20:48 +0800
+Subject: [PATCH] Modify DecenterProvider to DSNProvider
+
+Change-Id: I4b0f2fa996e93f59c69dd5210a60cdea35db67de
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ target/product/core.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/target/product/core.mk b/target/product/core.mk
+index 38397db..bad04b6 100644
+--- a/target/product/core.mk
++++ b/target/product/core.mk
+@@ -33,7 +33,7 @@ PRODUCT_PACKAGES += \
+     DeskClock \
+     DocumentsUI \
+     DownloadProviderUi \
+-    DecenterProvider \
++    DSNProvider \
+     Email \
+     ExactCalculator \
+     ExternalStorageProvider \
+-- 
+2.7.4
+

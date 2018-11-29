@@ -1,0 +1,151 @@
+From 6d7e5f4076a19acdd31dc01bf10fa7a406bde5b5 Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Thu, 8 Nov 2018 16:39:39 +0800
+Subject: [PATCH] [WalletManager]: optmize api for getting balance of ethereum
+
+Change-Id: Id422d2490a0a501d9f9ebfeac731ba26df56e925
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ api/current.txt                            |  3 +--
+ api/system-current.txt                     |  3 +--
+ api/test-current.txt                       |  3 +--
+ core/java/brahmaos/app/IWalletManager.aidl |  4 ++--
+ core/java/brahmaos/app/WalletManager.java  | 37 ++++++++----------------------
+ 5 files changed, 15 insertions(+), 35 deletions(-)
+
+diff --git a/api/current.txt b/api/current.txt
+index c33dca5..7362926 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -52017,8 +52017,7 @@ package brahmaos.app {
+     method public abstract java.util.List<brahmaos.content.WalletData> createWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int deleteWalletByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getAllWallets() throws android.os.RemoteException;
+-    method public abstract void getEthereumAccountBalanceByAddress(java.lang.String, java.lang.String, brahmaos.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
+-    method public abstract void getEthereumTokenBalanceByAddress(java.lang.String, java.lang.String, java.lang.String, brahmaos.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
++    method public abstract void getEthereumBalanceByAddress(java.lang.String, java.lang.String, java.lang.String, brahmaos.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData getWalletDataByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getWalletsForChainType(java.lang.String) throws android.os.RemoteException;
+diff --git a/api/system-current.txt b/api/system-current.txt
+index 4ba45cc..a568d07 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -55975,8 +55975,7 @@ package brahmaos.app {
+     method public abstract java.util.List<brahmaos.content.WalletData> createWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int deleteWalletByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getAllWallets() throws android.os.RemoteException;
+-    method public abstract void getEthereumAccountBalanceByAddress(java.lang.String, java.lang.String, brahmaos.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
+-    method public abstract void getEthereumTokenBalanceByAddress(java.lang.String, java.lang.String, java.lang.String, brahmaos.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
++    method public abstract void getEthereumBalanceByAddress(java.lang.String, java.lang.String, java.lang.String, brahmaos.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData getWalletDataByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getWalletsForChainType(java.lang.String) throws android.os.RemoteException;
+diff --git a/api/test-current.txt b/api/test-current.txt
+index acc162f..89ed793 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -52499,8 +52499,7 @@ package brahmaos.app {
+     method public abstract java.util.List<brahmaos.content.WalletData> createWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int deleteWalletByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getAllWallets() throws android.os.RemoteException;
+-    method public abstract void getEthereumAccountBalanceByAddress(java.lang.String, java.lang.String, brahmaos.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
+-    method public abstract void getEthereumTokenBalanceByAddress(java.lang.String, java.lang.String, java.lang.String, brahmaos.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
++    method public abstract void getEthereumBalanceByAddress(java.lang.String, java.lang.String, java.lang.String, brahmaos.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData getWalletDataByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getWalletsForChainType(java.lang.String) throws android.os.RemoteException;
+diff --git a/core/java/brahmaos/app/IWalletManager.aidl b/core/java/brahmaos/app/IWalletManager.aidl
+index e7e8146..ae4b355 100644
+--- a/core/java/brahmaos/app/IWalletManager.aidl
++++ b/core/java/brahmaos/app/IWalletManager.aidl
+@@ -34,8 +34,8 @@ interface IWalletManager {
+     WalletData getWalletDataByAddress(String address);
+ 
+     boolean isValidAddress(String address, String chainType);
+-    void getEthereumAccountBalanceByAddress(String networkUrl, String address, in IOnETHBlanceGetListener listener);
+-    void getEthereumTokenBalanceByAddress(String networkUrl, String address, String tokenAddress, in IOnETHBlanceGetListener listener);
++    void getEthereumBalanceByAddress(String networkUrl, String address, String tokenAddress,
++                                     in IOnETHBlanceGetListener listener);
+     String transferEthereum(String networkUrl, String accountAddress,
+                                      String tokenAddress, String password,
+                                      String destinationAddress, double amount,
+diff --git a/core/java/brahmaos/app/WalletManager.java b/core/java/brahmaos/app/WalletManager.java
+index 880f314..f6aae80 100644
+--- a/core/java/brahmaos/app/WalletManager.java
++++ b/core/java/brahmaos/app/WalletManager.java
+@@ -38,7 +38,7 @@ public class WalletManager {
+     public static final int CODE_DEFAULT_WALLET_CANNOT_DELETE = 500;
+     public static final int CODE_OTHER_ERROR = -100;
+ 
+-    private static final String MAINNET_URL = "https://mainnet.infura.io/Gy3Csyt4bzKIGsctm3g0";
++    public static final String MAINNET_URL = "https://mainnet.infura.io/Gy3Csyt4bzKIGsctm3g0";
+ 
+     /*
+      ** The second param of function getEthereumAccountBalanceByAddress.
+@@ -77,6 +77,7 @@ public class WalletManager {
+     }
+ 
+     /**
++     * Used to save brahmaos default wallets into {@link WalletData}. Called in BrahmaSetup.
+      *
+      * @hide
+      */
+@@ -172,12 +173,13 @@ public class WalletManager {
+      *
+      * Note: result returned in onETHBlanceGetSuccess is the BigInteger's string value.
+      **/
+-    public void getEthereumAccountBalanceByAddress(String address, OnETHBlanceGetListener listener) {
+-        getEthereumAccountBalanceByAddress(MAINNET_URL, address, listener);
++    public void getEthereumBalanceByAddress(String address, String tokenAddress,
++                                            OnETHBlanceGetListener listener) {
++        getEthereumBalanceByAddress(MAINNET_URL, address, tokenAddress, listener);
+     }
+ 
+     /**
+-     * Similar to {@link #getEthereumAccountBalanceByAddress(String, OnETHBlanceGetListener)}
++     * Similar to {@link #getEthereumBalanceByAddress(String, String, OnETHBlanceGetListener)}
+      * Developer can use test URL by setting param networkUrl.
+      *
+      * Result returned by callback function onETHBlanceGetError()
+@@ -185,33 +187,14 @@ public class WalletManager {
+      *
+      * Note: result returned in onETHBlanceGetSuccess is the BigInteger's string value.
+      **/
+-    public void getEthereumAccountBalanceByAddress(String networkUrl, String address,
++    public void getEthereumBalanceByAddress(String networkUrl, String address,
++                                                   String tokenAddress,
+                                                    OnETHBlanceGetListener listener) {
+         try {
+             OnETHBlanceGetListenerDelegate delegate = new OnETHBlanceGetListenerDelegate(listener);
+-            getWalletService().getEthereumAccountBalanceByAddress(networkUrl, address, delegate);
++            getWalletService().getEthereumBalanceByAddress(networkUrl, address, tokenAddress, delegate);
+         } catch (RemoteException re) {
+-            Log.e(TAG, "Error calling IWalletManager#getEthereumAccountBalanceByAddress", re);
+-        }
+-    }
+-
+-    public void getEthereumTokenBalanceByAddress(String address, String tokenAddress,
+-                                                 OnETHBlanceGetListener listener) {
+-        getEthereumTokenBalanceByAddress(MAINNET_URL, address, tokenAddress, listener);
+-    }
+-
+-    /**
+-     * Similar to {@link #getEthereumTokenBalanceByAddress(String, String, OnETHBlanceGetListener)}
+-     * Developer can use test URL by setting param networkUrl.
+-     *
+-     **/
+-    public void getEthereumTokenBalanceByAddress(String networkUrl, String address,
+-                                                 String tokenAddress, OnETHBlanceGetListener listener) {
+-        try {
+-            OnETHBlanceGetListenerDelegate delegate = new OnETHBlanceGetListenerDelegate(listener);
+-            getWalletService().getEthereumTokenBalanceByAddress(networkUrl, address, tokenAddress, delegate);
+-        } catch (RemoteException re) {
+-            Log.e(TAG, "Error calling IWalletManager#getEthereumTokenBalanceByAddress", re);
++            Log.e(TAG, "Error calling IWalletManager#getEthereumBalanceByAddress", re);
+         }
+     }
+ 
+-- 
+2.7.4
+

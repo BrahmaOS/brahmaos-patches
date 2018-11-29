@@ -1,0 +1,107 @@
+From b213f19a0c911ef966df8efba97df9359385e115 Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Mon, 12 Nov 2018 17:38:58 +0800
+Subject: [PATCH] [WalletManager]: add api for getting ethereum gas price
+
+Change-Id: I20bd7c989a1159be0831cf05ad8bb10b110f4b6a
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ api/current.txt                            |  1 +
+ api/system-current.txt                     |  1 +
+ api/test-current.txt                       |  1 +
+ core/java/brahmaos/app/IWalletManager.aidl |  1 +
+ core/java/brahmaos/app/WalletManager.java  | 30 ++++++++++++++++++++++++++++++
+ 5 files changed, 34 insertions(+)
+
+diff --git a/api/current.txt b/api/current.txt
+index d4efd36..bfc5cf2 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -52091,6 +52091,7 @@ package brahmaos.app {
+     method public abstract int deleteWalletByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getAllWallets() throws android.os.RemoteException;
+     method public abstract void getEthereumBalanceByAddress(java.lang.String, java.lang.String, java.lang.String, brahmaos.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
++    method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData getWalletDataByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getWalletsForChainType(java.lang.String) throws android.os.RemoteException;
+diff --git a/api/system-current.txt b/api/system-current.txt
+index 94635a6..3fc8098 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -56049,6 +56049,7 @@ package brahmaos.app {
+     method public abstract int deleteWalletByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getAllWallets() throws android.os.RemoteException;
+     method public abstract void getEthereumBalanceByAddress(java.lang.String, java.lang.String, java.lang.String, brahmaos.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
++    method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData getWalletDataByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getWalletsForChainType(java.lang.String) throws android.os.RemoteException;
+diff --git a/api/test-current.txt b/api/test-current.txt
+index d1de44c..f11167a 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -52573,6 +52573,7 @@ package brahmaos.app {
+     method public abstract int deleteWalletByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getAllWallets() throws android.os.RemoteException;
+     method public abstract void getEthereumBalanceByAddress(java.lang.String, java.lang.String, java.lang.String, brahmaos.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
++    method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData getWalletDataByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getWalletsForChainType(java.lang.String) throws android.os.RemoteException;
+diff --git a/core/java/brahmaos/app/IWalletManager.aidl b/core/java/brahmaos/app/IWalletManager.aidl
+index ae4b355..fd90a9f 100644
+--- a/core/java/brahmaos/app/IWalletManager.aidl
++++ b/core/java/brahmaos/app/IWalletManager.aidl
+@@ -36,6 +36,7 @@ interface IWalletManager {
+     boolean isValidAddress(String address, String chainType);
+     void getEthereumBalanceByAddress(String networkUrl, String address, String tokenAddress,
+                                      in IOnETHBlanceGetListener listener);
++    String getEthereumGasPrice(String networkUrl);
+     String transferEthereum(String networkUrl, String accountAddress,
+                                      String tokenAddress, String password,
+                                      String destinationAddress, double amount,
+diff --git a/core/java/brahmaos/app/WalletManager.java b/core/java/brahmaos/app/WalletManager.java
+index f6aae80..a5c11a0 100644
+--- a/core/java/brahmaos/app/WalletManager.java
++++ b/core/java/brahmaos/app/WalletManager.java
+@@ -199,6 +199,36 @@ public class WalletManager {
+     }
+ 
+     /**
++     * @return The value of gas price got from the network, and its unit is 'GWEI'.
++     *         If return null, means exception appears.
++     **/
++    public String getEthereumGasPrice() {
++        try {
++            return getWalletService().getEthereumGasPrice(MAINNET_URL);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getEthereumGasPrice", re);
++        }
++        return null;
++    }
++
++    /**
++     * Similar to {@link #getEthereumGasPrice(String)}
++     * @param networkUrl Developer can set test URL for testing.
++     *
++     * @return The value of gas price got from the network, and its unit is 'GWEI'.
++     *         If return null, means exception appears.
++     **/
++    public String getEthereumGasPrice(String networkUrl) {
++        try {
++            return getWalletService().getEthereumGasPrice(networkUrl);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getEthereumGasPrice", re);
++        }
++        return null;
++    }
++
++
++    /**
+      * @param accountAddress The address of ethereum wallet.
+      * @param tokenAddress The address of token.
+      *                    If is null means ethereum wallet, otherwise means token wallet.
+-- 
+2.7.4
+

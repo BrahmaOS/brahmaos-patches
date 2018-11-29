@@ -1,0 +1,32 @@
+From ea5cc565234dce11265660b5b5186233dcd8d3cc Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Mon, 15 Oct 2018 17:17:07 +0800
+Subject: [PATCH] PRODUCT_PACKAGES: add GmsCore and related packages
+
+Change-Id: Ia7a6e400f5b2263a967c562696523f2fff367df2
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ target/product/core.mk | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/target/product/core.mk b/target/product/core.mk
+index bad04b6..d31f8b5 100644
+--- a/target/product/core.mk
++++ b/target/product/core.mk
+@@ -65,7 +65,12 @@ PRODUCT_PACKAGES += \
+     BrahmaWallet \
+     BrahmaSetup \
+     Update \
+-    GoodWeather
++    GoodWeather \
++    GmsCore \
++    GsfProxy \
++    FakeStore \
++    NominatimNlpBackend \
++    IchnaeaNlpBackend
+ 
+ # The set of packages whose code can be loaded by the system server.
+ PRODUCT_SYSTEM_SERVER_APPS += \
+-- 
+2.7.4
+
