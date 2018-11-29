@@ -1,0 +1,78 @@
+From 911ac5b6ba7174a153fa6aee85d0d79fb7c38166 Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Tue, 20 Nov 2018 11:05:04 +0800
+Subject: [PATCH] default_workspace: update desktop icon position
+
+Change-Id: Ib9eb88fe5d548bd3f52b11432ffc901394dfb008
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ res/xml/default_workspace_5x5.xml | 45 +++++++++++++++++++++++++++------------
+ 1 file changed, 31 insertions(+), 14 deletions(-)
+
+diff --git a/res/xml/default_workspace_5x5.xml b/res/xml/default_workspace_5x5.xml
+index 9c0d749..57c7491 100644
+--- a/res/xml/default_workspace_5x5.xml
++++ b/res/xml/default_workspace_5x5.xml
+@@ -20,28 +20,45 @@
+     <include launcher:workspace="@xml/dw_phone_hotseat" />
+ 
+     <!-- Bottom row -->
++    <!--<resolve-->
++        <!--launcher:screen="0"-->
++        <!--launcher:x="0"-->
++        <!--launcher:y="-1" >-->
++        <!--<favorite launcher:uri="#Intent;action=android.intent.action.MAIN;category=android.intent.category.APP_EMAIL;end" />-->
++        <!--<favorite launcher:uri="mailto:" />-->
++    <!--</resolve>-->
++
+     <resolve
+         launcher:screen="0"
+-        launcher:x="0"
+-        launcher:y="-1" >
+-	    <favorite launcher:uri="#Intent;action=android.intent.action.MAIN;category=android.intent.category.APP_EMAIL;end" />
+-	    <favorite launcher:uri="mailto:" />
+-
++        launcher:x="3"
++        launcher:y="3" >
++        <favorite launcher:uri="#Intent;action=android.intent.action.MAIN;category=android.intent.category.APP_GALLERY;end" />
++        <favorite launcher:uri="#Intent;type=images/*;end" />
+     </resolve>
+ 
+-    <resolve
+-        launcher:screen="0"
+-        launcher:x="1"
+-        launcher:y="-1" >
+-	    <favorite launcher:uri="#Intent;action=android.intent.action.MAIN;category=android.intent.category.APP_GALLERY;end" />
+-	    <favorite launcher:uri="#Intent;type=images/*;end" />
+ 
+-    </resolve>
++                       <!--BrahmaOS Desktop-->
++    <!--|                   Weather  Widget                  |-->
++    <!--|                                                    |-->
++    <!--|                                                    |-->
++    <!--|                                                    |-->
++    <!--|                                                    |-->
++    <!--| Telegram   Files              Gallery      ToolBox |-->
++    <!--| Contacts                                    Wallet |-->
++    <!--| Phone      Message            Brave         Camera |-->
++
+ 
+     <!--AzaleaPan remove qsb 2018.08.03-->
+-    <favorite screen="0" x="0" y="3" packageName="io.brahmaos.wallet.brahmawallet" className="io.brahmaos.wallet.brahmawallet.ui.SplashActivity"/>
++    <favorite screen="0" x="0" y="3" packageName="org.telegram.messenger" className="org.telegram.ui.LaunchActivity"/>
++    <favorite screen="0" x="1" y="3" packageName="com.android.documentsui" className="com.android.documentsui.LauncherActivity"/>
++    <favorite screen="0" x="4" y="3" packageName="io.brahmaos.apps.brahmatoolbox" className="io.brahmaos.apps.brahmatoolbox.ui.coinrate.CoinRateActivity"/>
++    <favorite
++        launcher:screen="0"
++        launcher:x="0"
++        launcher:y="-1"
++        launcher:uri="#Intent;action=android.intent.action.MAIN;category=android.intent.category.APP_CONTACTS;end" />
+ 
+-    <favorite screen="0" x="1" y="3" packageName="org.telegram.messenger" className="org.telegram.ui.LaunchActivity"/>
++    <favorite screen="0" x="4" y="-1" packageName="io.brahmaos.wallet.brahmawallet" className="io.brahmaos.wallet.brahmawallet.ui.SplashActivity"/>
+ 
+     <appwidget screen="0" x="0" y="0" spanX='5' spanY="1" packageName="org.asdtm.goodweather" className="org.asdtm.goodweather.widget.LessWidgetProvider"/>
+ 
+-- 
+2.7.4
+
