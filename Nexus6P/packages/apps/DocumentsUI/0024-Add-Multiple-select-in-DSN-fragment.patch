@@ -1,0 +1,2054 @@
+From ffdea8e8fcb5bc61fe18b319ea01b1a1e4f425b3 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Sun, 7 Oct 2018 21:30:07 +0800
+Subject: [PATCH] Add Multiple select in DSN fragment
+
+Change-Id: I3356a44862b8b4167832ccfed97489826b5e8466
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ res/drawable/ic_cloud_download.xml                 |   9 +
+ res/layout/list_item_dsn.xml                       |   2 +-
+ res/menu/dsn_action_mode_menu.xml                  |  28 ++
+ res/values-en-rGB/strings.xml                      |   2 +-
+ .../documentsui/DSN/DSNActionModeController.java   |  79 +++++
+ .../DSN/dirlist/DSNDirectoryAddonsAdapter.java     | 176 +++++++++++
+ .../DSN/dirlist/DSNDirectoryFragment.java          | 335 +++++++++++++++++++++
+ .../DSN/dirlist/DSNListeningGestureDetector.java   | 132 ++++++++
+ .../DSN/dirlist/DSNUserInputHandler.java           | 254 ++++++++++++++++
+ .../DSN/selection/DSNGestureSelector.java          | 281 +++++++++++++++++
+ .../DSN/selection/DSNSelectionManager.java         |  55 ++++
+ src/com/android/documentsui/base/Shared.java       |   7 +-
+ .../documentsui/dirlist/DSNDirectoryFragment.java  | 291 ------------------
+ .../dirlist/DSNModelObjectMetaAdapter.java         | 154 ----------
+ .../documentsui/dirlist/DirectoryFragment.java     |   2 +
+ .../dirlist/ListeningGestureDetector.java          |   4 +-
+ .../documentsui/dirlist/UserInputHandler.java      |   2 +
+ .../documentsui/files/DSNFilesActivity.java        |   8 +-
+ .../android/documentsui/files/FilesActivity.java   |   1 -
+ .../documentsui/httpnetwork/HttpServer.java        |   1 -
+ 20 files changed, 1367 insertions(+), 456 deletions(-)
+ create mode 100644 res/drawable/ic_cloud_download.xml
+ create mode 100644 res/menu/dsn_action_mode_menu.xml
+ create mode 100644 src/com/android/documentsui/DSN/DSNActionModeController.java
+ create mode 100644 src/com/android/documentsui/DSN/dirlist/DSNDirectoryAddonsAdapter.java
+ create mode 100644 src/com/android/documentsui/DSN/dirlist/DSNDirectoryFragment.java
+ create mode 100644 src/com/android/documentsui/DSN/dirlist/DSNListeningGestureDetector.java
+ create mode 100644 src/com/android/documentsui/DSN/dirlist/DSNUserInputHandler.java
+ create mode 100644 src/com/android/documentsui/DSN/selection/DSNGestureSelector.java
+ create mode 100644 src/com/android/documentsui/DSN/selection/DSNSelectionManager.java
+ delete mode 100644 src/com/android/documentsui/dirlist/DSNDirectoryFragment.java
+ delete mode 100644 src/com/android/documentsui/dirlist/DSNModelObjectMetaAdapter.java
+
+diff --git a/res/drawable/ic_cloud_download.xml b/res/drawable/ic_cloud_download.xml
+new file mode 100644
+index 0000000..261c312
+--- /dev/null
++++ b/res/drawable/ic_cloud_download.xml
+@@ -0,0 +1,9 @@
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++        android:width="24dp"
++        android:height="24dp"
++        android:viewportWidth="24.0"
++        android:viewportHeight="24.0">
++    <path
++        android:fillColor="#FF000000"
++        android:pathData="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z"/>
++</vector>
+diff --git a/res/layout/list_item_dsn.xml b/res/layout/list_item_dsn.xml
+index fa77a61..2d5307a 100644
+--- a/res/layout/list_item_dsn.xml
++++ b/res/layout/list_item_dsn.xml
+@@ -3,7 +3,7 @@
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     android:layout_width="match_parent"
+     android:layout_height="wrap_content"
+-    android:background="@drawable/list_item_dsn_bg"	
++    android:background="@drawable/grid_item_background"
+     android:clickable="true"
+     android:orientation="vertical">
+     <RelativeLayout
+diff --git a/res/menu/dsn_action_mode_menu.xml b/res/menu/dsn_action_mode_menu.xml
+new file mode 100644
+index 0000000..46f0b1e
+--- /dev/null
++++ b/res/menu/dsn_action_mode_menu.xml
+@@ -0,0 +1,28 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Copyright (C) 2013 The Android Open Source Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++
++<menu xmlns:android="http://schemas.android.com/apk/res/android">
++    <item
++        android:id="@+id/action_menu_download"
++        android:icon="@drawable/ic_cloud_download"
++        android:title="@string/downloads_label"
++        android:showAsAction="always" />
++    <item
++        android:id="@+id/action_menu_delete"
++        android:icon="@drawable/ic_menu_delete"
++        android:title="@string/menu_delete"
++        android:showAsAction="always" />
++</menu>
+diff --git a/res/values-en-rGB/strings.xml b/res/values-en-rGB/strings.xml
+index c459cfa..819ac77 100644
+--- a/res/values-en-rGB/strings.xml
++++ b/res/values-en-rGB/strings.xml
+@@ -220,7 +220,7 @@
+     <string name="dsn_mimetype_title" msgid="3447621501565766957">"File MIME-TYPE"</string>
+     <string name="dsn_size_title" msgid="3447621501565766958">"File Size"</string>
+     <string name="dsn_name_content" msgid="3447621501565766959">"Original File Name"</string>
+-    <string name="dsn_createtime_title" msgid="3447621501565766960">"File CreatTime"</string>
++    <string name="dsn_createtime_title" msgid="3447621501565766960">"File CreateTime"</string>
+     <string name="dsn_synctime_title" msgid="3447621501565766961">"File SyncTime"</string>
+     <string name="dsn_blockcount_title" msgid="3447621501565766962">"Block Count"</string>
+ </resources>
+diff --git a/src/com/android/documentsui/DSN/DSNActionModeController.java b/src/com/android/documentsui/DSN/DSNActionModeController.java
+new file mode 100644
+index 0000000..6d0ed94
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/DSNActionModeController.java
+@@ -0,0 +1,79 @@
++/*
++ * Copyright (C) 2016 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.documentsui.DSN;
++
++import static com.android.documentsui.base.Shared.DEBUG;
++
++import android.annotation.IdRes;
++import android.annotation.Nullable;
++import android.app.Activity;
++import android.text.TextUtils;
++import android.util.Log;
++import android.view.ActionMode;
++import android.view.HapticFeedbackConstants;
++import android.view.Menu;
++import android.view.MenuItem;
++import android.view.View;
++
++import com.android.documentsui.MenuManager.SelectionDetails;
++import com.android.documentsui.base.ConfirmationCallback;
++import com.android.documentsui.base.ConfirmationCallback.Result;
++import com.android.documentsui.base.EventHandler;
++import com.android.documentsui.base.Menus;
++import com.android.documentsui.selection.Selection;
++import com.android.documentsui.selection.SelectionManager;
++import com.android.documentsui.ui.MessageBuilder;
++import com.android.documentsui.R;
++import java.util.function.Consumer;
++import java.util.function.IntConsumer;
++
++/**
++ * A controller that listens to selection changes and manages life cycles of action modes.
++ */
++public class DSNActionModeController implements ActionMode.Callback {
++        @Override
++        public boolean onCreateActionMode(ActionMode mode, Menu menu) {
++            mode.getMenuInflater().inflate(R.menu.dsn_action_mode_menu, menu);
++            return true;
++        }
++
++        @Override
++        public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
++            return false;
++        }
++
++        @Override
++        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
++            switch (item.getItemId()) {
++               case R.id.action_menu_download:
++                    //Toast.makeText(MainActivity.this,"warning!",Toast.LENGTH_SHORT).show();
++                    break;
++               case R.id.action_menu_delete:
++                    //Toast.makeText(MainActivity.this,"favourite!",Toast.LENGTH_SHORT).show();
++                    break;
++                default:
++                    break;
++            }
++            mode.finish();
++            return true;
++        }
++
++        @Override
++        public void onDestroyActionMode(ActionMode mode) {
++
++        }
++}
+\ No newline at end of file
+diff --git a/src/com/android/documentsui/DSN/dirlist/DSNDirectoryAddonsAdapter.java b/src/com/android/documentsui/DSN/dirlist/DSNDirectoryAddonsAdapter.java
+new file mode 100644
+index 0000000..a31aedf
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/dirlist/DSNDirectoryAddonsAdapter.java
+@@ -0,0 +1,176 @@
++/*
++ * Copyright (C) 2015 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.documentsui.DSN.dirlist;
++
++import static com.android.documentsui.base.DocumentInfo.getCursorInt;
++import static com.android.documentsui.base.DocumentInfo.getCursorString;
++import static com.android.documentsui.base.State.MODE_GRID;
++import static com.android.documentsui.base.State.MODE_LIST;
++
++import android.database.Cursor;
++import android.provider.DocumentsContract.Document;
++import android.util.Log;
++import android.view.ViewGroup;
++
++import com.android.documentsui.Model;
++import com.android.documentsui.base.EventListener;
++import com.android.documentsui.base.Lookup;
++import com.android.documentsui.base.State;
++import com.android.documentsui.Model.Update;
++
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Iterator;
++
++import android.text.format.Formatter;
++import android.support.v7.widget.RecyclerView;
++import com.android.documentsui.R;
++import android.widget.TextView;
++import android.widget.ImageView;
++import android.view.View;
++import android.support.v7.widget.LinearLayoutManager;
++import android.view.LayoutInflater;
++import android.support.v7.widget.LinearLayoutManager;
++import android.graphics.Color;
++import com.android.documentsui.httpnetwork.ObjectMeta;
++import android.content.Intent;
++import com.android.documentsui.base.Shared;
++import android.net.Uri;
++import android.app.Activity;
++import android.content.Context;
++import android.app.Fragment;
++import com.android.documentsui.files.DSNFilesActivity;
++
++
++
++/**
++ * Adapts from dirlist.Model to something RecyclerView understands.
++ */
++public class DSNDirectoryAddonsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
++        private List<ObjectMeta> mDSNModel = new ArrayList();
++        private Fragment mfragment;
++        private Context  mContext;
++        static final String SELECTION_CHANGED_MARKER = "Selection-Changed";
++        private static final String TAG = "DSNDirectoryAddonsAdapter";
++
++        @Override
++        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
++            View rootView = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_item_dsn, parent, false);
++
++            return new DSNDirectoryAddonsAdapter.ItemViewHolder(rootView);
++        }
++        public DSNDirectoryAddonsAdapter(Fragment fragment, Context context) {
++            mfragment = fragment;
++            mContext = context;
++        }
++
++        @Override
++        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
++            DSNDirectoryAddonsAdapter.ItemViewHolder itemViewHolder = (DSNDirectoryAddonsAdapter.ItemViewHolder) holder;
++            ObjectMeta mObjectMeta = mDSNModel.get(position);
++            setData(itemViewHolder, mObjectMeta);
++            holder.itemView.setActivated(false);
++            holder.itemView.setSelected(false);
++
++       }
++
++        @Override
++        public void onBindViewHolder(RecyclerView.ViewHolder  holder, int position, List<Object> payload) {
++            if (payload.contains(SELECTION_CHANGED_MARKER)) {
++                //final boolean selected = mEnv.isSelected(mModelIds.get(position));
++                holder.itemView.setActivated(true);
++                holder.itemView.setSelected(true);
++            } else {
++                onBindViewHolder(holder, position);
++            }
++        }
++
++        public void addDNSModelsObjectMeta(ObjectMeta objectMeta) {
++               mDSNModel.add(objectMeta);
++        }
++        public void clearDNSModels() {
++            mDSNModel.removeAll(mDSNModel);
++        }
++        public List<ObjectMeta> getDNSModels() {
++            return mDSNModel;
++        }
++        public Fragment getCurrentFragment() {
++            return mfragment;
++        }
++         /**
++         * return Item object
++         */
++        @Override
++        public long getItemId(int position) {
++             return position;
++        }
++
++        /**
++         * set account view
++         */
++        private void setData(DSNDirectoryAddonsAdapter.ItemViewHolder holder, final ObjectMeta Meta) {
++            if (Meta == null) {
++                return ;
++            }
++            holder.tvDSNShoreName.setText(Meta.getobjectname());
++            holder.tvDSNDate.setText(Meta.getobjectsynctime());
++            if (Meta.getobjectsize() > -1) {
++                holder.tvDSNSize.setVisibility(View.VISIBLE);
++                holder.tvDSNSize.setText(Formatter.formatFileSize(mContext, Meta.getobjectsize()));
++            } else {
++                holder.tvDSNSize.setVisibility(View.INVISIBLE);
++            }
++            if(Meta.getmimetype().contains("text")){
++                holder.ivDSNIcon.setImageResource(R.drawable.ic_lable_txt);
++            }else if(Meta.getmimetype().contains("jpeg")){
++                holder.ivDSNIcon.setImageResource(R.drawable.ic_lable_jpg);
++            }else if(Meta.getmimetype().contains("zip")){
++                holder.ivDSNIcon.setImageResource(R.drawable.ic_lable_zip);
++            }
++
++        }
++
++        @Override
++        public int getItemCount() {
++            return mDSNModel.size();
++        }
++
++        public void onItemSelectionChanged(int position) {
++            if (position >= 0) {
++                notifyItemChanged(position, SELECTION_CHANGED_MARKER);
++            } else {
++                Log.w(TAG, "Item change notification received for unknown item: ");
++            }
++        }
++
++        class ItemViewHolder extends RecyclerView.ViewHolder {
++            ImageView ivDSNIcon;
++            TextView tvDSNShoreName;
++            TextView tvDSNDate;
++            TextView tvDSNSize;
++
++            ItemViewHolder(View itemView) {
++                super(itemView);
++                ivDSNIcon = itemView.findViewById(R.id.iv_dsn_icon);
++                tvDSNShoreName = itemView.findViewById(R.id.tv_dsn_short_name);
++                tvDSNDate = itemView.findViewById(R.id.tv_dsn_date);
++                tvDSNSize = itemView.findViewById(R.id.tv_dsn_size);
++
++        }
++   }
++}
++
+diff --git a/src/com/android/documentsui/DSN/dirlist/DSNDirectoryFragment.java b/src/com/android/documentsui/DSN/dirlist/DSNDirectoryFragment.java
+new file mode 100644
+index 0000000..fe721e7
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/dirlist/DSNDirectoryFragment.java
+@@ -0,0 +1,335 @@
++package com.android.documentsui.DSN.dirlist;
++
++import static com.android.documentsui.base.DocumentInfo.getCursorInt;
++import static com.android.documentsui.base.DocumentInfo.getCursorString;
++import static com.android.documentsui.base.Shared.DEBUG;
++import static com.android.documentsui.base.Shared.VERBOSE;
++import static com.android.documentsui.base.State.MODE_GRID;
++import static com.android.documentsui.base.State.MODE_LIST;
++
++import android.annotation.DimenRes;
++import android.annotation.FractionRes;
++import android.annotation.IntDef;
++import android.app.Activity;
++import android.app.ActivityManager;
++import android.app.Fragment;
++import android.app.FragmentManager;
++import android.app.FragmentTransaction;
++import android.app.LoaderManager;
++import android.content.Context;
++import android.content.Intent;
++import android.content.Loader;
++import android.database.Cursor;
++import android.net.Uri;
++import android.os.Build;
++import android.os.Bundle;
++import android.os.Handler;
++import android.os.Parcelable;
++import android.provider.DocumentsContract;
++import android.provider.DocumentsContract.Document;
++import android.support.v4.widget.SwipeRefreshLayout;
++import android.support.v7.widget.GridLayoutManager;
++import android.support.v7.widget.GridLayoutManager.SpanSizeLookup;
++import android.support.v7.widget.RecyclerView;
++import android.support.v7.widget.RecyclerView.RecyclerListener;
++import android.support.v7.widget.RecyclerView.ViewHolder;
++import android.util.Log;
++import android.util.SparseArray;
++import android.view.ContextMenu;
++import android.view.HapticFeedbackConstants;
++import android.view.LayoutInflater;
++import android.view.MenuInflater;
++import android.view.MenuItem;
++import android.view.MotionEvent;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.ImageView;
++import android.widget.Toast;
++import android.widget.TextView;
++
++
++import com.android.documentsui.AbstractActionHandler;
++import com.android.documentsui.ActionHandler;
++import com.android.documentsui.ActionModeController;
++import com.android.documentsui.BaseActivity;
++import com.android.documentsui.BaseActivity.RetainedState;
++import com.android.documentsui.DirectoryReloadLock;
++import com.android.documentsui.DocumentsApplication;
++import com.android.documentsui.FocusManager;
++import com.android.documentsui.Injector;
++import com.android.documentsui.Injector.ContentScoped;
++import com.android.documentsui.Injector.Injected;
++import com.android.documentsui.Metrics;
++import com.android.documentsui.Model;
++import com.android.documentsui.R;
++import com.android.documentsui.ThumbnailCache;
++import com.android.documentsui.base.DocumentFilters;
++import com.android.documentsui.base.DocumentInfo;
++import com.android.documentsui.base.DocumentStack;
++import com.android.documentsui.base.EventHandler;
++import com.android.documentsui.base.EventListener;
++import com.android.documentsui.base.Events.InputEvent;
++import com.android.documentsui.base.Events.MotionInputEvent;
++import com.android.documentsui.base.Features;
++import com.android.documentsui.base.RootInfo;
++import com.android.documentsui.base.Shared;
++import com.android.documentsui.base.State;
++import com.android.documentsui.base.State.ViewMode;
++import com.android.documentsui.clipping.ClipStore;
++import com.android.documentsui.clipping.DocumentClipper;
++import com.android.documentsui.clipping.UrisSupplier;
++import com.android.documentsui.dirlist.AnimationView.AnimationType;
++import com.android.documentsui.picker.PickActivity;
++import com.android.documentsui.selection.BandController;
++import com.android.documentsui.selection.GestureSelector;
++import com.android.documentsui.selection.Selection;
++import com.android.documentsui.selection.SelectionManager;
++import com.android.documentsui.selection.SelectionMetadata;
++import com.android.documentsui.services.FileOperation;
++import com.android.documentsui.services.FileOperationService;
++import com.android.documentsui.services.FileOperationService.OpType;
++import com.android.documentsui.services.FileOperations;
++import com.android.documentsui.sorting.SortDimension;
++import com.android.documentsui.sorting.SortModel;
++import android.support.v7.widget.LinearLayoutManager;
++import android.widget.LinearLayout;
++//import com.android.documentsui.dirlist.DragHoverListener;
++import com.android.documentsui.DSN.dirlist.DSNDirectoryAddonsAdapter;
++//import com.android.documentsui.dirlist.DirectoryItemAnimator;
++import com.android.documentsui.dirlist.IconHelper;
++//import com.android.documentsui.dirlist.DirectoryItemAnimator;
++import com.android.documentsui.dirlist.AnimationView;
++
++import com.android.documentsui.DSN.selection.DSNGestureSelector;
++
++import java.io.IOException;
++import java.lang.annotation.Retention;
++import java.lang.annotation.RetentionPolicy;
++import java.util.List;
++import java.util.ArrayList;
++
++
++import javax.annotation.Nullable;
++import com.android.documentsui.DSNObjectMeta;
++import com.android.documentsui.DSNObjectMetaLoader;
++import com.android.documentsui.httpnetwork.HttpServer;
++import com.android.documentsui.httpnetwork.*;
++
++import com.fasterxml.jackson.core.type.TypeReference;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import com.android.documentsui.httpnetwork.Networks;
++import com.android.documentsui.widget.AVLoadingIndicatorView;
++
++
++import java.util.Collections;
++import java.util.HashMap;
++import java.util.LinkedHashMap;
++import java.util.Map;
++import java.util.concurrent.TimeUnit;
++import android.util.Log;
++import android.view.Menu;
++
++
++import rx.Completable;
++import rx.Observable;
++import rx.Observer;
++import rx.android.schedulers.AndroidSchedulers;
++import rx.schedulers.Schedulers;
++
++
++public class DSNDirectoryFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
++
++    protected BaseActivity mActivity;
++    protected View mProgressBar;
++    protected RecyclerView mRecView;
++    protected SwipeRefreshLayout mRefreshLayout;
++    @Injected
++    @ContentScoped
++    protected Injector<?> mInjector;
++    protected State mState;
++    protected Model mModel;
++    protected final Runnable mOnDisplayStateChanged = this::onDisplayStateChanged;
++    protected DocumentClipper mClipper;
++   // protected @Nullable DragHoverListener mDragHoverListener;
++    protected IconHelper mIconHelper;
++    private DSNDirectoryAddonsAdapter mDSNDirectoryAddonsAdapter;
++    private MenuItem mMenuItem;
++    private String ACOUNT_ID ;
++    private AVLoadingIndicatorView avi;
++    private AnimationView mAnimationView;
++
++    protected DSNUserInputHandler mInputHandler;
++
++    protected LinearLayout mLinearLayout;
++    protected ActionModeController mActionModeController;
++
++
++    public DSNDirectoryFragment() {
++        super();
++    }
++
++    @Override
++    public View onCreateView(
++            LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
++
++        mActivity = (BaseActivity) getActivity();
++        final View view = inflater.inflate(R.layout.fragment_dsn_directory, container, false);
++
++
++        //mProgressBar = view.findViewById(R.id.progressbar);
++        //assert(mProgressBar != null);
++        //mProgressBar.setVisibility(View.VISIBLE);
++
++        avi= (AVLoadingIndicatorView) view.findViewById(R.id.avi);
++        avi.setIndicator("BallSpinFadeLoaderIndicator");
++        avi.show();
++
++        mAnimationView = (AnimationView)view.findViewById(R.id.animationview);
++
++
++        mRecView = (RecyclerView) view.findViewById(R.id.dir_list);
++
++        mRecView.setRecyclerListener(
++                new RecyclerListener() {
++                    @Override
++                    public void onViewRecycled(ViewHolder holder) {
++                        cancelThumbnailTask(holder.itemView);
++                    }
++                });
++        mIconHelper = new IconHelper(mActivity, MODE_GRID);
++
++        mRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.refresh_layout);
++        mRefreshLayout.setOnRefreshListener(this);
++        //mRecView.setItemAnimator(new DirectoryItemAnimator(mActivity));
++
++
++        mInjector = mActivity.getInjector();
++        mDSNDirectoryAddonsAdapter = new DSNDirectoryAddonsAdapter(this,getContext());
++        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
++
++        mRecView.setLayoutManager(layoutManager);
++        mRecView.setAdapter(mDSNDirectoryAddonsAdapter);
++
++        DSNGestureSelector gestureSel = DSNGestureSelector.create(mRecView, null);
++
++        mActionModeController = mInjector.getActionModeController(
++                null,
++                this::handleMenuItemClick);
++
++        mInputHandler = new DSNUserInputHandler(
++                mActivity,
++                mRecView,
++                mDSNDirectoryAddonsAdapter,
++                null,
++                null,
++                null,
++                null,
++                () -> mRecView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS));
++
++        new DSNListeningGestureDetector(
++                this.getContext(),
++                mRecView,
++                gestureSel,
++                mInputHandler);
++
++        mInjector.actions.registerDisplayStateChangedListener(mOnDisplayStateChanged);
++
++        mClipper = DocumentsApplication.getDocumentClipper(getContext());
++        // Make the recycler and the empty views responsive to drop events when allowed.
++        //mRecView.setOnDragListener(mDragHoverListener);
++        setHasOptionsMenu(true);
++        ACOUNT_ID = DocumentsApplication.getAccountStr(getContext());
++        return view;
++    }
++
++    @Override
++    public void onStart() {
++        super.onStart();
++        mDSNDirectoryAddonsAdapter.clearDNSModels();
++        onStartNetworkRequest();
++
++    }
++    @Override
++    public void onResume(){
++        super.onStart();
++        mLinearLayout = mActivity.findViewById(R.id.dropdown_sort_widget);
++        mLinearLayout.setVisibility(View.GONE);
++    }
++    @Override
++    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater){
++        super.onCreateOptionsMenu(menu, inflater);
++
++    }
++    @Override
++    public void onPrepareOptionsMenu(Menu menu) {
++        super.onPrepareOptionsMenu(menu);
++        menu.setGroupVisible(R.id.group_hide_when_searching, false);
++        mMenuItem = menu.findItem(R.id.option_menu_search);
++        menu.setGroupVisible(R.id.group_hide_when_searching, false);
++        mMenuItem.setVisible(false);
++    }
++
++    @Override
++    public void onRefresh() {
++        mRefreshLayout.setRefreshing(false);
++    }
++    private void onDisplayStateChanged() {
++    }
++    protected void cancelThumbnailTask(View view) {
++        final ImageView iconThumb = (ImageView) view.findViewById(R.id.icon_thumb);
++        if (iconThumb != null) {
++            mIconHelper.stopLoading(iconThumb);
++        }
++    }
++
++    private void onStartNetworkRequest(){
++        Networks.getInstance().gethttpIpfsApi()
++                    .getDataFromIpfsCloud(ACOUNT_ID)
++                    .subscribeOn(Schedulers.io())
++                    .observeOn(AndroidSchedulers.mainThread())
++                    .subscribe(new Observer<ApiRespResult>() {
++                        @Override
++                        public void onCompleted() {
++                        }
++                        @Override
++                        public void onError(Throwable throwable) {
++                            throwable.printStackTrace();
++                        }
++                        @Override
++                        public void onNext(ApiRespResult apr) {
++                            if (apr.getResult() == 0 && apr.getData().containsKey(ApiConst.PARAM_QUOTES)) {
++                                ObjectMapper objectMapper = new ObjectMapper();
++                                try {
++                                    List<ObjectMeta> objectlist = objectMapper.readValue(objectMapper.writeValueAsString(apr.getData().get(ApiConst.PARAM_QUOTES)), new TypeReference<List<ObjectMeta>>() {});
++                                    ObjectMeta tmpobj = objectlist.get(0);
++                                    for(ObjectMeta objectMeta: objectlist)
++                                       mDSNDirectoryAddonsAdapter.addDNSModelsObjectMeta(objectMeta);
++
++                                } catch (IOException e1) {
++                                    e1.printStackTrace();
++                                }
++                                 mAnimationView.setVisibility(View.VISIBLE);
++                                 mDSNDirectoryAddonsAdapter.notifyDataSetChanged();
++                            } else {
++                            }
++
++                       }
++
++           });
++
++    }
++    private boolean handleMenuItemClick(MenuItem item) {
++        // Selection selection = mSelectionMgr.getSelection(new Selection());
++
++         switch (item.getItemId()) {
++             case R.id.action_menu_open:
++             case R.id.dir_menu_open:
++               //  openDocuments(selection);
++                // mActionModeController.finishActionMode();
++                 return true;
++     }
++         return true;
++
++        }
++
++}
+diff --git a/src/com/android/documentsui/DSN/dirlist/DSNListeningGestureDetector.java b/src/com/android/documentsui/DSN/dirlist/DSNListeningGestureDetector.java
+new file mode 100644
+index 0000000..1b2e7bf
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/dirlist/DSNListeningGestureDetector.java
+@@ -0,0 +1,132 @@
++/*
++ * Copyright (C) 2016 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.documentsui.DSN.dirlist;
++
++import static com.android.documentsui.base.Shared.VERBOSE;
++
++import android.annotation.Nullable;
++import android.content.Context;
++import android.os.Build;
++import android.support.v7.widget.RecyclerView;
++import android.support.v7.widget.RecyclerView.OnItemTouchListener;
++import android.util.Log;
++import android.view.GestureDetector;
++import android.view.MotionEvent;
++import android.view.ScaleGestureDetector;
++
++import com.android.documentsui.base.BooleanConsumer;
++import com.android.documentsui.base.EventHandler;
++import com.android.documentsui.base.Events;
++import com.android.documentsui.base.Events.InputEvent;
++import com.android.documentsui.base.Events.MotionInputEvent;
++import com.android.documentsui.selection.GestureSelector;
++import com.android.documentsui.DSN.selection.DSNGestureSelector;
++
++import java.util.function.Consumer;
++
++//Receives event meant for both directory and empty view, and either pass them to
++//{@link UserInputHandler} for simple gestures (Single Tap, Long-Press), or intercept them for
++//other types of gestures (drag n' drop)
++final class DSNListeningGestureDetector extends GestureDetector implements OnItemTouchListener {
++
++    private static final String TAG = "DSNListeningGestureDetector";
++
++    private final DSNGestureSelector mGestureSelector;
++
++    private final TouchDelegate mTouchDelegate = new TouchDelegate();
++
++    public DSNListeningGestureDetector(
++            Context context,
++            RecyclerView recView,
++            DSNGestureSelector gestureSelector,
++            DSNUserInputHandler handler) {
++
++        super(context, handler);
++
++        mGestureSelector = gestureSelector;
++        recView.addOnItemTouchListener(this);
++
++    }
++
++    @Override
++    public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
++        boolean handled = false;
++        Log.d("XULU_LOG",TAG+"/onInterceptTouchEvent/");
++
++        try (InputEvent event = MotionInputEvent.obtain(e, rv)) {
++            if (event.isMouseEvent()) {
++                if (event.isActionDown()) {
++                   // mRefreshLayoutEnabler.accept(false);
++                }
++            } else {
++                // If user has started some gesture while RecyclerView is not at the top, disable
++                // refresh
++                if (event.isActionDown() && rv.computeVerticalScrollOffset() != 0) {
++                   // mRefreshLayoutEnabler.accept(false);
++                }
++                handled |= mTouchDelegate.onInterceptTouchEvent(event);
++            }
++
++
++            if (event.isActionUp()) {
++                //mRefreshLayoutEnabler.accept(true);
++            }
++        }
++
++        // Forward all events to UserInputHandler.
++        // This is necessary since UserInputHandler needs to always see the first DOWN event. Or
++        // else all future UP events will be tossed.
++        Log.d("XULU_LOG",TAG+"/onInterceptTouchEvent/"+ String.valueOf(e.getAction() & MotionEvent.ACTION_MASK));
++        handled |= onTouchEvent(e);
++        return handled;
++    }
++
++    @Override
++    public void onTouchEvent(RecyclerView rv, MotionEvent e) {
++            Log.d("XULU_LOG",TAG+"/onTouchEvent/");
++        try (InputEvent event = MotionInputEvent.obtain(e, rv)) {
++
++             mTouchDelegate.onTouchEvent(rv, event);
++
++            if (event.isActionUp()) {
++               // mRefreshLayoutEnabler.accept(true);
++            }
++        }
++
++        // Note: even though this event is being handled as part of gestures such as drag and band,
++        // continue forwarding to the GestureDetector. The detector needs to see the entire cluster
++        // of events in order to properly interpret other gestures, such as long press.
++        onTouchEvent(e);
++    }
++
++    private class TouchDelegate {
++        boolean onInterceptTouchEvent(InputEvent e) {
++            // Gesture Selector needs to be constantly fed events, so that when a long press does
++            // happen, we would have the last DOWN event that occurred to keep track of our anchor
++            // point
++            return mGestureSelector.onInterceptTouchEvent(e);
++        }
++
++        // TODO: Make this take just an InputEvent, no RecyclerView
++        void onTouchEvent(RecyclerView rv, InputEvent e) {
++            mGestureSelector.onTouchEvent(rv, e);
++        }
++    }
++
++    @Override
++    public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {}
++}
+diff --git a/src/com/android/documentsui/DSN/dirlist/DSNUserInputHandler.java b/src/com/android/documentsui/DSN/dirlist/DSNUserInputHandler.java
+new file mode 100644
+index 0000000..baa5bb0
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/dirlist/DSNUserInputHandler.java
+@@ -0,0 +1,254 @@
++/*
++ * Copyright (C) 2016 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.documentsui.DSN.dirlist;
++
++import com.android.documentsui.dirlist.DocumentHolder;
++import com.android.documentsui.dirlist.FocusHandler;
++import com.android.documentsui.dirlist.DocumentDetails;
++
++import static com.android.documentsui.base.Shared.DEBUG;
++import static com.android.documentsui.base.Shared.VERBOSE;
++
++import android.support.annotation.VisibleForTesting;
++import android.util.Log;
++import android.view.GestureDetector;
++import android.view.KeyEvent;
++import android.view.MotionEvent;
++import android.support.v7.widget.RecyclerView;
++import android.view.View;
++import android.content.Intent;
++
++
++import com.android.documentsui.ActionHandler;
++import com.android.documentsui.base.EventHandler;
++import com.android.documentsui.base.Events;
++import com.android.documentsui.base.Events.InputEvent;
++import com.android.documentsui.selection.SelectionManager;
++import com.android.documentsui.files.DSNFilesActivity;
++import com.android.documentsui.ActionModeController;
++
++
++import java.util.function.Function;
++import java.util.function.Predicate;
++
++import javax.annotation.Nullable;
++import com.android.documentsui.DSN.DSNActionModeController;
++import com.android.documentsui.BaseActivity;
++
++
++
++/**
++ * Grand unified-ish gesture/event listener for items in the directory list.
++ */
++public final class DSNUserInputHandler extends GestureDetector.SimpleOnGestureListener {
++
++    private static final String TAG = "DSNUserInputHandler";
++
++    private ActionHandler mActions;
++    private final SelectionManager mSelectionMgr = null;
++    //private final Predicate<DocumentDetails> mSelectable;
++
++    private final EventHandler<InputEvent> mContextMenuClickHandler;
++
++    private final EventHandler<InputEvent> mTouchDragListener;
++    private final EventHandler<InputEvent> mGestureSelectHandler;
++    private final Runnable mPerformHapticFeedback;
++    private DSNDirectoryAddonsAdapter mDSNDirectoryAddonsAdapter;
++    protected BaseActivity mActivity;
++
++    protected RecyclerView mRecView;
++    protected ActionModeController mActionModeController;
++
++    private final TouchInputDelegate mTouchDelegate;
++    public DSNUserInputHandler(
++            BaseActivity activity,
++            RecyclerView recView,
++            DSNDirectoryAddonsAdapter directoryAddonsAdapter,
++            ActionModeController actionModeController,
++            EventHandler<InputEvent> contextMenuClickHandler,
++            EventHandler<InputEvent> touchDragListener,
++            EventHandler<InputEvent> gestureSelectHandler,
++            Runnable performHapticFeedback) {
++
++        mActivity = activity;
++        //mFocusHandler = focusHandler;
++        mRecView = recView;
++        mDSNDirectoryAddonsAdapter = directoryAddonsAdapter;
++        mActionModeController = actionModeController;
++        mContextMenuClickHandler = contextMenuClickHandler;
++        mTouchDragListener = touchDragListener;
++        mGestureSelectHandler = gestureSelectHandler;
++        mPerformHapticFeedback = performHapticFeedback;
++
++        mTouchDelegate = new TouchInputDelegate();
++        mRecView =recView;
++    }
++
++    @Override
++    public boolean onDown(MotionEvent e) {
++        return  mTouchDelegate.onDown(e);
++    }
++
++    @Override
++    public boolean onScroll(MotionEvent e1, MotionEvent e2,
++            float distanceX, float distanceY) {
++        return  mTouchDelegate.onScroll(e2);
++
++    }
++
++    @Override
++    public boolean onSingleTapUp(MotionEvent e) {
++        return mTouchDelegate.onSingleTapUp(e);
++    }
++
++    @Override
++    public boolean onSingleTapConfirmed(MotionEvent e) {
++        return mTouchDelegate.onSingleTapConfirmed(e);
++    }
++
++    @Override
++    public boolean onDoubleTap(MotionEvent e) {
++        return mTouchDelegate.onDoubleTap(e);
++    }
++
++    @Override
++    public void onLongPress(MotionEvent e) {
++        mTouchDelegate.onLongPress(e);
++    }
++
++    private boolean selectDocument(int Position) {
++        mDSNDirectoryAddonsAdapter.onItemSelectionChanged(Position);
++        onActionModeControllerChange();
++
++        return true;
++    }
++
++    public void onActionModeControllerChange() {
++        mActivity.startActionMode(new DSNActionModeController());
++
++    }
++
++
++    private boolean focusDocument(DocumentDetails doc) {
++        assert(doc != null);
++        assert(doc.hasModelId());
++
++        mSelectionMgr.clearSelection();
++        //mFocusHandler.focusDocument(doc.getModelId());
++        return true;
++    }
++
++    private void extendSelectionRange(DocumentDetails doc) {
++        mSelectionMgr.snapRangeSelection(doc.getAdapterPosition());
++        //mFocusHandler.focusDocument(doc.getModelId());
++    }
++
++    boolean isRangeExtension(MotionEvent event) {
++        //return event.isShiftKeyDown() && mSelectionMgr.isRangeSelectionActive();
++        return false;
++    }
++
++    private boolean shouldClearSelection(MotionEvent event, DocumentDetails doc) {
++        /*
++        return !event.isCtrlKeyDown()
++                && !doc.isInSelectionHotspot(event)
++                && !doc.isOverDocIcon(event)
++                && !isSelected(doc);*/
++                return false;
++    }
++
++    private boolean isSelected(DocumentDetails doc) {
++        return mSelectionMgr.getSelection().contains(doc.getModelId());
++    }
++
++    private static final String TTAG = "TouchInputDelegate";
++    private final class TouchInputDelegate {
++
++        boolean onDown(MotionEvent event) {
++            if (VERBOSE) Log.v(TTAG, "Delegated onDown event.");
++            return false;
++        }
++
++        // Don't consume so the RecyclerView will get the event and will get touch-based scrolling
++        boolean onScroll(MotionEvent event) {
++            if (VERBOSE) Log.v(TTAG, "Delegated onScroll event.");
++            return false;
++        }
++
++        boolean onSingleTapUp(MotionEvent event) {
++            if (VERBOSE) Log.v(TTAG, "Delegated onSingleTapUp event.");
++
++            int mPosition;
++            View child = mRecView.findChildViewUnder(event.getX(), event.getY());
++            mPosition = (child != null)
++                    ? mRecView.getChildAdapterPosition(child)
++                    : RecyclerView.NO_POSITION;
++            Log.d("XULU_LOG","onSingleTapUp:" +mPosition);
++            if(mPosition < 0)
++                return true;
++            Intent intent = new Intent(mDSNDirectoryAddonsAdapter.getCurrentFragment().getActivity(),DSNFilesActivity.class);
++            intent.putExtra("DSNObjectMeta", mDSNDirectoryAddonsAdapter.getDNSModels().get(mPosition));
++            mDSNDirectoryAddonsAdapter.getCurrentFragment().startActivity(intent);
++
++            return true;
++        }
++
++        boolean onSingleTapConfirmed(MotionEvent event) {
++            if (VERBOSE) Log.v(TTAG, "Delegated onSingleTapConfirmed event.");
++            return false;
++        }
++
++        boolean onDoubleTap(MotionEvent event) {
++            if (VERBOSE) Log.v(TTAG, "Delegated onDoubleTap event.");
++            return false;
++        }
++
++        final void onLongPress(MotionEvent event) {
++            if (VERBOSE) Log.v(TTAG, "DNS Delegated onLongPress event.");
++            int mPosition;
++            View child = mRecView.findChildViewUnder(event.getX(), event.getY());
++            mPosition = (child != null)
++                    ? mRecView.getChildAdapterPosition(child)
++                    : RecyclerView.NO_POSITION;
++            boolean handled = true;
++           // if (!mSelectionMgr.getSelection().contains(doc.getModelId())) {
++            selectDocument(mPosition);
++                // If we cannot select it, we didn't apply anchoring - therefore should not
++                // start gesture selection
++
++                //if (mSelectable.test(doc)) {
++                   // mGestureSelectHandler.accept(event);
++                 //   handled = true;
++                //}
++            //} else {
++                // We only initiate drag and drop on long press for touch to allow regular
++                // touch-based scrolling
++                //mTouchDragListener.accept(event);
++              //  handled = true;
++            //}
++
++            if (handled) {
++                mPerformHapticFeedback.run();
++            }
++
++
++
++        }
++    }
++
++
++}
+diff --git a/src/com/android/documentsui/DSN/selection/DSNGestureSelector.java b/src/com/android/documentsui/DSN/selection/DSNGestureSelector.java
+new file mode 100644
+index 0000000..0c9535f
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/selection/DSNGestureSelector.java
+@@ -0,0 +1,281 @@
++/*
++ * Copyright (C) 2016 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.documentsui.DSN.selection;
++
++import static com.android.documentsui.base.Shared.DEBUG;
++
++import android.graphics.Point;
++import android.support.annotation.VisibleForTesting;
++import android.support.v7.widget.RecyclerView;
++import android.util.Log;
++import android.view.View;
++
++import com.android.documentsui.DirectoryReloadLock;
++import com.android.documentsui.base.Events.InputEvent;
++import com.android.documentsui.ui.ViewAutoScroller;
++import com.android.documentsui.ui.ViewAutoScroller.ScrollActionDelegate;
++import com.android.documentsui.ui.ViewAutoScroller.ScrollDistanceDelegate;
++
++import java.util.function.IntSupplier;
++
++import javax.annotation.Nullable;
++
++/*
++ * Helper class used to intercept events that could cause a gesture multi-select, and keeps
++ * the interception going if necessary.
++ */
++public final class DSNGestureSelector {
++    private final String TAG = "DSNGestureSelector";
++
++   // private final SelectionManager mSelectionMgr;
++    private final Runnable mDragScroller;
++    private final IntSupplier mHeight;
++    private final ViewFinder mViewFinder;
++    private final DirectoryReloadLock mLock;
++    private int mLastStartedItemPos = -1;
++    private boolean mStarted = false;
++    private Point mLastInterceptedPoint;
++
++    DSNGestureSelector(
++            //SelectionManager selectionMgr,
++            IntSupplier heightSupplier,
++            ViewFinder viewFinder,
++            ScrollActionDelegate actionDelegate,
++            DirectoryReloadLock lock) {
++        //mSelectionMgr = selectionMgr;
++        mHeight = heightSupplier;
++        mViewFinder = viewFinder;
++        mLock = lock;
++
++        ScrollDistanceDelegate distanceDelegate = new ScrollDistanceDelegate() {
++            @Override
++            public Point getCurrentPosition() {
++                return mLastInterceptedPoint;
++            }
++
++            @Override
++            public int getViewHeight() {
++                return mHeight.getAsInt();
++            }
++
++            @Override
++            public boolean isActive() {
++                return false;
++               //return mStarted && mSelectionMgr.hasSelection();
++            }
++        };
++
++        mDragScroller = new ViewAutoScroller(distanceDelegate, actionDelegate);
++    }
++
++    public static DSNGestureSelector create(
++            //SelectionManager selectionMgr,
++            RecyclerView scrollView,
++            DirectoryReloadLock lock) {
++        ScrollActionDelegate actionDelegate = new ScrollActionDelegate() {
++            @Override
++            public void scrollBy(int dy) {
++                scrollView.scrollBy(0, dy);
++            }
++
++            @Override
++            public void runAtNextFrame(Runnable r) {
++                scrollView.postOnAnimation(r);
++            }
++
++            @Override
++            public void removeCallback(Runnable r) {
++                scrollView.removeCallbacks(r);
++            }
++        };
++
++        DSNGestureSelector helper =
++                new DSNGestureSelector(
++                        scrollView::getHeight,
++                        scrollView::findChildViewUnder,
++                        actionDelegate,
++                        lock);
++        return helper;
++    }
++
++    // Explicitly kick off a gesture multi-select.
++    public boolean start(InputEvent event) {
++        //the anchor must already be set before a multi-select event can be started
++        if (mLastStartedItemPos < 0) {
++            if (DEBUG) Log.d(TAG, "Tried to start multi-select without setting an anchor.");
++            return false;
++        }
++        if (mStarted) {
++            return false;
++        }
++        mStarted = true;
++        return true;
++    }
++
++    public boolean onInterceptTouchEvent(InputEvent e) {
++        if (e.isMouseEvent()) {
++            return false;
++        }
++
++        boolean handled = false;
++
++        if (e.isActionDown()) {
++            handled = handleInterceptedDownEvent(e);
++        }
++
++        if (e.isActionMove()) {
++            handled = handleInterceptedMoveEvent(e);
++        }
++
++        return handled;
++    }
++
++    public void onTouchEvent(RecyclerView rv, InputEvent e) {
++        if (!mStarted) {
++            return;
++        }
++
++        if (e.isActionUp()) {
++            handleUpEvent(e);
++        }
++
++        if (e.isActionCancel()) {
++            handleCancelEvent(e);
++        }
++
++        if (e.isActionMove()) {
++            handleOnTouchMoveEvent(rv, e);
++        }
++    }
++
++    // Called when an ACTION_DOWN event is intercepted.
++    // If down event happens on a file/doc, we mark that item's position as last started.
++    private boolean handleInterceptedDownEvent(InputEvent e) {
++        View itemView = mViewFinder.findView(e.getX(), e.getY());
++        if (itemView != null) {
++            mLastStartedItemPos = e.getItemPosition();
++        }
++        return false;
++    }
++
++    // Called when an ACTION_MOVE event is intercepted.
++    private boolean handleInterceptedMoveEvent(InputEvent e) {
++        mLastInterceptedPoint = e.getOrigin();
++        if (mStarted) {
++            //mSelectionMgr.startRangeSelection(mLastStartedItemPos);
++            // Gesture Selection about to start
++            mLock.block();
++            return true;
++        }
++        return false;
++    }
++
++    // Called when ACTION_UP event is to be handled.
++    // Essentially, since this means all gesture movement is over, reset everything and apply
++    // provisional selection.
++    private void handleUpEvent(InputEvent e) {
++        //mSelectionMgr.getSelection().applyProvisionalSelection();
++        endSelection();
++    }
++
++    // Called when ACTION_CANCEL event is to be handled.
++    // This means this gesture selection is aborted, so reset everything and abandon provisional
++    // selection.
++    private void handleCancelEvent(InputEvent e) {
++        //mSelectionMgr.cancelProvisionalSelection();
++        endSelection();
++    }
++
++    private void endSelection() {
++        assert(mStarted);
++        mLastStartedItemPos = -1;
++        mStarted = false;
++        mLock.unblock();
++    }
++
++    // Call when an intercepted ACTION_MOVE event is passed down.
++    // At this point, we are sure user wants to gesture multi-select.
++    private void handleOnTouchMoveEvent(RecyclerView rv, InputEvent e) {
++        mLastInterceptedPoint = e.getOrigin();
++
++        // If user has moved his pointer to the bottom-right empty pane (ie. to the right of the
++        // last item of the recycler view), we would want to set that as the currentItemPos
++        View lastItem = rv.getLayoutManager()
++                .getChildAt(rv.getLayoutManager().getChildCount() - 1);
++        int direction = rv.getContext().getResources().getConfiguration().getLayoutDirection();
++        final boolean pastLastItem = isPastLastItem(lastItem.getTop(),
++                lastItem.getLeft(),
++                lastItem.getRight(),
++                e,
++                direction);
++
++        // Since views get attached & detached from RecyclerView,
++        // {@link LayoutManager#getChildCount} can return a different number from the actual
++        // number
++        // of items in the adapter. Using the adapter is the for sure way to get the actual last
++        // item position.
++        final float inboundY = getInboundY(rv.getHeight(), e.getY());
++        final int lastGlidedItemPos = (pastLastItem) ? rv.getAdapter().getItemCount() - 1
++                : rv.getChildAdapterPosition(rv.findChildViewUnder(e.getX(), inboundY));
++        if (lastGlidedItemPos != RecyclerView.NO_POSITION) {
++            doGestureMultiSelect(lastGlidedItemPos);
++        }
++        scrollIfNecessary();
++    }
++
++    // It's possible for events to go over the top/bottom of the RecyclerView.
++    // We want to get a Y-coordinate within the RecyclerView so we can find the childView underneath
++    // correctly.
++    private static float getInboundY(float max, float y) {
++        if (y < 0f) {
++            return 0f;
++        } else if (y > max) {
++            return max;
++        }
++        return y;
++    }
++
++    /*
++     * Check to see an InputEvent if past a particular item, i.e. to the right or to the bottom
++     * of the item.
++     * For RTL, it would to be to the left or to the bottom of the item.
++     */
++    @VisibleForTesting
++    static boolean isPastLastItem(int top, int left, int right, InputEvent e, int direction) {
++        if (direction == View.LAYOUT_DIRECTION_LTR) {
++            return e.getX() > right && e.getY() > top;
++        } else {
++            return e.getX() < left && e.getY() > top;
++        }
++    }
++
++    /* Given the end position, select everything in-between.
++     * @param endPos  The adapter position of the end item.
++     */
++    private void doGestureMultiSelect(int endPos) {
++        //mSelectionMgr.snapProvisionalRangeSelection(endPos);
++    }
++
++    private void scrollIfNecessary() {
++        mDragScroller.run();
++    }
++
++    @FunctionalInterface
++    interface ViewFinder {
++        @Nullable View findView(float x, float y);
++    }
++}
+\ No newline at end of file
+diff --git a/src/com/android/documentsui/DSN/selection/DSNSelectionManager.java b/src/com/android/documentsui/DSN/selection/DSNSelectionManager.java
+new file mode 100644
+index 0000000..5cb550c
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/selection/DSNSelectionManager.java
+@@ -0,0 +1,55 @@
++/*
++ * Copyright (C) 2015 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.documentsui.DSN.selection;
++
++import static com.android.documentsui.base.Shared.DEBUG;
++
++import android.annotation.IntDef;
++import android.support.annotation.VisibleForTesting;
++import android.support.v7.widget.RecyclerView;
++import android.util.Log;
++
++import com.android.documentsui.dirlist.DocumentsAdapter;
++
++import java.lang.annotation.Retention;
++import java.lang.annotation.RetentionPolicy;
++import java.util.ArrayList;
++import java.util.List;
++
++import javax.annotation.Nullable;
++
++/**
++ * MultiSelectManager provides support traditional multi-item selection support to RecyclerView.
++ * Additionally it can be configured to restrict selection to a single element, @see
++ * #setSelectMode.
++ */
++public final class DSNSelectionManager {
++
++    public static final int MODE_MULTIPLE = 0;
++    public static final int MODE_SINGLE = 1;
++
++    public static final int RANGE_REGULAR = 0;
++    public static final int RANGE_PROVISIONAL = 1;
++
++    static final String TAG = "DSNSelectionManager";
++
++    private boolean mSingleSelect;
++
++    private RecyclerView.AdapterDataObserver mAdapterObserver;
++
++
++}
+diff --git a/src/com/android/documentsui/base/Shared.java b/src/com/android/documentsui/base/Shared.java
+index dc2277c..3adc571 100644
+--- a/src/com/android/documentsui/base/Shared.java
++++ b/src/com/android/documentsui/base/Shared.java
+@@ -52,8 +52,11 @@ public final class Shared {
+ 
+     public static final String TAG = "Documents";
+ 
+-    public static final boolean DEBUG = Build.IS_DEBUGGABLE;
+-    public static final boolean VERBOSE = DEBUG && Log.isLoggable(TAG, Log.VERBOSE);
++    //public static final boolean DEBUG = Build.IS_DEBUGGABLE;
++   // public static final boolean VERBOSE = DEBUG && Log.isLoggable(TAG, Log.VERBOSE);
++
++    public static final boolean DEBUG = true;
++    public static final boolean VERBOSE = true;
+ 
+     /** Intent action name to pick a copy destination. */
+     public static final String ACTION_PICK_COPY_DESTINATION =
+diff --git a/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java b/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java
+deleted file mode 100644
+index 3e487c8..0000000
+--- a/src/com/android/documentsui/dirlist/DSNDirectoryFragment.java
++++ /dev/null
+@@ -1,291 +0,0 @@
+-package com.android.documentsui.dirlist;
+-
+-import static com.android.documentsui.base.DocumentInfo.getCursorInt;
+-import static com.android.documentsui.base.DocumentInfo.getCursorString;
+-import static com.android.documentsui.base.Shared.DEBUG;
+-import static com.android.documentsui.base.Shared.VERBOSE;
+-import static com.android.documentsui.base.State.MODE_GRID;
+-import static com.android.documentsui.base.State.MODE_LIST;
+-
+-import android.annotation.DimenRes;
+-import android.annotation.FractionRes;
+-import android.annotation.IntDef;
+-import android.app.Activity;
+-import android.app.ActivityManager;
+-import android.app.Fragment;
+-import android.app.FragmentManager;
+-import android.app.FragmentTransaction;
+-import android.app.LoaderManager;
+-import android.content.Context;
+-import android.content.Intent;
+-import android.content.Loader;
+-import android.database.Cursor;
+-import android.net.Uri;
+-import android.os.Build;
+-import android.os.Bundle;
+-import android.os.Handler;
+-import android.os.Parcelable;
+-import android.provider.DocumentsContract;
+-import android.provider.DocumentsContract.Document;
+-import android.support.v4.widget.SwipeRefreshLayout;
+-import android.support.v7.widget.GridLayoutManager;
+-import android.support.v7.widget.GridLayoutManager.SpanSizeLookup;
+-import android.support.v7.widget.RecyclerView;
+-import android.support.v7.widget.RecyclerView.RecyclerListener;
+-import android.support.v7.widget.RecyclerView.ViewHolder;
+-import android.util.Log;
+-import android.util.SparseArray;
+-import android.view.ContextMenu;
+-import android.view.HapticFeedbackConstants;
+-import android.view.LayoutInflater;
+-import android.view.MenuInflater;
+-import android.view.MenuItem;
+-import android.view.MotionEvent;
+-import android.view.View;
+-import android.view.ViewGroup;
+-import android.widget.ImageView;
+-import android.widget.Toast;
+-import android.widget.TextView;
+-
+-
+-import com.android.documentsui.AbstractActionHandler;
+-import com.android.documentsui.ActionHandler;
+-import com.android.documentsui.ActionModeController;
+-import com.android.documentsui.BaseActivity;
+-import com.android.documentsui.BaseActivity.RetainedState;
+-import com.android.documentsui.DirectoryReloadLock;
+-import com.android.documentsui.DocumentsApplication;
+-import com.android.documentsui.FocusManager;
+-import com.android.documentsui.Injector;
+-import com.android.documentsui.Injector.ContentScoped;
+-import com.android.documentsui.Injector.Injected;
+-import com.android.documentsui.Metrics;
+-import com.android.documentsui.Model;
+-import com.android.documentsui.R;
+-import com.android.documentsui.ThumbnailCache;
+-import com.android.documentsui.base.DocumentFilters;
+-import com.android.documentsui.base.DocumentInfo;
+-import com.android.documentsui.base.DocumentStack;
+-import com.android.documentsui.base.EventHandler;
+-import com.android.documentsui.base.EventListener;
+-import com.android.documentsui.base.Events.InputEvent;
+-import com.android.documentsui.base.Events.MotionInputEvent;
+-import com.android.documentsui.base.Features;
+-import com.android.documentsui.base.RootInfo;
+-import com.android.documentsui.base.Shared;
+-import com.android.documentsui.base.State;
+-import com.android.documentsui.base.State.ViewMode;
+-import com.android.documentsui.clipping.ClipStore;
+-import com.android.documentsui.clipping.DocumentClipper;
+-import com.android.documentsui.clipping.UrisSupplier;
+-import com.android.documentsui.dirlist.AnimationView.AnimationType;
+-import com.android.documentsui.picker.PickActivity;
+-import com.android.documentsui.selection.BandController;
+-import com.android.documentsui.selection.GestureSelector;
+-import com.android.documentsui.selection.Selection;
+-import com.android.documentsui.selection.SelectionManager;
+-import com.android.documentsui.selection.SelectionMetadata;
+-import com.android.documentsui.services.FileOperation;
+-import com.android.documentsui.services.FileOperationService;
+-import com.android.documentsui.services.FileOperationService.OpType;
+-import com.android.documentsui.services.FileOperations;
+-import com.android.documentsui.sorting.SortDimension;
+-import com.android.documentsui.sorting.SortModel;
+-import android.support.v7.widget.LinearLayoutManager;
+-import android.widget.LinearLayout;
+-
+-
+-import java.io.IOException;
+-import java.lang.annotation.Retention;
+-import java.lang.annotation.RetentionPolicy;
+-import java.util.List;
+-import java.util.ArrayList;
+-
+-
+-import javax.annotation.Nullable;
+-import com.android.documentsui.DSNObjectMeta;
+-import com.android.documentsui.DSNObjectMetaLoader;
+-import com.android.documentsui.httpnetwork.HttpServer;
+-import com.android.documentsui.httpnetwork.*;
+-
+-import com.fasterxml.jackson.core.type.TypeReference;
+-import com.fasterxml.jackson.databind.ObjectMapper;
+-import com.android.documentsui.httpnetwork.Networks;
+-import com.android.documentsui.widget.AVLoadingIndicatorView;
+-
+-
+-import java.util.Collections;
+-import java.util.HashMap;
+-import java.util.LinkedHashMap;
+-import java.util.Map;
+-import java.util.concurrent.TimeUnit;
+-import android.util.Log;
+-import android.view.Menu;
+-
+-
+-import rx.Completable;
+-import rx.Observable;
+-import rx.Observer;
+-import rx.android.schedulers.AndroidSchedulers;
+-import rx.schedulers.Schedulers;
+-
+-
+-public class DSNDirectoryFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
+-
+-    protected BaseActivity mActivity;
+-    protected View mProgressBar;
+-    protected RecyclerView mRecView;
+-    protected SwipeRefreshLayout mRefreshLayout;
+-    @Injected
+-    @ContentScoped
+-    protected Injector<?> mInjector;
+-    protected State mState;
+-    protected Model mModel;
+-    protected final Runnable mOnDisplayStateChanged = this::onDisplayStateChanged;
+-    protected DocumentClipper mClipper;
+-    protected @Nullable DragHoverListener mDragHoverListener;
+-    protected IconHelper mIconHelper;
+-    private DSNModelObjectMetaAdapter mDSNModelObjectMetaAdapter;
+-    private MenuItem mMenuItem;
+-    private String ACOUNT_ID ;
+-    private AVLoadingIndicatorView avi;
+-    private AnimationView mAnimationView;
+-
+-
+-    protected LinearLayout mLinearLayout;
+-
+-
+-    public DSNDirectoryFragment() {
+-        super();
+-    }
+-
+-    @Override
+-    public View onCreateView(
+-            LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+-
+-        mActivity = (BaseActivity) getActivity();
+-        final View view = inflater.inflate(R.layout.fragment_dsn_directory, container, false);
+-
+-
+-        //mProgressBar = view.findViewById(R.id.progressbar);
+-        //assert(mProgressBar != null);
+-        //mProgressBar.setVisibility(View.VISIBLE);
+-
+-        avi= (AVLoadingIndicatorView) view.findViewById(R.id.avi);
+-        avi.setIndicator("BallSpinFadeLoaderIndicator");
+-        avi.show();
+-
+-        mAnimationView = (AnimationView)view.findViewById(R.id.animationview);
+-
+-
+-        mRecView = (RecyclerView) view.findViewById(R.id.dir_list);
+-
+-        mRecView.setRecyclerListener(
+-                new RecyclerListener() {
+-                    @Override
+-                    public void onViewRecycled(ViewHolder holder) {
+-                        cancelThumbnailTask(holder.itemView);
+-                    }
+-                });
+-        mIconHelper = new IconHelper(mActivity, MODE_GRID);
+-
+-        mRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.refresh_layout);
+-        mRefreshLayout.setOnRefreshListener(this);
+-        mRecView.setItemAnimator(new DirectoryItemAnimator(mActivity));
+-
+-        mInjector = mActivity.getInjector();
+-        mModel = mInjector.getModel();
+-        mModel.reset();
+-        mDSNModelObjectMetaAdapter = new DSNModelObjectMetaAdapter(this,getContext());
+-        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+-
+-        mRecView.setLayoutManager(layoutManager);
+-        mRecView.setAdapter(mDSNModelObjectMetaAdapter);
+-
+-        mInjector.actions.registerDisplayStateChangedListener(mOnDisplayStateChanged);
+-
+-        mClipper = DocumentsApplication.getDocumentClipper(getContext());
+-        // Make the recycler and the empty views responsive to drop events when allowed.
+-        mRecView.setOnDragListener(mDragHoverListener);
+-        setHasOptionsMenu(true);
+-        ACOUNT_ID = DocumentsApplication.getAccountStr(getContext());
+-        return view;
+-    }
+-
+-    @Override
+-    public void onStart() {
+-        super.onStart();
+-        mDSNModelObjectMetaAdapter.clearDNSModels();
+-        onStartNetworkRequest();
+-
+-    }
+-    @Override
+-    public void onResume(){
+-        super.onStart();
+-        mLinearLayout = mActivity.findViewById(R.id.dropdown_sort_widget);
+-        mLinearLayout.setVisibility(View.GONE);
+-    }
+-    @Override
+-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater){
+-        super.onCreateOptionsMenu(menu, inflater);
+-
+-    }
+-    @Override
+-    public void onPrepareOptionsMenu(Menu menu) {
+-        super.onPrepareOptionsMenu(menu);
+-        menu.setGroupVisible(R.id.group_hide_when_searching, false);
+-        mMenuItem = menu.findItem(R.id.option_menu_search);
+-                menu.setGroupVisible(R.id.group_hide_when_searching, false);
+-    }
+-
+-    @Override
+-    public void onRefresh() {
+-        mRefreshLayout.setRefreshing(false);
+-    }
+-    private void onDisplayStateChanged() {
+-    }
+-    protected void cancelThumbnailTask(View view) {
+-        final ImageView iconThumb = (ImageView) view.findViewById(R.id.icon_thumb);
+-        if (iconThumb != null) {
+-            mIconHelper.stopLoading(iconThumb);
+-        }
+-    }
+-
+-    private void onStartNetworkRequest(){
+-        Networks.getInstance().gethttpIpfsApi()
+-                    .getDataFromIpfsCloud(ACOUNT_ID)
+-                    .subscribeOn(Schedulers.io())
+-                    .observeOn(AndroidSchedulers.mainThread())
+-                    .subscribe(new Observer<ApiRespResult>() {
+-                        @Override
+-                        public void onCompleted() {
+-                        }
+-                        @Override
+-                        public void onError(Throwable throwable) {
+-                            throwable.printStackTrace();
+-                        }
+-                        @Override
+-                        public void onNext(ApiRespResult apr) {
+-                            if (apr.getResult() == 0 && apr.getData().containsKey(ApiConst.PARAM_QUOTES)) {
+-                                ObjectMapper objectMapper = new ObjectMapper();
+-                                try {
+-                                    List<ObjectMeta> objectlist = objectMapper.readValue(objectMapper.writeValueAsString(apr.getData().get(ApiConst.PARAM_QUOTES)), new TypeReference<List<ObjectMeta>>() {});
+-                                    ObjectMeta tmpobj = objectlist.get(0);
+-                                    for(ObjectMeta objectMeta: objectlist)
+-                                       mDSNModelObjectMetaAdapter.addDNSModelsObjectMeta(objectMeta);
+-
+-                                } catch (IOException e1) {
+-                                    e1.printStackTrace();
+-                                }
+-                                 mAnimationView.setVisibility(View.VISIBLE);
+-                                 mDSNModelObjectMetaAdapter.notifyDataSetChanged();
+-                            } else {
+-                            }
+-
+-                       }
+-
+-           });
+-
+-    }
+-
+-}
+diff --git a/src/com/android/documentsui/dirlist/DSNModelObjectMetaAdapter.java b/src/com/android/documentsui/dirlist/DSNModelObjectMetaAdapter.java
+deleted file mode 100644
+index 836b144..0000000
+--- a/src/com/android/documentsui/dirlist/DSNModelObjectMetaAdapter.java
++++ /dev/null
+@@ -1,154 +0,0 @@
+-/*
+- * Copyright (C) 2015 The Android Open Source Project
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
+-
+-package com.android.documentsui.dirlist;
+-
+-import static com.android.documentsui.base.DocumentInfo.getCursorInt;
+-import static com.android.documentsui.base.DocumentInfo.getCursorString;
+-import static com.android.documentsui.base.State.MODE_GRID;
+-import static com.android.documentsui.base.State.MODE_LIST;
+-
+-import android.database.Cursor;
+-import android.provider.DocumentsContract.Document;
+-import android.util.Log;
+-import android.view.ViewGroup;
+-
+-import com.android.documentsui.Model;
+-import com.android.documentsui.base.EventListener;
+-import com.android.documentsui.base.Lookup;
+-import com.android.documentsui.base.State;
+-import com.android.documentsui.Model.Update;
+-
+-import java.util.ArrayList;
+-import java.util.List;
+-import java.util.Iterator;
+-
+-import android.text.format.Formatter;
+-import android.support.v7.widget.RecyclerView;
+-import com.android.documentsui.R;
+-import android.widget.TextView;
+-import android.widget.ImageView;
+-import android.view.View;
+-import android.support.v7.widget.LinearLayoutManager;
+-import android.view.LayoutInflater;
+-import android.support.v7.widget.LinearLayoutManager;
+-import android.graphics.Color;
+-import com.android.documentsui.httpnetwork.ObjectMeta;
+-import android.content.Intent;
+-import com.android.documentsui.base.Shared;
+-import android.net.Uri;
+-import android.app.Activity;
+-import android.content.Context;
+-import android.app.Fragment;
+-import com.android.documentsui.files.DSNFilesActivity;
+-
+-
+-
+-/**
+- * Adapts from dirlist.Model to something RecyclerView understands.
+- */
+-final class DSNModelObjectMetaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+-        public List<ObjectMeta> mDSNModel = new ArrayList();
+-        private Fragment mfragment;
+-        private Context  mContext;
+-
+-        @Override
+-        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+-            View rootView = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_item_dsn, parent, false);
+-
+-            return new DSNModelObjectMetaAdapter.ItemViewHolder(rootView);
+-        }
+-        public DSNModelObjectMetaAdapter(Fragment fragment, Context context) {
+-            mfragment = fragment;
+-            mContext = context;
+-        }
+-
+-        @Override
+-        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+-            DSNModelObjectMetaAdapter.ItemViewHolder itemViewHolder = (DSNModelObjectMetaAdapter.ItemViewHolder) holder;
+-            ObjectMeta mObjectMeta = mDSNModel.get(position);
+-            setData(itemViewHolder, mObjectMeta);
+-            itemViewHolder.itemView.setOnClickListener(new View.OnClickListener() {
+-                @Override public void onClick(View v) {
+-                    Log.e("XULU_LOG","onBindViewHolder"+position);
+-                    Intent intent = new Intent(mfragment.getActivity(),DSNFilesActivity.class);
+-                    intent.putExtra("DSNObjectMeta", mDSNModel.get(position));
+-                    mfragment.startActivity(intent);
+-                }
+-            });
+-       }
+-
+-        public void addDNSModelsObjectMeta(ObjectMeta objectMeta) {
+-               mDSNModel.add(objectMeta);
+-        }
+-        public void clearDNSModels() {
+-            mDSNModel.removeAll(mDSNModel);
+-        }
+-         /**
+-         * return Item object
+-         */
+-        @Override
+-        public long getItemId(int position) {
+-             return position;
+-        }
+-
+-        /**
+-         * set account view
+-         */
+-        private void setData(DSNModelObjectMetaAdapter.ItemViewHolder holder, final ObjectMeta Meta) {
+-            if (Meta == null) {
+-                return ;
+-            }
+-            holder.tvDSNShoreName.setText(Meta.getobjectname());
+-            holder.tvDSNDate.setText(Meta.getobjectsynctime());
+-            if (Meta.getobjectsize() > -1) {
+-                holder.tvDSNSize.setVisibility(View.VISIBLE);
+-                holder.tvDSNSize.setText(Formatter.formatFileSize(mContext, Meta.getobjectsize()));
+-            } else {
+-                holder.tvDSNSize.setVisibility(View.INVISIBLE);
+-            }
+-            if(Meta.getmimetype().contains("text")){
+-                holder.ivDSNIcon.setImageResource(R.drawable.ic_lable_txt);
+-            }else if(Meta.getmimetype().contains("jpeg")){
+-                holder.ivDSNIcon.setImageResource(R.drawable.ic_lable_jpg);
+-            }else if(Meta.getmimetype().contains("zip")){
+-                holder.ivDSNIcon.setImageResource(R.drawable.ic_lable_zip);
+-            }
+-
+-        }
+-
+-        @Override
+-        public int getItemCount() {
+-            return mDSNModel.size();
+-        }
+-
+-        class ItemViewHolder extends RecyclerView.ViewHolder {
+-            ImageView ivDSNIcon;
+-            TextView tvDSNShoreName;
+-            TextView tvDSNDate;
+-            TextView tvDSNSize;
+-
+-            ItemViewHolder(View itemView) {
+-                super(itemView);
+-                ivDSNIcon = itemView.findViewById(R.id.iv_dsn_icon);
+-                tvDSNShoreName = itemView.findViewById(R.id.tv_dsn_short_name);
+-                tvDSNDate = itemView.findViewById(R.id.tv_dsn_date);
+-                tvDSNSize = itemView.findViewById(R.id.tv_dsn_size);
+-
+-        }
+-   }
+-}
+-
+diff --git a/src/com/android/documentsui/dirlist/DirectoryFragment.java b/src/com/android/documentsui/dirlist/DirectoryFragment.java
+index c33e89f..584559e 100644
+--- a/src/com/android/documentsui/dirlist/DirectoryFragment.java
++++ b/src/com/android/documentsui/dirlist/DirectoryFragment.java
+@@ -110,6 +110,8 @@ import java.util.List;
+ 
+ import javax.annotation.Nullable;
+ 
++import com.android.documentsui.DSN.dirlist.DSNDirectoryFragment;
++
+ /**
+  * Display the documents inside a single directory.
+  */
+diff --git a/src/com/android/documentsui/dirlist/ListeningGestureDetector.java b/src/com/android/documentsui/dirlist/ListeningGestureDetector.java
+index cc81d3f..445ac4d 100644
+--- a/src/com/android/documentsui/dirlist/ListeningGestureDetector.java
++++ b/src/com/android/documentsui/dirlist/ListeningGestureDetector.java
+@@ -95,6 +95,7 @@ final class ListeningGestureDetector extends GestureDetector implements OnItemTo
+     @Override
+     public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
+         boolean handled = false;
++        Log.d("XULU_LOG",TAG+"/onInterceptTouchEvent/");
+ 
+         // TODO: Re-wire event handling so that we're not dispatching
+         //     events to to scaledetector's #onTouchEvent from this
+@@ -128,13 +129,14 @@ final class ListeningGestureDetector extends GestureDetector implements OnItemTo
+         // Forward all events to UserInputHandler.
+         // This is necessary since UserInputHandler needs to always see the first DOWN event. Or
+         // else all future UP events will be tossed.
++        Log.d("XULU_LOG",TAG+"/onInterceptTouchEvent/"+ String.valueOf(e.getAction() & MotionEvent.ACTION_MASK));
+         handled |= onTouchEvent(e);
+-
+         return handled;
+     }
+ 
+     @Override
+     public void onTouchEvent(RecyclerView rv, MotionEvent e) {
++            Log.d("XULU_LOG",TAG+"/onTouchEvent/");
+         try (InputEvent event = MotionInputEvent.obtain(e, rv)) {
+             if (Events.isMouseEvent(e)) {
+                 mMouseDelegate.onTouchEvent(event);
+diff --git a/src/com/android/documentsui/dirlist/UserInputHandler.java b/src/com/android/documentsui/dirlist/UserInputHandler.java
+index f33284b..c290ce4 100644
+--- a/src/com/android/documentsui/dirlist/UserInputHandler.java
++++ b/src/com/android/documentsui/dirlist/UserInputHandler.java
+@@ -194,6 +194,7 @@ public final class UserInputHandler<T extends InputEvent>
+         mSelectionMgr.toggleSelection(doc.getModelId());
+         mSelectionMgr.setSelectionRangeBegin(doc.getAdapterPosition());
+ 
++        Log.d("XULU_LOG",TAG+"/selectDocument/"+mSelectionMgr.getSelection().size());
+         // we set the focus on this doc so it will be the origin for keyboard events or shift+clicks
+         // if there is only a single item selected, otherwise clear focus
+         if (mSelectionMgr.getSelection().size() == 1) {
+@@ -303,6 +304,7 @@ public final class UserInputHandler<T extends InputEvent>
+                     selectDocument(doc);
+                     // If we cannot select it, we didn't apply anchoring - therefore should not
+                     // start gesture selection
++
+                     if (mSelectable.test(doc)) {
+                         mGestureSelectHandler.accept(event);
+                         handled = true;
+diff --git a/src/com/android/documentsui/files/DSNFilesActivity.java b/src/com/android/documentsui/files/DSNFilesActivity.java
+index 7f09755..e111c8f 100644
+--- a/src/com/android/documentsui/files/DSNFilesActivity.java
++++ b/src/com/android/documentsui/files/DSNFilesActivity.java
+@@ -308,10 +308,10 @@ public class DSNFilesActivity extends AppCompatActivity  {
+         DirectoryFragment dir;
+         switch (item.getItemId()) {
+             case R.id.option_menu_delete:
+-                Log.d("XULU_LOG","onOptionsItemSelected detele");
+-                Intent intent = new Intent(this,DSNFilesActivity.class);
+-                intent.putExtra("DSNObjectMeta", mObjectMeta);
+-                this.startActivity(intent);
++                //Log.d("XULU_LOG","onOptionsItemSelected detele");
++                //Intent intent = new Intent(this,DSNFilesActivity.class);
++                //intent.putExtra("DSNObjectMeta", mObjectMeta);
++                //this.startActivity(intent);
+                 break;
+             case R.id.option_menu_download:
+                 Log.d("XULU_LOG","onOptionsItemSelected download");
+diff --git a/src/com/android/documentsui/files/FilesActivity.java b/src/com/android/documentsui/files/FilesActivity.java
+index 95f58bb..77519f6 100644
+--- a/src/com/android/documentsui/files/FilesActivity.java
++++ b/src/com/android/documentsui/files/FilesActivity.java
+@@ -67,7 +67,6 @@ import com.android.documentsui.ui.MessageBuilder;
+ import java.util.ArrayList;
+ import java.util.List;
+ 
+-import com.android.documentsui.dirlist.DSNDirectoryFragment;
+ 
+ /**
+  * Standalone file management activity.
+diff --git a/src/com/android/documentsui/httpnetwork/HttpServer.java b/src/com/android/documentsui/httpnetwork/HttpServer.java
+index 88c630c..958b4cc 100644
+--- a/src/com/android/documentsui/httpnetwork/HttpServer.java
++++ b/src/com/android/documentsui/httpnetwork/HttpServer.java
+@@ -22,7 +22,6 @@ import rx.Observer;
+ import rx.android.schedulers.AndroidSchedulers;
+ import rx.schedulers.Schedulers;
+ import com.android.documentsui.httpnetwork.ObjectMeta;
+-import com.android.documentsui.dirlist.DSNDirectoryFragment;
+ 
+ 
+ public class HttpServer extends BaseService{
+-- 
+2.7.4
+
