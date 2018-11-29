@@ -1,0 +1,27 @@
+From ee40ff798a403797a6c34e5244e571efce1c608b Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Fri, 2 Nov 2018 14:39:56 +0800
+Subject: [PATCH] PRODUCT_PACKAGES: add UnifiedNlpApi and MPermissionHelper
+
+Change-Id: Ie0a1e0c2f4ffe0014634b25eea4ae4583097c584
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ target/product/core.mk | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/target/product/core.mk b/target/product/core.mk
+index 804aded..1306ca4 100644
+--- a/target/product/core.mk
++++ b/target/product/core.mk
+@@ -71,6 +71,8 @@ PRODUCT_PACKAGES += \
+     FakeStore \
+     NominatimNlpBackend \
+     IchnaeaNlpBackend \
++    UnifiedNlpApi \
++    MPermissionHelper \
+     WalletServer
+ 
+ # The set of packages whose code can be loaded by the system server.
+-- 
+2.7.4
+

@@ -1,0 +1,28 @@
+From 35938300de85d7e7abe24caf5b122abaf9bb9e78 Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Fri, 2 Nov 2018 17:45:58 +0800
+Subject: [PATCH] PRODUCT_PACKAGES: add BrahmaToolbox
+
+Change-Id: I61483d27c31560c532fa2f9b275fb267208d82b8
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ target/product/core.mk | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/target/product/core.mk b/target/product/core.mk
+index 1306ca4..8022f99 100644
+--- a/target/product/core.mk
++++ b/target/product/core.mk
+@@ -73,7 +73,8 @@ PRODUCT_PACKAGES += \
+     IchnaeaNlpBackend \
+     UnifiedNlpApi \
+     MPermissionHelper \
+-    WalletServer
++    WalletServer \
++    BrahmaToolbox
+ 
+ # The set of packages whose code can be loaded by the system server.
+ PRODUCT_SYSTEM_SERVER_APPS += \
+-- 
+2.7.4
+
