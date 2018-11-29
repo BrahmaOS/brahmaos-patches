@@ -1,0 +1,40 @@
+From 27eca1400b16d600fb27c43ed66a3813e926814b Mon Sep 17 00:00:00 2001
+From: martin <martin@163.com>
+Date: Wed, 14 Nov 2018 15:14:11 +0800
+Subject: [PATCH] Remove add account button when first entry or no contacts.
+
+Change-Id: Ifa56c94829f753767d78db72bc60320d28c9ef22
+---
+ src/com/android/contacts/editor/RawContactEditorView.java      | 3 ++-
+ src/com/android/contacts/list/ContactsUnavailableFragment.java | 1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/com/android/contacts/editor/RawContactEditorView.java b/src/com/android/contacts/editor/RawContactEditorView.java
+index 013dd78..42cb850 100644
+--- a/src/com/android/contacts/editor/RawContactEditorView.java
++++ b/src/com/android/contacts/editor/RawContactEditorView.java
+@@ -900,7 +900,8 @@ public class RawContactEditorView extends LinearLayout implements View.OnClickLi
+ 
+         if (Phone.CONTENT_ITEM_TYPE.equals(mimeType)
+                 || Email.CONTENT_ITEM_TYPE.equals(mimeType)
+-                || EthereumAccountAddress.CONTENT_ITEM_TYPE.equals(mimeType)) {
++                || EthereumAccountAddress.CONTENT_ITEM_TYPE.equals(mimeType)
++                || BitcoinAccountAddress.CONTENT_ITEM_TYPE.equals(mimeType)) {
+             // Phone numbers, email addresses, ethereum and bitcoin account are always displayed,
+             // even if they are empty
+             kindSectionView.setHideWhenEmpty(false);
+diff --git a/src/com/android/contacts/list/ContactsUnavailableFragment.java b/src/com/android/contacts/list/ContactsUnavailableFragment.java
+index c13e475..2fb982d 100644
+--- a/src/com/android/contacts/list/ContactsUnavailableFragment.java
++++ b/src/com/android/contacts/list/ContactsUnavailableFragment.java
+@@ -149,6 +149,7 @@ public class ContactsUnavailableFragment extends Fragment implements OnClickList
+             mAddAccountButton.setVisibility(visibility);
+             mImportContactsButton.setVisibility(visibility);
+         }
++        mAddAccountButton.setVisibility(View.GONE);
+     }
+ 
+     @Override
+-- 
+2.7.4
+

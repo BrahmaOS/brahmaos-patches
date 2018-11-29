@@ -1,0 +1,506 @@
+From eb8f959b074fb3174f9c70f783209bd3ffa42948 Mon Sep 17 00:00:00 2001
+From: martin <martin@163.com>
+Date: Tue, 13 Nov 2018 10:42:20 +0800
+Subject: [PATCH] Add ethereum and bitcoin field.
+
+Change-Id: If44668f644301b022751a1da706408e9c46b7449
+---
+ README.md                                          | 17 +++++++++
+ res/drawable/quantum_ic_bitcoin_vd_theme_24.xml    | 24 +++++++++++++
+ res/drawable/quantum_ic_ethereum_vd_theme_24.xml   | 41 ++++++++++++++++++++++
+ res/values-zh-rCN/strings.xml                      |  2 ++
+ res/values/strings.xml                             |  8 +++++
+ .../ContactEditorAccountsChangedActivity.java      | 33 +++--------------
+ .../contacts/editor/ContactEditorFragment.java     |  2 +-
+ src/com/android/contacts/editor/EditorUiUtils.java |  9 ++++-
+ .../contacts/editor/RawContactEditorView.java      | 34 ++++++++++--------
+ .../android/contacts/model/RawContactModifier.java | 24 +++++++++++++
+ .../contacts/model/account/AccountType.java        |  2 ++
+ .../contacts/model/account/BaseAccountType.java    | 30 ++++++++++++++++
+ .../model/account/ExchangeAccountType.java         |  2 ++
+ .../model/account/FallbackAccountType.java         |  2 ++
+ .../contacts/model/account/GoogleAccountType.java  |  2 ++
+ 15 files changed, 187 insertions(+), 45 deletions(-)
+ create mode 100644 README.md
+ create mode 100644 res/drawable/quantum_ic_bitcoin_vd_theme_24.xml
+ create mode 100644 res/drawable/quantum_ic_ethereum_vd_theme_24.xml
+
+diff --git a/README.md b/README.md
+new file mode 100644
+index 0000000..d8182a0
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1,17 @@
++# Brahma Contacts
++
++Brahma Contacts supply basic feature of contacts.
++
++## Support
++
++If you've found an error in this sample, please file an issue: https://github.com/BrahmaOS/brahmaos-packages-apps-Contacts/issues
++
++## License
++
++Copyright 2018 BRAHMACARIYA FOUNDATION LTD.
++
++Licensed to the Apache Software Foundation (ASF) under one or more contributor license agreements. See the NOTICE file distributed with this work for additional information regarding copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
++
++http://www.apache.org/licenses/LICENSE-2.0
++
++Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+diff --git a/res/drawable/quantum_ic_bitcoin_vd_theme_24.xml b/res/drawable/quantum_ic_bitcoin_vd_theme_24.xml
+new file mode 100644
+index 0000000..567250d
+--- /dev/null
++++ b/res/drawable/quantum_ic_bitcoin_vd_theme_24.xml
+@@ -0,0 +1,24 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Copyright (C) 2016 The Android Open Source Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++        android:width="24dp"
++        android:height="24dp"
++        android:viewportWidth="1024.0"
++        android:viewportHeight="1024.0"
++        android:tint="?attr/colorControlNormal">
++    <path android:fillColor="#F7931A" android:pathData="M1008.53,635.91c-68.35,274.33 -346.14,441.17 -620.43,372.73C113.93,940.8 -53.08,662.41 15.47,388.49 83.72,113.94 361.6,-53 635.74,15.28c274.33,68.48 441.24,346.23 372.82,620.69v-0.1zM737.63,439.08c10.24,-67.84 -41.57,-104.54 -112.64,-129.28l23.04,-91.87 -56.1,-14.08 -22.4,89.89c-14.72,-3.71 -30.08,-7.14 -45.41,-10.66l22.43,-90.75 -56.32,-14.08 -23.04,92.38c-12.16,-2.85 -24.1,-5.63 -35.84,-8.54l-77.44,-19.2 -14.94,60.03s41.6,9.6 40.74,10.08c22.82,5.79 26.88,20.74 26.24,32.67l-63.01,252.57c-3.2,7.07 -10.24,17.31 -26.21,13.41 0.64,0.86 -40.96,-10.24 -40.96,-10.24l-28.16,64.42 72.96,18.17 39.68,10.34 -23.04,93.44 56.32,13.95 23.04,-92.57c15.36,4.26 30.08,8.1 44.8,11.65l-21.76,91.9 56.32,14.08 23.26,-93.44c95.58,18.21 167.68,10.98 197.98,-75.68 24.32,-69.85 -1.28,-110.08 -51.94,-136.35 36.45,-8.22 64,-32.42 71.68,-82.33h0.42zM609.18,619.14c-17.25,69.98 -134.68,32 -172.8,22.62l30.72,-123.74c38.24,9.82 160.29,28.58 142.08,101.12zM626.69,438.25c-15.78,63.58 -113.57,31.36 -145.28,23.45l27.9,-112.64c31.74,7.68 133.85,22.37 117.34,88.93v0.26z"/>
++</vector>
+diff --git a/res/drawable/quantum_ic_ethereum_vd_theme_24.xml b/res/drawable/quantum_ic_ethereum_vd_theme_24.xml
+new file mode 100644
+index 0000000..9074c81
+--- /dev/null
++++ b/res/drawable/quantum_ic_ethereum_vd_theme_24.xml
+@@ -0,0 +1,41 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++        android:width="128dp"
++        android:height="128dp"
++        android:viewportWidth="1024"
++        android:viewportHeight="1024"
++        android:tint="?attr/colorControlNormal">
++    <path
++        android:pathData="M512,764.06v259.06l321.21,-447.23z"
++        android:fillColor="#343434"/>
++    <path
++        android:pathData="M512,764.06L190.79,575.89 512,1024z"
++        android:fillColor="#8C8C8C"/>
++    <path
++        android:pathData="M827.95,530.38l-315.95,-527.75V386.84z"
++        android:fillColor="#343434"/>
++    <path
++        android:pathData="M512,386.84v333.45l315.08,-190.79z"
++        android:fillColor="#151515"/>
++    <path
++        android:pathData="M196.92,529.5l315.08,190.79v-334.33z"
++        android:fillColor="#393939"/>
++    <path
++        android:pathData="M511.99,385.97V0l-315.95,530.38z"
++        android:fillColor="#8C8C8C"/>
++</vector>
+diff --git a/res/values-zh-rCN/strings.xml b/res/values-zh-rCN/strings.xml
+index f6e7a3a..d10c082 100644
+--- a/res/values-zh-rCN/strings.xml
++++ b/res/values-zh-rCN/strings.xml
+@@ -343,6 +343,8 @@
+     <string name="ghostData_company" msgid="5414421120553765775">"公司"</string>
+     <string name="ghostData_title" msgid="7496735200318496110">"职位"</string>
+     <string name="label_notes" msgid="8337354953278341042">"备注"</string>
++    <string name="label_ethereum_account_address">"以太坊帐号地址"</string>
++    <string name="label_bitcoin_account_address">"比特币帐号地址"</string>
+     <string name="label_custom_field" msgid="1994056912242214426">"自定义"</string>
+     <string name="label_sip_address" msgid="7252153678613978127">"SIP"</string>
+     <string name="websiteLabelsGroup" msgid="4202998982804009261">"网站"</string>
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index 1ea9708..05206f5 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -980,6 +980,14 @@
+          about a contact -->
+     <string name="label_notes">Notes</string>
+ 
++    <!-- The label describing the EthereumAccountAddress field of a contact. This field allows free form text entry
++         about a contact -->
++    <string name="label_ethereum_account_address">Ethereum account address</string>
++
++    <!-- The label describing the BitcoinAccountAddress field of a contact. This field allows free form text entry
++         about a contact -->
++    <string name="label_bitcoin_account_address">Bitcoin account address</string>
++
+     <!-- The label describing the custom field of a contact. [CHAR LIMIT=20] -->
+     <string name="label_custom_field">Custom</string>
+ 
+diff --git a/src/com/android/contacts/activities/ContactEditorAccountsChangedActivity.java b/src/com/android/contacts/activities/ContactEditorAccountsChangedActivity.java
+index dea134b..1b0cd3d 100644
+--- a/src/com/android/contacts/activities/ContactEditorAccountsChangedActivity.java
++++ b/src/com/android/contacts/activities/ContactEditorAccountsChangedActivity.java
+@@ -170,34 +170,11 @@ public class ContactEditorAccountsChangedActivity extends Activity
+                 }
+             });
+         } else {
+-            // If the user has 0 writable accounts, we will just show the user a message with 2
+-            // possible action buttons.
+-            view = View.inflate(this,
+-                    R.layout.contact_editor_accounts_changed_activity_with_text, null);
+-
+-            final TextView textView = (TextView) view.findViewById(R.id.text);
+-            final Button leftButton = (Button) view.findViewById(R.id.left_button);
+-            final Button rightButton = (Button) view.findViewById(R.id.right_button);
+-
+-            textView.setText(getString(R.string.contact_editor_prompt_zero_accounts));
+-
+-            // This button allows the user to continue editing the contact as a phone-only
+-            // local contact.
+-            leftButton.setText(getString(android.R.string.cancel));
+-            leftButton.setOnClickListener(new OnClickListener() {
+-                @Override
+-                public void onClick(View v) {
+-                    // Remember that the user wants to create local contacts, so the user is not
+-                    // prompted again with this activity.
+-                    saveAccountAndReturnResult(AccountWithDataSet.getNullAccount());
+-                    finish();
+-                }
+-            });
+-
+-            // This button allows the user to add a new account to the device and return to
+-            // this app afterwards.
+-            rightButton.setText(getString(R.string.add_account));
+-            rightButton.setOnClickListener(mAddAccountClickListener);
++            // Remember that the user wants to create local contacts, so the user is not
++            // prompted again with this activity.
++            saveAccountAndReturnResult(AccountWithDataSet.getNullAccount());
++            finish();
++            return;
+         }
+ 
+         if (mDialog != null && mDialog.isShowing()) {
+diff --git a/src/com/android/contacts/editor/ContactEditorFragment.java b/src/com/android/contacts/editor/ContactEditorFragment.java
+index da68ec6..cfde498 100644
+--- a/src/com/android/contacts/editor/ContactEditorFragment.java
++++ b/src/com/android/contacts/editor/ContactEditorFragment.java
+@@ -520,7 +520,7 @@ public class ContactEditorFragment extends Fragment implements
+ 
+         final View view = inflater.inflate(
+                 R.layout.contact_editor_fragment, container, false);
+-        mContent = (LinearLayout) view.findViewById(R.id.raw_contacts_editor_view);
++        mContent = view.findViewById(R.id.raw_contacts_editor_view);
+         return view;
+     }
+ 
+diff --git a/src/com/android/contacts/editor/EditorUiUtils.java b/src/com/android/contacts/editor/EditorUiUtils.java
+index 9aa5c8e..ad596c4 100644
+--- a/src/com/android/contacts/editor/EditorUiUtils.java
++++ b/src/com/android/contacts/editor/EditorUiUtils.java
+@@ -29,6 +29,8 @@ import android.graphics.drawable.Drawable;
+ import android.media.RingtoneManager;
+ import android.net.Uri;
+ import android.os.Build;
++import android.provider.ContactsContract.CommonDataKinds.EthereumAccountAddress;
++import android.provider.ContactsContract.CommonDataKinds.BitcoinAccountAddress;
+ import android.provider.ContactsContract.CommonDataKinds.Email;
+ import android.provider.ContactsContract.CommonDataKinds.Event;
+ import android.provider.ContactsContract.CommonDataKinds.Im;
+@@ -109,7 +111,6 @@ public class EditorUiUtils {
+         return id;
+     }
+ 
+-
+     public static String getAccountHeaderLabelForMyProfile(Context context,
+             AccountInfo accountInfo) {
+         if (accountInfo.isDeviceAccount()) {
+@@ -194,6 +195,12 @@ public class EditorUiUtils {
+             case Relation.CONTENT_ITEM_TYPE:
+                 return ResourcesCompat.getDrawable(context.getResources(),
+                         R.drawable.quantum_ic_circles_ext_vd_theme_24, null);
++            case EthereumAccountAddress.CONTENT_ITEM_TYPE:
++                return ResourcesCompat.getDrawable(context.getResources(),
++                        R.drawable.quantum_ic_ethereum_vd_theme_24, null);
++            case BitcoinAccountAddress.CONTENT_ITEM_TYPE:
++                return ResourcesCompat.getDrawable(context.getResources(),
++                        R.drawable.quantum_ic_bitcoin_vd_theme_24, null);
+             default:
+                 return null;
+         }
+diff --git a/src/com/android/contacts/editor/RawContactEditorView.java b/src/com/android/contacts/editor/RawContactEditorView.java
+index 7c61f64..df6cd7c 100644
+--- a/src/com/android/contacts/editor/RawContactEditorView.java
++++ b/src/com/android/contacts/editor/RawContactEditorView.java
+@@ -24,6 +24,8 @@ import android.net.Uri;
+ import android.os.Bundle;
+ import android.os.Parcel;
+ import android.os.Parcelable;
++import android.provider.ContactsContract.CommonDataKinds.EthereumAccountAddress;
++import android.provider.ContactsContract.CommonDataKinds.BitcoinAccountAddress;
+ import android.provider.ContactsContract.CommonDataKinds.Email;
+ import android.provider.ContactsContract.CommonDataKinds.Event;
+ import android.provider.ContactsContract.CommonDataKinds.GroupMembership;
+@@ -133,6 +135,8 @@ public class RawContactEditorView extends LinearLayout implements View.OnClickLi
+                 Nickname.CONTENT_ITEM_TYPE,
+                 Organization.CONTENT_ITEM_TYPE,
+                 Phone.CONTENT_ITEM_TYPE,
++                EthereumAccountAddress.CONTENT_ITEM_TYPE,
++                BitcoinAccountAddress.CONTENT_ITEM_TYPE,
+                 SipAddress.CONTENT_ITEM_TYPE,
+                 Email.CONTENT_ITEM_TYPE,
+                 StructuredPostal.CONTENT_ITEM_TYPE,
+@@ -583,19 +587,19 @@ public class RawContactEditorView extends LinearLayout implements View.OnClickLi
+         final AccountType accountType = mCurrentRawContactDelta.getAccountType(mAccountTypeManager);
+         final List<DataKind> dataKinds = accountType.getSortedDataKinds();
+         final int dataKindSize = dataKinds == null ? 0 : dataKinds.size();
+-        if (Log.isLoggable(TAG, Log.VERBOSE)) {
+-            Log.v(TAG, "parse: " + dataKindSize + " dataKinds(s)");
+-        }
++//        if (Log.isLoggable(TAG, Log.DEBUG)) {
++            Log.d(TAG, "parse: " + dataKindSize + " dataKinds(s)");
++//        }
+ 
+         for (int i = 0; i < dataKindSize; i++) {
+             final DataKind dataKind = dataKinds.get(i);
+             // Skip null and un-editable fields.
+             if (dataKind == null || !dataKind.editable) {
+-                if (Log.isLoggable(TAG, Log.VERBOSE)) {
+-                    Log.v(TAG, "parse: " + i +
++                //if (Log.isLoggable(TAG, Log.DEBUG)) {
++                    Log.d(TAG, "parse: " + i +
+                             (dataKind == null ? " dropped null data kind"
+                                     : " dropped uneditable mimetype: " + dataKind.mimeType));
+-                }
++                //}
+                 continue;
+             }
+             final String mimeType = dataKind.mimeType;
+@@ -603,18 +607,18 @@ public class RawContactEditorView extends LinearLayout implements View.OnClickLi
+             // Skip psuedo mime types
+             if (DataKind.PSEUDO_MIME_TYPE_NAME.equals(mimeType) ||
+                     DataKind.PSEUDO_MIME_TYPE_PHONETIC_NAME.equals(mimeType)) {
+-                if (Log.isLoggable(TAG, Log.VERBOSE)) {
+-                    Log.v(TAG, "parse: " + i + " " + dataKind.mimeType + " dropped pseudo type");
+-                }
++                //if (Log.isLoggable(TAG, Log.DEBUG)) {
++                    Log.d(TAG, "parse: " + i + " " + dataKind.mimeType + " dropped pseudo type");
++                //}
+                 continue;
+             }
+ 
+             // Skip custom fields
+             // TODO: Handle them when we implement editing custom fields.
+             if (CustomDataItem.MIMETYPE_CUSTOM_FIELD.equals(mimeType)) {
+-                if (Log.isLoggable(TAG, Log.VERBOSE)) {
+-                    Log.v(TAG, "parse: " + i + " " + dataKind.mimeType + " dropped custom field");
+-                }
++                //if (Log.isLoggable(TAG, Log.DEBUG)) {
++                    Log.d(TAG, "parse: " + i + " " + dataKind.mimeType + " dropped custom field");
++                //}
+                 continue;
+             }
+ 
+@@ -623,13 +627,13 @@ public class RawContactEditorView extends LinearLayout implements View.OnClickLi
+             mKindSectionDataMap.put(mimeType, kindSectionData);
+             mSortedMimetypes.add(mimeType);
+ 
+-            if (Log.isLoggable(TAG, Log.VERBOSE)) {
+-                Log.v(TAG, "parse: " + i + " " + dataKind.mimeType + " " +
++            //if (Log.isLoggable(TAG, Log.DEBUG)) {
++                Log.d(TAG, "parse: " + i + " " + dataKind.mimeType + " " +
+                         kindSectionData.getValuesDeltas().size() + " value(s) " +
+                         kindSectionData.getNonEmptyValuesDeltas().size() + " non-empty value(s) " +
+                         kindSectionData.getVisibleValuesDeltas().size() +
+                         " visible value(s)");
+-            }
++            //}
+         }
+     }
+ 
+diff --git a/src/com/android/contacts/model/RawContactModifier.java b/src/com/android/contacts/model/RawContactModifier.java
+index 789bd10..f39feeb 100644
+--- a/src/com/android/contacts/model/RawContactModifier.java
++++ b/src/com/android/contacts/model/RawContactModifier.java
+@@ -37,6 +37,8 @@ import android.provider.ContactsContract.CommonDataKinds.SipAddress;
+ import android.provider.ContactsContract.CommonDataKinds.StructuredName;
+ import android.provider.ContactsContract.CommonDataKinds.StructuredPostal;
+ import android.provider.ContactsContract.CommonDataKinds.Website;
++import android.provider.ContactsContract.CommonDataKinds.EthereumAccountAddress;
++import android.provider.ContactsContract.CommonDataKinds.BitcoinAccountAddress;
+ import android.provider.ContactsContract.Data;
+ import android.provider.ContactsContract.Intents;
+ import android.provider.ContactsContract.Intents.Insert;
+@@ -581,6 +583,28 @@ public class RawContactModifier {
+             }
+         }
+ 
++        // Ethereum account address
++        final boolean hasEthereumAccountAddress = extras.containsKey(Insert.ETHEREUM_ACCOUNT_ADDRESS);
++        final DataKind kindEthereumAccountAddress = accountType.getKindForMimetype(EthereumAccountAddress.CONTENT_ITEM_TYPE);
++        if (hasEthereumAccountAddress && RawContactModifier.canInsert(state, kindEthereumAccountAddress)) {
++            final ValuesDelta child = RawContactModifier.insertChild(state, kindEthereumAccountAddress);
++            final String address = extras.getString(Insert.ETHEREUM_ACCOUNT_ADDRESS);
++            if (ContactsUtils.isGraphic(address)) {
++                child.put(EthereumAccountAddress.ADDRESS, address);
++            }
++        }
++
++        // Bitcoin account address
++        final boolean hasBitcoinAccountAddress = extras.containsKey(Insert.BITCOIN_ACCOUNT_ADDRESS);
++        final DataKind kindBitcoinAccountAddress = accountType.getKindForMimetype(BitcoinAccountAddress.CONTENT_ITEM_TYPE);
++        if (hasBitcoinAccountAddress && RawContactModifier.canInsert(state, kindBitcoinAccountAddress)) {
++            final ValuesDelta child = RawContactModifier.insertChild(state, kindBitcoinAccountAddress);
++            final String address = extras.getString(Insert.BITCOIN_ACCOUNT_ADDRESS);
++            if (ContactsUtils.isGraphic(address)) {
++                child.put(BitcoinAccountAddress.ADDRESS, address);
++            }
++        }
++
+         // Arbitrary additional data
+         ArrayList<ContentValues> values = extras.getParcelableArrayList(Insert.DATA);
+         if (values != null) {
+diff --git a/src/com/android/contacts/model/account/AccountType.java b/src/com/android/contacts/model/account/AccountType.java
+index bddfc09..949e83d 100644
+--- a/src/com/android/contacts/model/account/AccountType.java
++++ b/src/com/android/contacts/model/account/AccountType.java
+@@ -25,6 +25,7 @@ import android.provider.ContactsContract.CommonDataKinds.Phone;
+ import android.provider.ContactsContract.CommonDataKinds.StructuredPostal;
+ import android.provider.ContactsContract.Contacts;
+ import android.provider.ContactsContract.RawContacts;
++import android.util.Log;
+ import android.view.inputmethod.EditorInfo;
+ import android.widget.EditText;
+ 
+@@ -342,6 +343,7 @@ public abstract class AccountType {
+ 
+         kind.resourcePackageName = this.resourcePackageName;
+         this.mKinds.add(kind);
++        Log.d(TAG, "add kind - " + kind);
+         this.mMimeKinds.put(kind.mimeType, kind);
+         return kind;
+     }
+diff --git a/src/com/android/contacts/model/account/BaseAccountType.java b/src/com/android/contacts/model/account/BaseAccountType.java
+index 50f623a..61346be 100644
+--- a/src/com/android/contacts/model/account/BaseAccountType.java
++++ b/src/com/android/contacts/model/account/BaseAccountType.java
+@@ -34,6 +34,8 @@ import android.provider.ContactsContract.CommonDataKinds.SipAddress;
+ import android.provider.ContactsContract.CommonDataKinds.StructuredName;
+ import android.provider.ContactsContract.CommonDataKinds.StructuredPostal;
+ import android.provider.ContactsContract.CommonDataKinds.Website;
++import android.provider.ContactsContract.CommonDataKinds.EthereumAccountAddress;
++import android.provider.ContactsContract.CommonDataKinds.BitcoinAccountAddress;
+ import android.provider.ContactsContract.Data;
+ import android.util.AttributeSet;
+ import android.util.Log;
+@@ -71,6 +73,8 @@ public abstract class BaseAccountType extends AccountType {
+     protected static final int FLAGS_NOTE = EditorInfo.TYPE_CLASS_TEXT
+             | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES | EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE;
+     protected static final int FLAGS_EVENT = EditorInfo.TYPE_CLASS_TEXT;
++    protected static final int FLAGS_ETHEREUM_ACCOUNT_ADDRESS = EditorInfo.TYPE_CLASS_TEXT;
++    protected static final int FLAGS_BITCOIN_ACCOUNT_ADDRESS = EditorInfo.TYPE_CLASS_TEXT;
+     protected static final int FLAGS_WEBSITE = EditorInfo.TYPE_CLASS_TEXT
+             | EditorInfo.TYPE_TEXT_VARIATION_URI;
+     protected static final int FLAGS_POSTAL = EditorInfo.TYPE_CLASS_TEXT
+@@ -114,6 +118,8 @@ public abstract class BaseAccountType extends AccountType {
+         static final int SIP_ADDRESS = 145;
+         static final int GROUP_MEMBERSHIP = 150;
+         static final int WEBSITE = 160;
++        static final int ETHEREUM_ACCOUNT_ADDRESS = 170;
++        static final int BITCOIN_ACCOUNT_ADDRESS = 180;
+         static final int RELATIONSHIP = 999;
+     }
+ 
+@@ -396,6 +402,30 @@ public abstract class BaseAccountType extends AccountType {
+         return kind;
+     }
+ 
++    protected DataKind addDataKindEthereumAccountAddress(Context context) throws DefinitionException {
++        DataKind kind = addKind(new DataKind(EthereumAccountAddress.CONTENT_ITEM_TYPE, R.string.label_ethereum_account_address,
++                Weight.ETHEREUM_ACCOUNT_ADDRESS, true));
++        kind.typeOverallMax = 1;
++        kind.actionHeader = new SimpleInflater(R.string.label_ethereum_account_address);
++        kind.actionBody = new SimpleInflater(EthereumAccountAddress.ADDRESS);
++        kind.fieldList = Lists.newArrayList();
++        kind.fieldList.add(new EditField(EthereumAccountAddress.ADDRESS, R.string.label_ethereum_account_address, FLAGS_ETHEREUM_ACCOUNT_ADDRESS));
++        kind.maxLinesForDisplay = 1;
++        return kind;
++    }
++
++    protected DataKind addDataKindBitcoinAccountAddress(Context context) throws DefinitionException {
++        DataKind kind = addKind(new DataKind(BitcoinAccountAddress.CONTENT_ITEM_TYPE, R.string.label_bitcoin_account_address,
++                Weight.BITCOIN_ACCOUNT_ADDRESS, true));
++        kind.typeOverallMax = 1;
++        kind.actionHeader = new SimpleInflater(R.string.label_bitcoin_account_address);
++        kind.actionBody = new SimpleInflater(BitcoinAccountAddress.ADDRESS);
++        kind.fieldList = Lists.newArrayList();
++        kind.fieldList.add(new EditField(BitcoinAccountAddress.ADDRESS, R.string.label_bitcoin_account_address, FLAGS_BITCOIN_ACCOUNT_ADDRESS));
++        kind.maxLinesForDisplay = 1;
++        return kind;
++    }
++
+     protected DataKind addDataKindWebsite(Context context) throws DefinitionException {
+         DataKind kind = addKind(new DataKind(Website.CONTENT_ITEM_TYPE,
+                 R.string.websiteLabelsGroup, Weight.WEBSITE, true));
+diff --git a/src/com/android/contacts/model/account/ExchangeAccountType.java b/src/com/android/contacts/model/account/ExchangeAccountType.java
+index bd79852..2127dc5 100644
+--- a/src/com/android/contacts/model/account/ExchangeAccountType.java
++++ b/src/com/android/contacts/model/account/ExchangeAccountType.java
+@@ -63,6 +63,8 @@ public class ExchangeAccountType extends BaseAccountType {
+             addDataKindOrganization(context);
+             addDataKindPhoto(context);
+             addDataKindNote(context);
++            addDataKindEthereumAccountAddress(context);
++            addDataKindBitcoinAccountAddress(context);
+             addDataKindEvent(context);
+             addDataKindWebsite(context);
+             addDataKindGroupMembership(context);
+diff --git a/src/com/android/contacts/model/account/FallbackAccountType.java b/src/com/android/contacts/model/account/FallbackAccountType.java
+index 288a917..78f2834 100644
+--- a/src/com/android/contacts/model/account/FallbackAccountType.java
++++ b/src/com/android/contacts/model/account/FallbackAccountType.java
+@@ -52,6 +52,8 @@ public class FallbackAccountType extends BaseAccountType {
+             addDataKindOrganization(context);
+             addDataKindPhoto(context);
+             addDataKindNote(context);
++            addDataKindEthereumAccountAddress(context);
++            addDataKindBitcoinAccountAddress(context);
+             addDataKindWebsite(context);
+             addDataKindSipAddress(context);
+             addDataKindGroupMembership(context);
+diff --git a/src/com/android/contacts/model/account/GoogleAccountType.java b/src/com/android/contacts/model/account/GoogleAccountType.java
+index c7aac76..139a19c 100644
+--- a/src/com/android/contacts/model/account/GoogleAccountType.java
++++ b/src/com/android/contacts/model/account/GoogleAccountType.java
+@@ -64,6 +64,8 @@ public class GoogleAccountType extends BaseAccountType {
+             addDataKindOrganization(context);
+             addDataKindPhoto(context);
+             addDataKindNote(context);
++            addDataKindEthereumAccountAddress(context);
++            addDataKindBitcoinAccountAddress(context);
+             addDataKindWebsite(context);
+             addDataKindSipAddress(context);
+             addDataKindGroupMembership(context);
+-- 
+2.7.4
+

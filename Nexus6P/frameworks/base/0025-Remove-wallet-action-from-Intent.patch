@@ -1,0 +1,33 @@
+From d91995cc858185fe79d561eb3f4780e797b7a68b Mon Sep 17 00:00:00 2001
+From: martin <martin@163.com>
+Date: Wed, 14 Nov 2018 10:27:27 +0800
+Subject: [PATCH] Remove wallet-action from Intent.
+
+Change-Id: I98f96c268dc993d985ffb6e20f3643ebc7c19b70
+---
+ core/java/android/content/Intent.java | 9 ---------
+ 1 file changed, 9 deletions(-)
+
+diff --git a/core/java/android/content/Intent.java b/core/java/android/content/Intent.java
+index 517a3a7..08acfb6 100644
+--- a/core/java/android/content/Intent.java
++++ b/core/java/android/content/Intent.java
+@@ -1511,15 +1511,6 @@ public class Intent implements Parcelable, Cloneable {
+             "android.intent.action.MANAGE_NETWORK_USAGE";
+ 
+     /**
+-     * Activity Action: Launch wallet to transfer ETH, erc20 token or BTC.
+-     * <p>
+-     * Input:
+-     * </p>
+-     */
+-    @SdkConstant(SdkConstantType.ACTIVITY_INTENT_ACTION)
+-    public static final String ACTION_WALLET_TRANSFER = "brahmaos.intent.action.WALLET_TRANSFER_ETHEREUM";
+-
+-    /**
+      * Activity Action: Launch application installer.
+      * <p>
+      * Input: The data must be a content: URI at which the application
+-- 
+2.7.4
+

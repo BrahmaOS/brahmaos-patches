@@ -1,0 +1,1600 @@
+From bc134fbbb27b54a44dd409df29484a682c4addc6 Mon Sep 17 00:00:00 2001
+From: martin <martin@163.com>
+Date: Wed, 14 Nov 2018 09:55:20 +0800
+Subject: [PATCH] Support bitcoin account address in ContactsContract.
+
+Change-Id: I62c25f2947c80530f394a6a6e62c506da9d4f5b0
+---
+ api/current.txt                                  |  18 +
+ api/system-current.txt                           |  18 +
+ api/test-current.txt                             |  18 +
+ core/java/android/content/Intent.java            |   9 +
+ core/java/android/provider/ContactsContract.java | 430 ++++++++++++++---------
+ 5 files changed, 325 insertions(+), 168 deletions(-)
+
+diff --git a/api/current.txt b/api/current.txt
+index bfc5cf2..9509bc8 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -33525,6 +33525,14 @@ package android.provider {
+     field public static final int TYPE_CUSTOM = 0; // 0x0
+   }
+ 
++  public static final class ContactsContract.CommonDataKinds.BitcoinAccountAddress implements android.provider.ContactsContract.DataColumnsWithJoins {
++    field public static final java.lang.String ADDRESS = "data1";
++    field public static final java.lang.String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/bitcoin_account_address";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX = "android.provider.extra.ADDRESS_BOOK_INDEX";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX_COUNTS = "android.provider.extra.ADDRESS_BOOK_INDEX_COUNTS";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX_TITLES = "android.provider.extra.ADDRESS_BOOK_INDEX_TITLES";
++  }
++
+   public static final class ContactsContract.CommonDataKinds.Callable implements android.provider.ContactsContract.CommonDataKinds.CommonColumns android.provider.ContactsContract.DataColumnsWithJoins {
+     ctor public ContactsContract.CommonDataKinds.Callable();
+     field public static final android.net.Uri CONTENT_FILTER_URI;
+@@ -33572,6 +33580,14 @@ package android.provider {
+     field public static final int TYPE_WORK = 2; // 0x2
+   }
+ 
++  public static final class ContactsContract.CommonDataKinds.EthereumAccountAddress implements android.provider.ContactsContract.DataColumnsWithJoins {
++    field public static final java.lang.String ADDRESS = "data1";
++    field public static final java.lang.String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/ethereum_account_address";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX = "android.provider.extra.ADDRESS_BOOK_INDEX";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX_COUNTS = "android.provider.extra.ADDRESS_BOOK_INDEX_COUNTS";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX_TITLES = "android.provider.extra.ADDRESS_BOOK_INDEX_TITLES";
++  }
++
+   public static final class ContactsContract.CommonDataKinds.Event implements android.provider.ContactsContract.CommonDataKinds.CommonColumns android.provider.ContactsContract.DataColumnsWithJoins {
+     method public static final java.lang.CharSequence getTypeLabel(android.content.res.Resources, int, java.lang.CharSequence);
+     method public static int getTypeResource(java.lang.Integer);
+@@ -34084,11 +34100,13 @@ package android.provider {
+   public static final class ContactsContract.Intents.Insert {
+     ctor public ContactsContract.Intents.Insert();
+     field public static final java.lang.String ACTION = "android.intent.action.INSERT";
++    field public static final java.lang.String BITCOIN_ACCOUNT_ADDRESS = "bitcoin_account_address";
+     field public static final java.lang.String COMPANY = "company";
+     field public static final java.lang.String DATA = "data";
+     field public static final java.lang.String EMAIL = "email";
+     field public static final java.lang.String EMAIL_ISPRIMARY = "email_isprimary";
+     field public static final java.lang.String EMAIL_TYPE = "email_type";
++    field public static final java.lang.String ETHEREUM_ACCOUNT_ADDRESS = "ethereum_account_address";
+     field public static final java.lang.String EXTRA_ACCOUNT = "android.provider.extra.ACCOUNT";
+     field public static final java.lang.String EXTRA_DATA_SET = "android.provider.extra.DATA_SET";
+     field public static final java.lang.String FULL_MODE = "full_mode";
+diff --git a/api/system-current.txt b/api/system-current.txt
+index 3fc8098..bbaccfc 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -36443,6 +36443,14 @@ package android.provider {
+     field public static final int TYPE_CUSTOM = 0; // 0x0
+   }
+ 
++  public static final class ContactsContract.CommonDataKinds.BitcoinAccountAddress implements android.provider.ContactsContract.DataColumnsWithJoins {
++    field public static final java.lang.String ADDRESS = "data1";
++    field public static final java.lang.String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/bitcoin_account_address";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX = "android.provider.extra.ADDRESS_BOOK_INDEX";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX_COUNTS = "android.provider.extra.ADDRESS_BOOK_INDEX_COUNTS";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX_TITLES = "android.provider.extra.ADDRESS_BOOK_INDEX_TITLES";
++  }
++
+   public static final class ContactsContract.CommonDataKinds.Callable implements android.provider.ContactsContract.CommonDataKinds.CommonColumns android.provider.ContactsContract.DataColumnsWithJoins {
+     ctor public ContactsContract.CommonDataKinds.Callable();
+     field public static final android.net.Uri CONTENT_FILTER_URI;
+@@ -36490,6 +36498,14 @@ package android.provider {
+     field public static final int TYPE_WORK = 2; // 0x2
+   }
+ 
++  public static final class ContactsContract.CommonDataKinds.EthereumAccountAddress implements android.provider.ContactsContract.DataColumnsWithJoins {
++    field public static final java.lang.String ADDRESS = "data1";
++    field public static final java.lang.String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/ethereum_account_address";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX = "android.provider.extra.ADDRESS_BOOK_INDEX";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX_COUNTS = "android.provider.extra.ADDRESS_BOOK_INDEX_COUNTS";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX_TITLES = "android.provider.extra.ADDRESS_BOOK_INDEX_TITLES";
++  }
++
+   public static final class ContactsContract.CommonDataKinds.Event implements android.provider.ContactsContract.CommonDataKinds.CommonColumns android.provider.ContactsContract.DataColumnsWithJoins {
+     method public static final java.lang.CharSequence getTypeLabel(android.content.res.Resources, int, java.lang.CharSequence);
+     method public static int getTypeResource(java.lang.Integer);
+@@ -37002,11 +37018,13 @@ package android.provider {
+   public static final class ContactsContract.Intents.Insert {
+     ctor public ContactsContract.Intents.Insert();
+     field public static final java.lang.String ACTION = "android.intent.action.INSERT";
++    field public static final java.lang.String BITCOIN_ACCOUNT_ADDRESS = "bitcoin_account_address";
+     field public static final java.lang.String COMPANY = "company";
+     field public static final java.lang.String DATA = "data";
+     field public static final java.lang.String EMAIL = "email";
+     field public static final java.lang.String EMAIL_ISPRIMARY = "email_isprimary";
+     field public static final java.lang.String EMAIL_TYPE = "email_type";
++    field public static final java.lang.String ETHEREUM_ACCOUNT_ADDRESS = "ethereum_account_address";
+     field public static final java.lang.String EXTRA_ACCOUNT = "android.provider.extra.ACCOUNT";
+     field public static final java.lang.String EXTRA_DATA_SET = "android.provider.extra.DATA_SET";
+     field public static final java.lang.String FULL_MODE = "full_mode";
+diff --git a/api/test-current.txt b/api/test-current.txt
+index f11167a..7e6902d 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -33714,6 +33714,14 @@ package android.provider {
+     field public static final int TYPE_CUSTOM = 0; // 0x0
+   }
+ 
++  public static final class ContactsContract.CommonDataKinds.BitcoinAccountAddress implements android.provider.ContactsContract.DataColumnsWithJoins {
++    field public static final java.lang.String ADDRESS = "data1";
++    field public static final java.lang.String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/bitcoin_account_address";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX = "android.provider.extra.ADDRESS_BOOK_INDEX";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX_COUNTS = "android.provider.extra.ADDRESS_BOOK_INDEX_COUNTS";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX_TITLES = "android.provider.extra.ADDRESS_BOOK_INDEX_TITLES";
++  }
++
+   public static final class ContactsContract.CommonDataKinds.Callable implements android.provider.ContactsContract.CommonDataKinds.CommonColumns android.provider.ContactsContract.DataColumnsWithJoins {
+     ctor public ContactsContract.CommonDataKinds.Callable();
+     field public static final android.net.Uri CONTENT_FILTER_URI;
+@@ -33761,6 +33769,14 @@ package android.provider {
+     field public static final int TYPE_WORK = 2; // 0x2
+   }
+ 
++  public static final class ContactsContract.CommonDataKinds.EthereumAccountAddress implements android.provider.ContactsContract.DataColumnsWithJoins {
++    field public static final java.lang.String ADDRESS = "data1";
++    field public static final java.lang.String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/ethereum_account_address";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX = "android.provider.extra.ADDRESS_BOOK_INDEX";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX_COUNTS = "android.provider.extra.ADDRESS_BOOK_INDEX_COUNTS";
++    field public static final java.lang.String EXTRA_ADDRESS_BOOK_INDEX_TITLES = "android.provider.extra.ADDRESS_BOOK_INDEX_TITLES";
++  }
++
+   public static final class ContactsContract.CommonDataKinds.Event implements android.provider.ContactsContract.CommonDataKinds.CommonColumns android.provider.ContactsContract.DataColumnsWithJoins {
+     method public static final java.lang.CharSequence getTypeLabel(android.content.res.Resources, int, java.lang.CharSequence);
+     method public static int getTypeResource(java.lang.Integer);
+@@ -34273,11 +34289,13 @@ package android.provider {
+   public static final class ContactsContract.Intents.Insert {
+     ctor public ContactsContract.Intents.Insert();
+     field public static final java.lang.String ACTION = "android.intent.action.INSERT";
++    field public static final java.lang.String BITCOIN_ACCOUNT_ADDRESS = "bitcoin_account_address";
+     field public static final java.lang.String COMPANY = "company";
+     field public static final java.lang.String DATA = "data";
+     field public static final java.lang.String EMAIL = "email";
+     field public static final java.lang.String EMAIL_ISPRIMARY = "email_isprimary";
+     field public static final java.lang.String EMAIL_TYPE = "email_type";
++    field public static final java.lang.String ETHEREUM_ACCOUNT_ADDRESS = "ethereum_account_address";
+     field public static final java.lang.String EXTRA_ACCOUNT = "android.provider.extra.ACCOUNT";
+     field public static final java.lang.String EXTRA_DATA_SET = "android.provider.extra.DATA_SET";
+     field public static final java.lang.String FULL_MODE = "full_mode";
+diff --git a/core/java/android/content/Intent.java b/core/java/android/content/Intent.java
+index 08acfb6..517a3a7 100644
+--- a/core/java/android/content/Intent.java
++++ b/core/java/android/content/Intent.java
+@@ -1511,6 +1511,15 @@ public class Intent implements Parcelable, Cloneable {
+             "android.intent.action.MANAGE_NETWORK_USAGE";
+ 
+     /**
++     * Activity Action: Launch wallet to transfer ETH, erc20 token or BTC.
++     * <p>
++     * Input:
++     * </p>
++     */
++    @SdkConstant(SdkConstantType.ACTIVITY_INTENT_ACTION)
++    public static final String ACTION_WALLET_TRANSFER = "brahmaos.intent.action.WALLET_TRANSFER_ETHEREUM";
++
++    /**
+      * Activity Action: Launch application installer.
+      * <p>
+      * Input: The data must be a content: URI at which the application
+diff --git a/core/java/android/provider/ContactsContract.java b/core/java/android/provider/ContactsContract.java
+index cc1c067..d220c5c 100644
+--- a/core/java/android/provider/ContactsContract.java
++++ b/core/java/android/provider/ContactsContract.java
+@@ -125,12 +125,12 @@ public final class ContactsContract {
+ 
+     /**
+      * An optional URI parameter for insert, update, or delete queries
+-     * that allows the caller
++     * that allows the callerg
+      * to specify that it is a sync adapter. The default value is false. If true
+      * {@link RawContacts#DIRTY} is not automatically set and the
+      * "syncToNetwork" parameter is set to false when calling
+      * {@link
+-     * ContentResolver#notifyChange(android.net.Uri, android.database.ContentObserver, boolean)}.
++     * ContentResolver#notifyChange(Uri, android.database.ContentObserver, boolean)}.
+      * This prevents an unnecessary extra synchronization, see the discussion of
+      * the delete operation in {@link RawContacts}.
+      */
+@@ -282,7 +282,7 @@ public final class ContactsContract {
+      * </p>
+      * <p>
+      * The most important use case for Directories is search.  A Directory provider is
+-     * expected to support at least {@link ContactsContract.Contacts#CONTENT_FILTER_URI
++     * expected to support at least {@link Contacts#CONTENT_FILTER_URI
+      * Contacts.CONTENT_FILTER_URI}.  If a Directory provider wants to participate
+      * in email and phone lookup functionalities, it should also implement
+      * {@link CommonDataKinds.Email#CONTENT_FILTER_URI CommonDataKinds.Email.CONTENT_FILTER_URI}
+@@ -456,8 +456,8 @@ public final class ContactsContract {
+ 
+         /**
+          * _ID of the default directory, which represents locally stored contacts.
+-         * <b>This is only supported by {@link ContactsContract.Contacts#CONTENT_URI} and
+-         * {@link ContactsContract.Contacts#CONTENT_FILTER_URI}.
++         * <b>This is only supported by {@link Contacts#CONTENT_URI} and
++         * {@link Contacts#CONTENT_FILTER_URI}.
+          * Other URLs do not support the concept of "visible" or "invisible" contacts.
+          */
+         public static final long DEFAULT = 0;
+@@ -704,7 +704,7 @@ public final class ContactsContract {
+                 Uri.withAppendedPath(AUTHORITY_URI, CONTENT_DIRECTORY);
+ 
+         /**
+-         * @see android.provider.SyncStateContract.Helpers#get
++         * @see SyncStateContract.Helpers#get
+          */
+         public static byte[] get(ContentProviderClient provider, Account account)
+                 throws RemoteException {
+@@ -712,7 +712,7 @@ public final class ContactsContract {
+         }
+ 
+         /**
+-         * @see android.provider.SyncStateContract.Helpers#get
++         * @see SyncStateContract.Helpers#get
+          */
+         public static Pair<Uri, byte[]> getWithUri(ContentProviderClient provider, Account account)
+                 throws RemoteException {
+@@ -720,7 +720,7 @@ public final class ContactsContract {
+         }
+ 
+         /**
+-         * @see android.provider.SyncStateContract.Helpers#set
++         * @see SyncStateContract.Helpers#set
+          */
+         public static void set(ContentProviderClient provider, Account account, byte[] data)
+                 throws RemoteException {
+@@ -728,7 +728,7 @@ public final class ContactsContract {
+         }
+ 
+         /**
+-         * @see android.provider.SyncStateContract.Helpers#newSetOperation
++         * @see SyncStateContract.Helpers#newSetOperation
+          */
+         public static ContentProviderOperation newSetOperation(Account account, byte[] data) {
+             return SyncStateContract.Helpers.newSetOperation(CONTENT_URI, account, data);
+@@ -758,7 +758,7 @@ public final class ContactsContract {
+                 Uri.withAppendedPath(Profile.CONTENT_URI, CONTENT_DIRECTORY);
+ 
+         /**
+-         * @see android.provider.SyncStateContract.Helpers#get
++         * @see SyncStateContract.Helpers#get
+          */
+         public static byte[] get(ContentProviderClient provider, Account account)
+                 throws RemoteException {
+@@ -766,7 +766,7 @@ public final class ContactsContract {
+         }
+ 
+         /**
+-         * @see android.provider.SyncStateContract.Helpers#get
++         * @see SyncStateContract.Helpers#get
+          */
+         public static Pair<Uri, byte[]> getWithUri(ContentProviderClient provider, Account account)
+                 throws RemoteException {
+@@ -774,7 +774,7 @@ public final class ContactsContract {
+         }
+ 
+         /**
+-         * @see android.provider.SyncStateContract.Helpers#set
++         * @see SyncStateContract.Helpers#set
+          */
+         public static void set(ContentProviderClient provider, Account account, byte[] data)
+                 throws RemoteException {
+@@ -782,7 +782,7 @@ public final class ContactsContract {
+         }
+ 
+         /**
+-         * @see android.provider.SyncStateContract.Helpers#newSetOperation
++         * @see SyncStateContract.Helpers#newSetOperation
+          */
+         public static ContentProviderOperation newSetOperation(Account account, byte[] data) {
+             return SyncStateContract.Helpers.newSetOperation(CONTENT_URI, account, data);
+@@ -853,14 +853,14 @@ public final class ContactsContract {
+     }
+ 
+     /**
+-     * Columns of {@link ContactsContract.Contacts} that track the user's
++     * Columns of {@link Contacts} that track the user's
+      * preferences for, or interactions with, the contact.
+      *
+      * @see Contacts
+      * @see RawContacts
+-     * @see ContactsContract.Data
++     * @see Data
+      * @see PhoneLookup
+-     * @see ContactsContract.Contacts.AggregationSuggestions
++     * @see Contacts.AggregationSuggestions
+      */
+     protected interface ContactOptionsColumns {
+         /**
+@@ -923,14 +923,14 @@ public final class ContactsContract {
+     }
+ 
+     /**
+-     * Columns of {@link ContactsContract.Contacts} that refer to intrinsic
++     * Columns of {@link Contacts} that refer to intrinsic
+      * properties of the contact, as opposed to the user-specified options
+      * found in {@link ContactOptionsColumns}.
+      *
+      * @see Contacts
+-     * @see ContactsContract.Data
++     * @see Data
+      * @see PhoneLookup
+-     * @see ContactsContract.Contacts.AggregationSuggestions
++     * @see Contacts.AggregationSuggestions
+      */
+     protected interface ContactsColumns {
+         /**
+@@ -960,7 +960,7 @@ public final class ContactsContract {
+         /**
+          * Photo file ID of the full-size photo.  If present, this will be used to populate
+          * {@link #PHOTO_URI}.  The ID can also be used with
+-         * {@link ContactsContract.DisplayPhoto#CONTENT_URI} to create a URI to the photo.
++         * {@link DisplayPhoto#CONTENT_URI} to create a URI to the photo.
+          * If this is present, {@link #PHOTO_ID} is also guaranteed to be populated.
+          *
+          * <P>Type: INTEGER</P>
+@@ -970,7 +970,7 @@ public final class ContactsContract {
+         /**
+          * A URI that can be used to retrieve the contact's full-size photo.
+          * If PHOTO_FILE_ID is not null, this will be populated with a URI based off
+-         * {@link ContactsContract.DisplayPhoto#CONTENT_URI}.  Otherwise, this will
++         * {@link DisplayPhoto#CONTENT_URI}.  Otherwise, this will
+          * be populated with the same value as {@link #PHOTO_THUMBNAIL_URI}.
+          * A photo can be referred to either by a URI (this field) or by ID
+          * (see {@link #PHOTO_ID}). If either PHOTO_FILE_ID or PHOTO_ID is not null,
+@@ -1185,7 +1185,7 @@ public final class ContactsContract {
+          * version of the full name.
+          * <p>
+          *
+-         * @see ContactsContract.ContactNameColumns#DISPLAY_NAME_ALTERNATIVE
++         * @see ContactNameColumns#DISPLAY_NAME_ALTERNATIVE
+          */
+         public static final String DISPLAY_NAME_PRIMARY = "display_name";
+ 
+@@ -1644,7 +1644,7 @@ public final class ContactsContract {
+ 
+         /**
+          * Build a {@link #CONTENT_LOOKUP_URI} lookup {@link Uri} using the
+-         * given {@link ContactsContract.Contacts#_ID} and {@link #LOOKUP_KEY}.
++         * given {@link Contacts#_ID} and {@link #LOOKUP_KEY}.
+          * <p>
+          * Returns null if unable to construct a valid lookup URI from the
+          * provided parameters.
+@@ -1810,7 +1810,7 @@ public final class ContactsContract {
+         /**
+          * <p>
+          * A sub-directory of a contact that contains all of its
+-         * {@link ContactsContract.RawContacts} as well as
++         * {@link RawContacts} as well as
+          * {@link ContactsContract.Data} rows. To access this directory append
+          * {@link #CONTENT_DIRECTORY} to the contact URI.
+          * </p>
+@@ -1942,7 +1942,7 @@ public final class ContactsContract {
+             /**
+              * The directory twig for this sub-table. The URI can be followed by an optional
+              * type-to-filter, similar to
+-             * {@link android.provider.ContactsContract.Contacts#CONTENT_FILTER_URI}.
++             * {@link Contacts#CONTENT_FILTER_URI}.
+              */
+             public static final String CONTENT_DIRECTORY = "suggestions";
+ 
+@@ -2000,9 +2000,9 @@ public final class ContactsContract {
+                  * object for fetching aggregation suggestions.
+                  */
+                 public Uri build() {
+-                    android.net.Uri.Builder builder = Contacts.CONTENT_URI.buildUpon();
++                    Uri.Builder builder = Contacts.CONTENT_URI.buildUpon();
+                     builder.appendEncodedPath(String.valueOf(mContactId));
+-                    builder.appendPath(Contacts.AggregationSuggestions.CONTENT_DIRECTORY);
++                    builder.appendPath(AggregationSuggestions.CONTENT_DIRECTORY);
+                     if (mLimit != 0) {
+                         builder.appendQueryParameter("limit", String.valueOf(mLimit));
+                     }
+@@ -2079,7 +2079,7 @@ public final class ContactsContract {
+          *
+          * </p>
+          * <p>You may also consider using the convenience method
+-         * {@link ContactsContract.Contacts#openContactPhotoInputStream(ContentResolver, Uri, boolean)}
++         * {@link Contacts#openContactPhotoInputStream(ContentResolver, Uri, boolean)}
+          * to retrieve the raw photo contents of either the thumbnail-sized or the full-sized photo.
+          * </p>
+          * <p>
+@@ -2105,7 +2105,7 @@ public final class ContactsContract {
+ 
+             /**
+              * Full-size photo file ID of the raw contact.
+-             * See {@link ContactsContract.DisplayPhoto}.
++             * See {@link DisplayPhoto}.
+              * <p>
+              * Type: NUMBER
+              */
+@@ -2134,7 +2134,7 @@ public final class ContactsContract {
+                 boolean preferHighres) {
+             if (preferHighres) {
+                 final Uri displayPhotoUri = Uri.withAppendedPath(contactUri,
+-                        Contacts.Photo.DISPLAY_PHOTO);
++                        Photo.DISPLAY_PHOTO);
+                 try {
+                     AssetFileDescriptor fd = cr.openAssetFileDescriptor(displayPhotoUri, "r");
+                     if (fd != null) {
+@@ -2151,7 +2151,7 @@ public final class ContactsContract {
+             }
+             Cursor cursor = cr.query(photoUri,
+                     new String[] {
+-                        ContactsContract.CommonDataKinds.Photo.PHOTO
++                        CommonDataKinds.Photo.PHOTO
+                     }, null, null, null);
+             try {
+                 if (cursor == null || !cursor.moveToNext()) {
+@@ -2294,7 +2294,7 @@ public final class ContactsContract {
+     protected interface DeletedContactsColumns {
+ 
+         /**
+-         * A reference to the {@link ContactsContract.Contacts#_ID} that was deleted.
++         * A reference to the {@link Contacts#_ID} that was deleted.
+          * <P>Type: INTEGER</P>
+          */
+         public static final String CONTACT_ID = "contact_id";
+@@ -2342,7 +2342,7 @@ public final class ContactsContract {
+ 
+     protected interface RawContactsColumns {
+         /**
+-         * A reference to the {@link ContactsContract.Contacts#_ID} that this
++         * A reference to the {@link Contacts#_ID} that this
+          * data belongs to.
+          * <P>Type: INTEGER</P>
+          */
+@@ -2377,8 +2377,8 @@ public final class ContactsContract {
+          * <p>
+          * This column does *not* escape forward slashes in the account type or the data set.
+          * If this is an issue, consider using
+-         * {@link ContactsContract.RawContacts#ACCOUNT_TYPE} and
+-         * {@link ContactsContract.RawContacts#DATA_SET} directly.
++         * {@link RawContacts#ACCOUNT_TYPE} and
++         * {@link RawContacts#DATA_SET} directly.
+          */
+         public static final String ACCOUNT_TYPE_AND_DATA_SET = "account_type_and_data_set";
+ 
+@@ -2390,7 +2390,7 @@ public final class ContactsContract {
+ 
+         /**
+          * The "deleted" flag: "0" by default, "1" if the row has been marked
+-         * for deletion. When {@link android.content.ContentResolver#delete} is
++         * for deletion. When {@link ContentResolver#delete} is
+          * called on a raw contact, it is marked for deletion and removed from its
+          * aggregate contact. The sync adaptor deletes the raw contact on the server and
+          * then calls ContactResolver.delete once more, this time passing the
+@@ -2600,7 +2600,7 @@ public final class ContactsContract {
+      * <td>long</td>
+      * <td>{@link #CONTACT_ID}</td>
+      * <td>read-only</td>
+-     * <td>The ID of the row in the {@link ContactsContract.Contacts} table
++     * <td>The ID of the row in the {@link Contacts} table
+      * that this raw contact belongs
+      * to. Raw contacts are linked to contacts by the aggregation process, which can be controlled
+      * by the {@link #AGGREGATION_MODE} field and {@link AggregationExceptions}.</td>
+@@ -2618,7 +2618,7 @@ public final class ContactsContract {
+      * <td>{@link #DELETED}</td>
+      * <td>read/write</td>
+      * <td>The "deleted" flag: "0" by default, "1" if the row has been marked
+-     * for deletion. When {@link android.content.ContentResolver#delete} is
++     * for deletion. When {@link ContentResolver#delete} is
+      * called on a raw contact, it is marked for deletion and removed from its
+      * aggregate contact. The sync adaptor deletes the raw contact on the server and
+      * then calls ContactResolver.delete once more, this time passing the
+@@ -2633,7 +2633,7 @@ public final class ContactsContract {
+      * on the corresponding value of the aggregate contact, this field
+      * should be set at the time the raw contact is inserted.
+      * After that, this value is typically updated via
+-     * {@link ContactsContract.Contacts#markAsContacted}.</td>
++     * {@link Contacts#markAsContacted}.</td>
+      * </tr>
+      * <tr>
+      * <td>long</td>
+@@ -2643,7 +2643,7 @@ public final class ContactsContract {
+      * on the corresponding value of the aggregate contact, this field
+      * should be set at the time the raw contact is inserted.
+      * After that, this value is typically updated via
+-     * {@link ContactsContract.Contacts#markAsContacted}.
++     * {@link Contacts#markAsContacted}.
+      * </td>
+      * </tr>
+      * <tr>
+@@ -2664,7 +2664,7 @@ public final class ContactsContract {
+      * {@link android.media.RingtoneManager#ACTION_RINGTONE_PICKER} intent.
+      * To have an effect on the corresponding value of the aggregate contact, this field
+      * should be set at the time the raw contact is inserted. To set a custom
+-     * ringtone on a contact, use the field {@link ContactsContract.Contacts#CUSTOM_RINGTONE
++     * ringtone on a contact, use the field {@link Contacts#CUSTOM_RINGTONE
+      * Contacts.CUSTOM_RINGTONE}
+      * instead.</td>
+      * </tr>
+@@ -2872,8 +2872,8 @@ public final class ContactsContract {
+         public static final int AGGREGATION_MODE_DISABLED = 3;
+ 
+         /**
+-         * Build a {@link android.provider.ContactsContract.Contacts#CONTENT_LOOKUP_URI}
+-         * style {@link Uri} for the parent {@link android.provider.ContactsContract.Contacts}
++         * Build a {@link Contacts#CONTENT_LOOKUP_URI}
++         * style {@link Uri} for the parent {@link Contacts}
+          * entry of the given {@link RawContacts} entry.
+          */
+         public static Uri getContactLookupUri(ContentResolver resolver, Uri rawContactUri) {
+@@ -2918,7 +2918,7 @@ public final class ContactsContract {
+          * <p>
+          * A sub-directory of a single raw contact that contains all of its
+          * {@link ContactsContract.Data} rows. To access this directory append
+-         * {@link RawContacts.Entity#CONTENT_DIRECTORY} to the raw contact URI. See
++         * {@link Entity#CONTENT_DIRECTORY} to the raw contact URI. See
+          * {@link RawContactsEntity} for a stand-alone table containing the same
+          * data.
+          * </p>
+@@ -2959,7 +2959,7 @@ public final class ContactsContract {
+          * <p>
+          * A sub-directory of a single raw contact that contains all of its
+          * {@link ContactsContract.StreamItems} rows. To access this directory append
+-         * {@link RawContacts.StreamItems#CONTENT_DIRECTORY} to the raw contact URI. See
++         * {@link StreamItems#CONTENT_DIRECTORY} to the raw contact URI. See
+          * {@link ContactsContract.StreamItems} for a stand-alone table containing the
+          * same data.
+          * </p>
+@@ -3002,7 +3002,7 @@ public final class ContactsContract {
+          * <p>
+          * A sub-directory of a single raw contact that represents its primary
+          * display photo.  To access this directory append
+-         * {@link RawContacts.DisplayPhoto#CONTENT_DIRECTORY} to the raw contact URI.
++         * {@link DisplayPhoto#CONTENT_DIRECTORY} to the raw contact URI.
+          * The resulting URI represents an image file, and should be interacted with
+          * using ContentResolver.openAssetFileDescriptor.
+          * <p>
+@@ -3157,7 +3157,7 @@ public final class ContactsContract {
+      * Social status update columns.
+      *
+      * @see StatusUpdates
+-     * @see ContactsContract.Data
++     * @see Data
+      */
+     protected interface StatusColumns {
+         /**
+@@ -3272,7 +3272,7 @@ public final class ContactsContract {
+      * </p>
+      * <p>
+      * Only a certain number of stream items will ever be stored under a given raw contact.
+-     * Users of this API can query {@link ContactsContract.StreamItems#CONTENT_LIMIT_URI} to
++     * Users of this API can query {@link StreamItems#CONTENT_LIMIT_URI} to
+      * determine this limit, and should restrict the number of items inserted in any given
+      * transaction correspondingly.  Insertion of more items beyond the limit will
+      * automatically lead to deletion of the oldest items, by {@link StreamItems#TIMESTAMP}.
+@@ -3347,7 +3347,7 @@ public final class ContactsContract {
+      *     StreamItems.StreamItemPhotos.CONTENT_DIRECTORY), values);
+      * </pre>
+      * </dd>
+-     * <dt>Via {@link ContactsContract.StreamItems#CONTENT_PHOTO_URI}:</dt>
++     * <dt>Via {@link StreamItems#CONTENT_PHOTO_URI}:</dt>
+      * <dd>
+      * <pre>
+      * values.clear();
+@@ -3441,7 +3441,7 @@ public final class ContactsContract {
+          * A content:// style URI for the photos stored in a sub-table underneath
+          * stream items.  This is only used for inserts, and updates - queries and deletes
+          * for photos should be performed by appending
+-         * {@link StreamItems.StreamItemPhotos#CONTENT_DIRECTORY} path to URIs for a
++         * {@link StreamItemPhotos#CONTENT_DIRECTORY} path to URIs for a
+          * specific stream item.
+          * </p>
+          * <p>
+@@ -3485,7 +3485,7 @@ public final class ContactsContract {
+         public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/stream_item";
+ 
+         /**
+-         * Queries to {@link ContactsContract.StreamItems#CONTENT_LIMIT_URI} will
++         * Queries to {@link StreamItems#CONTENT_LIMIT_URI} will
+          * contain this column, with the value indicating the maximum number of
+          * stream items that will be stored under any single raw contact.
+          *
+@@ -3499,7 +3499,7 @@ public final class ContactsContract {
+          * <p>
+          * A sub-directory of a single stream item entry that contains all of its
+          * photo rows. To access this
+-         * directory append {@link StreamItems.StreamItemPhotos#CONTENT_DIRECTORY} to
++         * directory append {@link StreamItemPhotos#CONTENT_DIRECTORY} to
+          * an individual stream item URI.
+          * </p>
+          * <p>
+@@ -3560,7 +3560,7 @@ public final class ContactsContract {
+     /**
+      * Columns in the StreamItems table.
+      *
+-     * @see ContactsContract.StreamItems
++     * @see StreamItems
+      * @deprecated - Do not use. This will not be supported in the future. In the future,
+      * cursors returned from related queries will be empty.
+      *
+@@ -3569,7 +3569,7 @@ public final class ContactsContract {
+     @Deprecated
+     protected interface StreamItemsColumns {
+         /**
+-         * A reference to the {@link android.provider.ContactsContract.Contacts#_ID}
++         * A reference to the {@link Contacts#_ID}
+          * that this stream item belongs to.
+          *
+          * <p>Type: INTEGER</p>
+@@ -3582,7 +3582,7 @@ public final class ContactsContract {
+         public static final String CONTACT_ID = "contact_id";
+ 
+         /**
+-         * A reference to the {@link android.provider.ContactsContract.Contacts#LOOKUP_KEY}
++         * A reference to the {@link Contacts#LOOKUP_KEY}
+          * that this stream item belongs to.
+          *
+          * <p>Type: TEXT</p>
+@@ -3826,7 +3826,7 @@ public final class ContactsContract {
+      * long photoId = ContentUris.parseId(photoUri);
+      * </pre>
+      * </dd>
+-     * <dt>Via the {@link ContactsContract.StreamItems#CONTENT_PHOTO_URI} URI:</dt>
++     * <dt>Via the {@link StreamItems#CONTENT_PHOTO_URI} URI:</dt>
+      * <dd>
+      * <pre>
+      * ContentValues values = new ContentValues();
+@@ -3865,7 +3865,7 @@ public final class ContactsContract {
+      * getContentResolver().update(builder.build(), values, null, null);
+      * </pre>
+      * </dd>
+-     * <dt>Via the {@link ContactsContract.StreamItems#CONTENT_PHOTO_URI} URI:</dt>
++     * <dt>Via the {@link StreamItems#CONTENT_PHOTO_URI} URI:</dt>
+      * <dd>
+      * <pre>
+      * ContentValues values = new ContentValues();
+@@ -3937,7 +3937,7 @@ public final class ContactsContract {
+      * </dl>
+      * The record will contain both a {@link StreamItemPhotos#PHOTO_FILE_ID} and a
+      * {@link StreamItemPhotos#PHOTO_URI}.  The {@link StreamItemPhotos#PHOTO_FILE_ID}
+-     * can be used in conjunction with the {@link ContactsContract.DisplayPhoto} API to
++     * can be used in conjunction with the {@link DisplayPhoto} API to
+      * retrieve photo content, or you can open the {@link StreamItemPhotos#PHOTO_URI} as
+      * an asset file, as follows:
+      * <pre>
+@@ -3992,7 +3992,7 @@ public final class ContactsContract {
+     /**
+      * Columns in the StreamItemPhotos table.
+      *
+-     * @see ContactsContract.StreamItemPhotos
++     * @see StreamItemPhotos
+      * @deprecated - Do not use. This will not be supported in the future. In the future,
+      * cursors returned from related queries will be empty.
+      *
+@@ -4023,7 +4023,7 @@ public final class ContactsContract {
+ 
+         /**
+          * Photo file ID for the photo.
+-         * See {@link ContactsContract.DisplayPhoto}.
++         * See {@link DisplayPhoto}.
+          * <P>Type: NUMBER</P>
+          *
+          * @deprecated - Do not use. This will not be supported in the future. In the future,
+@@ -4096,7 +4096,7 @@ public final class ContactsContract {
+     /**
+      * Columns in the PhotoFiles table.
+      *
+-     * @see ContactsContract.PhotoFiles
++     * @see PhotoFiles
+      *
+      * @hide
+      */
+@@ -4124,7 +4124,7 @@ public final class ContactsContract {
+     /**
+      * Columns in the Data table.
+      *
+-     * @see ContactsContract.Data
++     * @see Data
+      */
+     protected interface DataColumns {
+         /**
+@@ -4269,9 +4269,9 @@ public final class ContactsContract {
+     }
+ 
+     /**
+-     * Combines all columns returned by {@link ContactsContract.Data} table queries.
++     * Combines all columns returned by {@link Data} table queries.
+      *
+-     * @see ContactsContract.Data
++     * @see Data
+      */
+     protected interface DataColumnsWithJoins extends BaseColumns, DataColumns, StatusColumns,
+             RawContactsColumns, ContactsColumns, ContactNameColumns, ContactOptionsColumns,
+@@ -4306,7 +4306,7 @@ public final class ContactsContract {
+      * {@link CommonDataKinds.Phone}, {@link CommonDataKinds.Email} etc. As a
+      * convenience, these classes define data kind specific aliases for DATA1 etc.
+      * For example, {@link CommonDataKinds.Phone Phone.NUMBER} is the same as
+-     * {@link ContactsContract.Data Data.DATA1}.
++     * {@link Data Data.DATA1}.
+      * </p>
+      * <p>
+      * {@link #DATA1} is an indexed column and should be used for the data element that is
+@@ -4494,6 +4494,8 @@ public final class ContactsContract {
+      * <ul>
+      * <li>{@link CommonDataKinds.StructuredName StructuredName.CONTENT_ITEM_TYPE}</li>
+      * <li>{@link CommonDataKinds.Phone Phone.CONTENT_ITEM_TYPE}</li>
++     * <li>{@link CommonDataKinds.EthereumAccountAddress EthereumAccountAddress.CONTENT_ITEM_TYPE}</li>
++     * <li>{@link CommonDataKinds.BitcoinAccountAddress BitcoinAccountAddress.CONTENT_ITEM_TYPE}</li>
+      * <li>{@link CommonDataKinds.Email Email.CONTENT_ITEM_TYPE}</li>
+      * <li>{@link CommonDataKinds.Photo Photo.CONTENT_ITEM_TYPE}</li>
+      * <li>{@link CommonDataKinds.Organization Organization.CONTENT_ITEM_TYPE}</li>
+@@ -4653,7 +4655,7 @@ public final class ContactsContract {
+      *
+      * <table class="jd-sumtable">
+      * <tr>
+-     * <th colspan='4'>Join with {@link ContactsContract.RawContacts}</th>
++     * <th colspan='4'>Join with {@link RawContacts}</th>
+      * </tr>
+      * <tr>
+      * <td style="width: 7em;">long</td>
+@@ -4678,7 +4680,7 @@ public final class ContactsContract {
+      *
+      * <p>
+      * The ID column for the associated aggregated contact table
+-     * {@link ContactsContract.Contacts} is available
++     * {@link Contacts} is available
+      * via the implicit join to the {@link RawContacts} table, see above.
+      * The remaining columns from this table are also
+      * available, through an implicit join.  This
+@@ -4688,103 +4690,103 @@ public final class ContactsContract {
+      *
+      * <table class="jd-sumtable">
+      * <tr>
+-     * <th colspan='4'>Join with {@link ContactsContract.Contacts}</th>
++     * <th colspan='4'>Join with {@link Contacts}</th>
+      * </tr>
+      * <tr>
+      * <td style="width: 7em;">String</td>
+      * <td style="width: 20em;">{@link #LOOKUP_KEY}</td>
+      * <td style="width: 5em;">read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}</td>
++     * <td>See {@link Contacts}</td>
+      * </tr>
+      * <tr>
+      * <td>String</td>
+      * <td>{@link #DISPLAY_NAME}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}</td>
++     * <td>See {@link Contacts}</td>
+      * </tr>
+      * <tr>
+      * <td>long</td>
+      * <td>{@link #PHOTO_ID}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>int</td>
+      * <td>{@link #IN_VISIBLE_GROUP}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>int</td>
+      * <td>{@link #HAS_PHONE_NUMBER}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>int</td>
+      * <td>{@link #TIMES_CONTACTED}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>long</td>
+      * <td>{@link #LAST_TIME_CONTACTED}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>int</td>
+      * <td>{@link #STARRED}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>String</td>
+      * <td>{@link #CUSTOM_RINGTONE}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>int</td>
+      * <td>{@link #SEND_TO_VOICEMAIL}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>int</td>
+      * <td>{@link #CONTACT_PRESENCE}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>String</td>
+      * <td>{@link #CONTACT_STATUS}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>long</td>
+      * <td>{@link #CONTACT_STATUS_TIMESTAMP}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>String</td>
+      * <td>{@link #CONTACT_STATUS_RES_PACKAGE}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>long</td>
+      * <td>{@link #CONTACT_STATUS_LABEL}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>long</td>
+      * <td>{@link #CONTACT_STATUS_ICON}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * </table>
+      */
+@@ -4823,9 +4825,9 @@ public final class ContactsContract {
+ 
+         /**
+          * <p>
+-         * Build a {@link android.provider.ContactsContract.Contacts#CONTENT_LOOKUP_URI}
+-         * style {@link Uri} for the parent {@link android.provider.ContactsContract.Contacts}
+-         * entry of the given {@link ContactsContract.Data} entry.
++         * Build a {@link Contacts#CONTENT_LOOKUP_URI}
++         * style {@link Uri} for the parent {@link Contacts}
++         * entry of the given {@link Data} entry.
+          * </p>
+          * <p>
+          * Returns the Uri for the contact in the first entry returned by
+@@ -4935,25 +4937,25 @@ public final class ContactsContract {
+      * <td>String</td>
+      * <td>{@link #MIMETYPE}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Data}.</td>
++     * <td>See {@link Data}.</td>
+      * </tr>
+      * <tr>
+      * <td>int</td>
+      * <td>{@link #IS_PRIMARY}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Data}.</td>
++     * <td>See {@link Data}.</td>
+      * </tr>
+      * <tr>
+      * <td>int</td>
+      * <td>{@link #IS_SUPER_PRIMARY}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Data}.</td>
++     * <td>See {@link Data}.</td>
+      * </tr>
+      * <tr>
+      * <td>int</td>
+      * <td>{@link #DATA_VERSION}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Data}.</td>
++     * <td>See {@link Data}.</td>
+      * </tr>
+      * <tr>
+      * <td>Any type</td>
+@@ -4975,7 +4977,7 @@ public final class ContactsContract {
+      * {@link #DATA15}
+      * </td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Data}.</td>
++     * <td>See {@link Data}.</td>
+      * </tr>
+      * <tr>
+      * <td>Any type</td>
+@@ -4986,7 +4988,7 @@ public final class ContactsContract {
+      * {@link #SYNC4}
+      * </td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Data}.</td>
++     * <td>See {@link Data}.</td>
+      * </tr>
+      * </table>
+      */
+@@ -5055,7 +5057,7 @@ public final class ContactsContract {
+          */
+         public static final String DATA_ID = "data_id";
+         /**
+-         * A reference to the {@link ContactsContract.Contacts#_ID} that this
++         * A reference to the {@link Contacts#_ID} that this
+          * data belongs to.
+          * <P>Type: INTEGER</P>
+          */
+@@ -5149,61 +5151,61 @@ public final class ContactsContract {
+      * <td>String</td>
+      * <td>{@link #LOOKUP_KEY}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}</td>
++     * <td>See {@link Contacts}</td>
+      * </tr>
+      * <tr>
+      * <td>String</td>
+      * <td>{@link #DISPLAY_NAME}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}</td>
++     * <td>See {@link Contacts}</td>
+      * </tr>
+      * <tr>
+      * <td>long</td>
+      * <td>{@link #PHOTO_ID}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>int</td>
+      * <td>{@link #IN_VISIBLE_GROUP}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>int</td>
+      * <td>{@link #HAS_PHONE_NUMBER}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>int</td>
+      * <td>{@link #TIMES_CONTACTED}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>long</td>
+      * <td>{@link #LAST_TIME_CONTACTED}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>int</td>
+      * <td>{@link #STARRED}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>String</td>
+      * <td>{@link #CUSTOM_RINGTONE}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * <tr>
+      * <td>int</td>
+      * <td>{@link #SEND_TO_VOICEMAIL}</td>
+      * <td>read-only</td>
+-     * <td>See {@link ContactsContract.Contacts}.</td>
++     * <td>See {@link Contacts}.</td>
+      * </tr>
+      * </table>
+      */
+@@ -5248,7 +5250,7 @@ public final class ContactsContract {
+          *     <li>
+          *     Corp contacts will get artificial {@link #_ID}s.  In order to tell whether a contact
+          *     is from the corp profile, use
+-         *     {@link ContactsContract.Contacts#isEnterpriseContactId(long)}.
++         *     {@link Contacts#isEnterpriseContactId(long)}.
+          *     </li>
+          *     <li>
+          *     Corp contacts will get artificial {@link #LOOKUP_KEY}s too.
+@@ -5260,9 +5262,9 @@ public final class ContactsContract {
+          * </ul>
+          * <p>
+          * A contact lookup URL built by
+-         * {@link ContactsContract.Contacts#getLookupUri(long, String)}
++         * {@link Contacts#getLookupUri(long, String)}
+          * with an {@link #_ID} and a {@link #LOOKUP_KEY} returned by this API can be passed to
+-         * {@link ContactsContract.QuickContact#showQuickContact} even if a contact is from the
++         * {@link QuickContact#showQuickContact} even if a contact is from the
+          * corp profile.
+          * </p>
+          *
+@@ -5291,7 +5293,7 @@ public final class ContactsContract {
+ 
+     /**
+      * Additional data mixed in with {@link StatusColumns} to link
+-     * back to specific {@link ContactsContract.Data#_ID} entries.
++     * back to specific {@link Data#_ID} entries.
+      *
+      * @see StatusUpdates
+      */
+@@ -5311,9 +5313,9 @@ public final class ContactsContract {
+ 
+         /**
+          * Name of the custom protocol.  Should be supplied along with the {@link #PROTOCOL} value
+-         * {@link ContactsContract.CommonDataKinds.Im#PROTOCOL_CUSTOM}.  Should be null or
++         * {@link CommonDataKinds.Im#PROTOCOL_CUSTOM}.  Should be null or
+          * omitted if {@link #PROTOCOL} value is not
+-         * {@link ContactsContract.CommonDataKinds.Im#PROTOCOL_CUSTOM}.
++         * {@link CommonDataKinds.Im#PROTOCOL_CUSTOM}.
+          *
+          * <p>Type: NUMBER</p>
+          */
+@@ -5335,7 +5337,7 @@ public final class ContactsContract {
+ 
+     /**
+      * <p>
+-     * A status update is linked to a {@link ContactsContract.Data} row and captures
++     * A status update is linked to a {@link Data} row and captures
+      * the user's latest status update via the corresponding source, e.g.
+      * "Having lunch" via "Google Talk".
+      * </p>
+@@ -5388,9 +5390,9 @@ public final class ContactsContract {
+      * <td>{@link #CUSTOM_PROTOCOL}</td>
+      * <td>read/write</td>
+      * <td>Name of the custom protocol.  Should be supplied along with the {@link #PROTOCOL} value
+-     * {@link ContactsContract.CommonDataKinds.Im#PROTOCOL_CUSTOM}.  Should be null or
++     * {@link CommonDataKinds.Im#PROTOCOL_CUSTOM}.  Should be null or
+      * omitted if {@link #PROTOCOL} value is not
+-     * {@link ContactsContract.CommonDataKinds.Im#PROTOCOL_CUSTOM}.</td>
++     * {@link CommonDataKinds.Im#PROTOCOL_CUSTOM}.</td>
+      * </tr>
+      * <tr>
+      * <td>String</td>
+@@ -5561,7 +5563,7 @@ public final class ContactsContract {
+ 
+     /**
+      * Additional column returned by
+-     * {@link ContactsContract.Contacts#CONTENT_FILTER_URI Contacts.CONTENT_FILTER_URI} explaining
++     * {@link Contacts#CONTENT_FILTER_URI Contacts.CONTENT_FILTER_URI} explaining
+      * why the filter matched the contact. This column will contain extracts from the contact's
+      * constituent {@link Data Data} items, formatted in a way that indicates the section of the
+      * snippet that matched the filter.
+@@ -5636,7 +5638,7 @@ public final class ContactsContract {
+     }
+ 
+     /**
+-     * Container for definitions of common data types stored in the {@link ContactsContract.Data}
++     * Container for definitions of common data types stored in the {@link Data}
+      * table.
+      */
+     public static final class CommonDataKinds {
+@@ -5688,7 +5690,7 @@ public final class ContactsContract {
+ 
+         /**
+          * A data kind representing the contact's proper name. You can use all
+-         * columns defined for {@link ContactsContract.Data} as well as the following aliases.
++         * columns defined for {@link Data} as well as the following aliases.
+          *
+          * <h2>Column aliases</h2>
+          * <table class="jd-sumtable">
+@@ -5818,7 +5820,7 @@ public final class ContactsContract {
+ 
+             /**
+              * The style used for combining given/middle/family name into a full name.
+-             * See {@link ContactsContract.FullNameStyle}.
++             * See {@link FullNameStyle}.
+              */
+             public static final String FULL_NAME_STYLE = DATA10;
+ 
+@@ -5854,7 +5856,7 @@ public final class ContactsContract {
+          * </pre>
+          * </p>
+          * <p>
+-         * You can use all columns defined for {@link ContactsContract.Data} as well as the
++         * You can use all columns defined for {@link Data} as well as the
+          * following aliases.
+          * </p>
+          *
+@@ -5922,10 +5924,90 @@ public final class ContactsContract {
+ 
+         /**
+          * <p>
++         * A data kind representing the contact's Ethereum account address.
++         * </p>
++         * <p>
++         * You can use all columns defined for {@link Data} as well as the
++         * following aliases.
++         * </p>
++         *
++         * <h2>Column aliases</h2>
++         * <table class="jd-sumtable">
++         * <tr>
++         * <th>Type</th><th>Alias</th><th colspan='2'>Data column</th>
++         * </tr>
++         * <tr>
++         * <td>String</td>
++         * <td>{@link #ADDRESS}</td>
++         * <td>{@link #DATA1}</td>
++         * <td></td>
++         * </tr>
++         * </table>
++         */
++        public static final class EthereumAccountAddress
++                implements DataColumnsWithJoins, ContactCounts {
++
++            /**
++             * This utility class cannot be instantiated
++             */
++            private EthereumAccountAddress() {}
++
++            /** MIME type used when storing this in data table. */
++            public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/ethereum_account_address";
++
++            /**
++             * The ethereum account address as the user entered it.
++             * <P>Type: TEXT</P>
++             */
++            public static final String ADDRESS = DATA1;
++        }
++
++        /**
++         * <p>
++         * A data kind representing the contact's Bitcoin account address.
++         * </p>
++         * <p>
++         * You can use all columns defined for {@link Data} as well as the
++         * following aliases.
++         * </p>
++         *
++         * <h2>Column aliases</h2>
++         * <table class="jd-sumtable">
++         * <tr>
++         * <th>Type</th><th>Alias</th><th colspan='2'>Data column</th>
++         * </tr>
++         * <tr>
++         * <td>String</td>
++         * <td>{@link #ADDRESS}</td>
++         * <td>{@link #DATA1}</td>
++         * <td></td>
++         * </tr>
++         * </table>
++         */
++        public static final class BitcoinAccountAddress
++                implements DataColumnsWithJoins, ContactCounts {
++
++            /**
++             * This utility class cannot be instantiated
++             */
++            private BitcoinAccountAddress() {}
++
++            /** MIME type used when storing this in data table. */
++            public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/bitcoin_account_address";
++
++            /**
++             * The ethereum account address as the user entered it.
++             * <P>Type: TEXT</P>
++             */
++            public static final String ADDRESS = DATA1;
++        }
++
++        /**
++         * <p>
+          * A data kind representing a telephone number.
+          * </p>
+          * <p>
+-         * You can use all columns defined for {@link ContactsContract.Data} as
++         * You can use all columns defined for {@link Data} as
+          * well as the following aliases.
+          * </p>
+          * <h2>Column aliases</h2>
+@@ -6156,7 +6238,7 @@ public final class ContactsContract {
+          * A data kind representing an email address.
+          * </p>
+          * <p>
+-         * You can use all columns defined for {@link ContactsContract.Data} as
++         * You can use all columns defined for {@link Data} as
+          * well as the following aliases.
+          * </p>
+          * <h2>Column aliases</h2>
+@@ -6261,7 +6343,7 @@ public final class ContactsContract {
+             *     Corp contacts will get artificial {@link #CONTACT_ID}s.  In order to tell whether
+             *     a contact
+             *     is from the corp profile, use
+-            *     {@link ContactsContract.Contacts#isEnterpriseContactId(long)}.
++            *     {@link Contacts#isEnterpriseContactId(long)}.
+              *     </li>
+              *     <li>
+              *     Corp contacts will get artificial {@link #LOOKUP_KEY}s too.
+@@ -6273,9 +6355,9 @@ public final class ContactsContract {
+              * </ul>
+              * <p>
+              * A contact lookup URL built by
+-             * {@link ContactsContract.Contacts#getLookupUri(long, String)}
++             * {@link Contacts#getLookupUri(long, String)}
+              * with an {@link #_ID} and a {@link #LOOKUP_KEY} returned by this API can be passed to
+-             * {@link ContactsContract.QuickContact#showQuickContact} even if a contact is from the
++             * {@link QuickContact#showQuickContact} even if a contact is from the
+              * corp profile.
+              * </p>
+             *
+@@ -6367,7 +6449,7 @@ public final class ContactsContract {
+          * A data kind representing a postal addresses.
+          * </p>
+          * <p>
+-         * You can use all columns defined for {@link ContactsContract.Data} as
++         * You can use all columns defined for {@link Data} as
+          * well as the following aliases.
+          * </p>
+          * <h2>Column aliases</h2>
+@@ -6575,7 +6657,7 @@ public final class ContactsContract {
+          * A data kind representing an IM address
+          * </p>
+          * <p>
+-         * You can use all columns defined for {@link ContactsContract.Data} as
++         * You can use all columns defined for {@link Data} as
+          * well as the following aliases.
+          * </p>
+          * <h2>Column aliases</h2>
+@@ -6747,7 +6829,7 @@ public final class ContactsContract {
+          * A data kind representing an organization.
+          * </p>
+          * <p>
+-         * You can use all columns defined for {@link ContactsContract.Data} as
++         * You can use all columns defined for {@link Data} as
+          * well as the following aliases.
+          * </p>
+          * <h2>Column aliases</h2>
+@@ -6883,7 +6965,7 @@ public final class ContactsContract {
+ 
+             /**
+              * The alphabet used for capturing the phonetic name.
+-             * See {@link ContactsContract.PhoneticNameStyle}.
++             * See {@link PhoneticNameStyle}.
+              */
+             public static final String PHONETIC_NAME_STYLE = DATA10;
+ 
+@@ -6920,7 +7002,7 @@ public final class ContactsContract {
+          * A data kind representing a relation.
+          * </p>
+          * <p>
+-         * You can use all columns defined for {@link ContactsContract.Data} as
++         * You can use all columns defined for {@link Data} as
+          * well as the following aliases.
+          * </p>
+          * <h2>Column aliases</h2>
+@@ -7047,7 +7129,7 @@ public final class ContactsContract {
+          * A data kind representing an event.
+          * </p>
+          * <p>
+-         * You can use all columns defined for {@link ContactsContract.Data} as
++         * You can use all columns defined for {@link Data} as
+          * well as the following aliases.
+          * </p>
+          * <h2>Column aliases</h2>
+@@ -7144,13 +7226,13 @@ public final class ContactsContract {
+          * </p>
+          * <p>
+          * Some sync adapters will choose to download photos in a separate
+-         * pass. A common pattern is to use columns {@link ContactsContract.Data#SYNC1}
+-         * through {@link ContactsContract.Data#SYNC4} to store temporary
++         * pass. A common pattern is to use columns {@link Data#SYNC1}
++         * through {@link Data#SYNC4} to store temporary
+          * data, e.g. the image URL or ID, state of download, server-side version
+          * of the image.  It is allowed for the {@link #PHOTO} to be null.
+          * </p>
+          * <p>
+-         * You can use all columns defined for {@link ContactsContract.Data} as
++         * You can use all columns defined for {@link Data} as
+          * well as the following aliases.
+          * </p>
+          * <h2>Column aliases</h2>
+@@ -7185,7 +7267,7 @@ public final class ContactsContract {
+ 
+             /**
+              * Photo file ID for the display photo of the raw contact.
+-             * See {@link ContactsContract.DisplayPhoto}.
++             * See {@link DisplayPhoto}.
+              * <p>
+              * Type: NUMBER
+              */
+@@ -7205,7 +7287,7 @@ public final class ContactsContract {
+          * Notes about the contact.
+          * </p>
+          * <p>
+-         * You can use all columns defined for {@link ContactsContract.Data} as
++         * You can use all columns defined for {@link Data} as
+          * well as the following aliases.
+          * </p>
+          * <h2>Column aliases</h2>
+@@ -7243,7 +7325,7 @@ public final class ContactsContract {
+          * Group Membership.
+          * </p>
+          * <p>
+-         * You can use all columns defined for {@link ContactsContract.Data} as
++         * You can use all columns defined for {@link Data} as
+          * well as the following aliases.
+          * </p>
+          * <h2>Column aliases</h2>
+@@ -7307,7 +7389,7 @@ public final class ContactsContract {
+          * A data kind representing a website related to the contact.
+          * </p>
+          * <p>
+-         * You can use all columns defined for {@link ContactsContract.Data} as
++         * You can use all columns defined for {@link Data} as
+          * well as the following aliases.
+          * </p>
+          * <h2>Column aliases</h2>
+@@ -7379,7 +7461,7 @@ public final class ContactsContract {
+          * A data kind representing a SIP address for the contact.
+          * </p>
+          * <p>
+-         * You can use all columns defined for {@link ContactsContract.Data} as
++         * You can use all columns defined for {@link Data} as
+          * well as the following aliases.
+          * </p>
+          * <h2>Column aliases</h2>
+@@ -7688,7 +7770,7 @@ public final class ContactsContract {
+ 
+         /**
+          * The "deleted" flag: "0" by default, "1" if the row has been marked
+-         * for deletion. When {@link android.content.ContentResolver#delete} is
++         * for deletion. When {@link ContentResolver#delete} is
+          * called on a group, it is marked for deletion. The sync adaptor
+          * deletes the group on the server and then calls ContactResolver.delete
+          * once more, this time setting the the
+@@ -7817,7 +7899,7 @@ public final class ContactsContract {
+      * <td>{@link #DELETED}</td>
+      * <td>read/write</td>
+      * <td>The "deleted" flag: "0" by default, "1" if the row has been marked
+-     * for deletion. When {@link android.content.ContentResolver#delete} is
++     * for deletion. When {@link ContentResolver#delete} is
+      * called on a group, it is marked for deletion. The sync adaptor deletes
+      * the group on the server and then calls ContactResolver.delete once more,
+      * this time setting the the {@link ContactsContract#CALLER_IS_SYNCADAPTER}
+@@ -7846,7 +7928,7 @@ public final class ContactsContract {
+ 
+         /**
+          * The content:// style URI for this table joined with details data from
+-         * {@link ContactsContract.Data}.
++         * {@link Data}.
+          */
+         public static final Uri CONTENT_SUMMARY_URI = Uri.withAppendedPath(AUTHORITY_URI,
+                 "groups_summary");
+@@ -8214,9 +8296,9 @@ public final class ContactsContract {
+      * <p>
+      * With the feedback, Contacts Provider may return more contextually appropriate results for
+      * Data listing, typically supplied with
+-     * {@link ContactsContract.Contacts#CONTENT_FILTER_URI},
+-     * {@link ContactsContract.CommonDataKinds.Email#CONTENT_FILTER_URI},
+-     * {@link ContactsContract.CommonDataKinds.Phone#CONTENT_FILTER_URI}, and users can benefit
++     * {@link Contacts#CONTENT_FILTER_URI},
++     * {@link CommonDataKinds.Email#CONTENT_FILTER_URI},
++     * {@link CommonDataKinds.Phone#CONTENT_FILTER_URI}, and users can benefit
+      * from better ranked (sorted) lists in applications that show auto-complete list.
+      * </p>
+      * <p>
+@@ -8539,7 +8621,7 @@ public final class ContactsContract {
+         /**
+          * Trigger a dialog that lists the various methods of interacting with
+          * the requested {@link Contacts} entry. This may be based on available
+-         * {@link ContactsContract.Data} rows under that contact, and may also
++         * {@link Data} rows under that contact, and may also
+          * include social status and presence details.
+          *
+          * @param context The parent {@link Context} that may be used as the
+@@ -8548,7 +8630,7 @@ public final class ContactsContract {
+          *            should be centered around. In particular, if the dialog
+          *            has a "callout" arrow, it will be pointed and centered
+          *            around this {@link View}.
+-         * @param lookupUri A {@link ContactsContract.Contacts#CONTENT_LOOKUP_URI} style
++         * @param lookupUri A {@link Contacts#CONTENT_LOOKUP_URI} style
+          *            {@link Uri} that describes a specific contact to feature
+          *            in this dialog. A work lookup uri is supported here,
+          *            see {@link CommonDataKinds.Email#ENTERPRISE_CONTENT_LOOKUP_URI} and
+@@ -8572,7 +8654,7 @@ public final class ContactsContract {
+         /**
+          * Trigger a dialog that lists the various methods of interacting with
+          * the requested {@link Contacts} entry. This may be based on available
+-         * {@link ContactsContract.Data} rows under that contact, and may also
++         * {@link Data} rows under that contact, and may also
+          * include social status and presence details.
+          *
+          * @param context The parent {@link Context} that may be used as the
+@@ -8584,7 +8666,7 @@ public final class ContactsContract {
+          *            non-native density, you need to manually adjust using
+          *            {@link DisplayMetrics#density} before calling.
+          * @param lookupUri A
+-         *            {@link ContactsContract.Contacts#CONTENT_LOOKUP_URI} style
++         *            {@link Contacts#CONTENT_LOOKUP_URI} style
+          *            {@link Uri} that describes a specific contact to feature
+          *            in this dialog. A work lookup uri is supported here,
+          *            see {@link CommonDataKinds.Email#ENTERPRISE_CONTENT_LOOKUP_URI} and
+@@ -8607,7 +8689,7 @@ public final class ContactsContract {
+         /**
+          * Trigger a dialog that lists the various methods of interacting with
+          * the requested {@link Contacts} entry. This may be based on available
+-         * {@link ContactsContract.Data} rows under that contact, and may also
++         * {@link Data} rows under that contact, and may also
+          * include social status and presence details.
+          *
+          * @param context The parent {@link Context} that may be used as the
+@@ -8617,7 +8699,7 @@ public final class ContactsContract {
+          *            has a "callout" arrow, it will be pointed and centered
+          *            around this {@link View}.
+          * @param lookupUri A
+-         *            {@link ContactsContract.Contacts#CONTENT_LOOKUP_URI} style
++         *            {@link Contacts#CONTENT_LOOKUP_URI} style
+          *            {@link Uri} that describes a specific contact to feature
+          *            in this dialog. A work lookup uri is supported here,
+          *            see {@link CommonDataKinds.Email#ENTERPRISE_CONTENT_LOOKUP_URI} and
+@@ -8645,7 +8727,7 @@ public final class ContactsContract {
+         /**
+          * Trigger a dialog that lists the various methods of interacting with
+          * the requested {@link Contacts} entry. This may be based on available
+-         * {@link ContactsContract.Data} rows under that contact, and may also
++         * {@link Data} rows under that contact, and may also
+          * include social status and presence details.
+          *
+          * @param context The parent {@link Context} that may be used as the
+@@ -8657,7 +8739,7 @@ public final class ContactsContract {
+          *            non-native density, you need to manually adjust using
+          *            {@link DisplayMetrics#density} before calling.
+          * @param lookupUri A
+-         *            {@link ContactsContract.Contacts#CONTENT_LOOKUP_URI} style
++         *            {@link Contacts#CONTENT_LOOKUP_URI} style
+          *            {@link Uri} that describes a specific contact to feature
+          *            in this dialog. A work lookup uri is supported here,
+          *            see {@link CommonDataKinds.Email#ENTERPRISE_CONTENT_LOOKUP_URI} and
+@@ -8689,7 +8771,7 @@ public final class ContactsContract {
+      * Usage example:
+      * <dl>
+      * <dt>Retrieving a full-size photo by photo file ID (see
+-     * {@link ContactsContract.ContactsColumns#PHOTO_FILE_ID})
++     * {@link ContactsColumns#PHOTO_FILE_ID})
+      * </dt>
+      * <dd>
+      * <pre>
+@@ -8729,7 +8811,7 @@ public final class ContactsContract {
+                 Uri.withAppendedPath(AUTHORITY_URI, "photo_dimensions");
+ 
+         /**
+-         * Queries to {@link ContactsContract.DisplayPhoto#CONTENT_MAX_DIMENSIONS_URI} will
++         * Queries to {@link DisplayPhoto#CONTENT_MAX_DIMENSIONS_URI} will
+          * contain this column, populated with the maximum height and width (in pixels)
+          * that will be stored for a display photo.  Larger photos will be down-sized to
+          * fit within a square of this many pixels.
+@@ -8737,7 +8819,7 @@ public final class ContactsContract {
+         public static final String DISPLAY_MAX_DIM = "display_max_dim";
+ 
+         /**
+-         * Queries to {@link ContactsContract.DisplayPhoto#CONTENT_MAX_DIMENSIONS_URI} will
++         * Queries to {@link DisplayPhoto#CONTENT_MAX_DIMENSIONS_URI} will
+          * contain this column, populated with the height and width (in pixels) for photo
+          * thumbnails.
+          */
+@@ -8745,7 +8827,7 @@ public final class ContactsContract {
+     }
+ 
+     /**
+-     * Contains helper classes used to create or manage {@link android.content.Intent Intents}
++     * Contains helper classes used to create or manage {@link Intent Intents}
+      * that involve contacts.
+      */
+     public static final class Intents {
+@@ -8832,17 +8914,17 @@ public final class ContactsContract {
+          * regardless of the underlying messaging protocol used.
+          * <p>
+          * The action could be originated from the Voice Assistant as a voice interaction. In such
+-         * case, a receiving activity that supports {@link android.content.Intent#CATEGORY_VOICE}
+-         * could check return value of {@link android.app.Activity#isVoiceInteractionRoot} before
++         * case, a receiving activity that supports {@link Intent#CATEGORY_VOICE}
++         * could check return value of {@link Activity#isVoiceInteractionRoot} before
+          * proceeding. By doing this check the activity verifies that the action indeed was
+          * initiated by Voice Assistant and could send a message right away, without any further
+          * input from the user. This allows for a smooth user experience when sending a message by
+          * voice. Note: this activity must also support the {@link
+-         * android.content.Intent#CATEGORY_DEFAULT} so it can be found by {@link
++         * Intent#CATEGORY_DEFAULT} so it can be found by {@link
+          * android.service.voice.VoiceInteractionSession#startVoiceActivity}.
+          * <p>
+          * When the action was not initiated by Voice Assistant or when the receiving activity does
+-         * not support {@link android.content.Intent#CATEGORY_VOICE}, the activity must confirm
++         * not support {@link Intent#CATEGORY_VOICE}, the activity must confirm
+          * with the user before sending the message (because in this case it is unknown which app
+          * sent the intent, it could be malicious).
+          * <p>
+@@ -8889,12 +8971,12 @@ public final class ContactsContract {
+          * either METADATA_ACCOUNT_TYPE or METADATA_MIMETYPE field is missing), Voice Assistant
+          * will use existing phone number entries as contact ID's for such app.
+          * <p>
+-         * Input: {@link android.content.Intent#getType} is the MIME type of the data being sent.
++         * Input: {@link Intent#getType} is the MIME type of the data being sent.
+          * The intent sender will always put the concrete mime type in the intent type, like
+          * "text/plain" or "audio/wav" for example. If the MIME type is "text/plain", message to
+-         * sent will be provided via {@link android.content.Intent#EXTRA_TEXT} as a styled
++         * sent will be provided via {@link Intent#EXTRA_TEXT} as a styled
+          * CharSequence. Otherwise, the message content will be supplied through {@link
+-         * android.content.Intent#setClipData(ClipData)} as a content provider URI(s). In the latter
++         * Intent#setClipData(ClipData)} as a content provider URI(s). In the latter
+          * case, EXTRA_TEXT could still be supplied optionally; for example, for audio messages
+          * ClipData will contain URI of a recording and EXTRA_TEXT could contain the text
+          * transcription of this recording.
+@@ -8993,12 +9075,12 @@ public final class ContactsContract {
+          * could belong to the contacts or not, and will be selected by default.
+          * <p>
+          * The user's selection will be returned from
+-         * {@link android.app.Activity#onActivityResult(int, int, android.content.Intent)}
++         * {@link Activity#onActivityResult(int, int, Intent)}
+          * if the resultCode is
+-         * {@link android.app.Activity#RESULT_OK}, the array of picked phone
++         * {@link Activity#RESULT_OK}, the array of picked phone
+          * numbers are in the Intent's
+          * {@link #EXTRA_PHONE_URIS}; otherwise, the
+-         * {@link android.app.Activity#RESULT_CANCELED} is returned if the user
++         * {@link Activity#RESULT_CANCELED} is returned if the user
+          * left the Activity without changing the selection.
+          *
+          * @hide
+@@ -9109,7 +9191,7 @@ public final class ContactsContract {
+ 
+         /**
+          * Convenience class that contains string constants used
+-         * to create contact {@link android.content.Intent Intents}.
++         * to create contact {@link Intent Intents}.
+          */
+         public static final class Insert {
+             /** The action code to use when adding a contact */
+@@ -9153,6 +9235,18 @@ public final class ContactsContract {
+             public static final String NOTES = "notes";
+ 
+             /**
++             * The extra field for the contact ethereum account address.
++             * <P>Type: String</P>
++             */
++            public static final String ETHEREUM_ACCOUNT_ADDRESS = "ethereum_account_address";
++
++            /**
++             * The extra field for the contact bitcoin account address.
++             * <P>Type: String</P>
++             */
++            public static final String BITCOIN_ACCOUNT_ADDRESS = "bitcoin_account_address";
++
++            /**
+              * The extra field for the contact phone number.
+              * <P>Type: String</P>
+              */
+@@ -9356,7 +9450,7 @@ public final class ContactsContract {
+ 
+         /**
+          * The raw contact backup id.
+-         * A reference to the {@link ContactsContract.RawContacts#BACKUP_ID} that save the
++         * A reference to the {@link RawContacts#BACKUP_ID} that save the
+          * persistent unique id for each raw contact within its source system.
+          */
+         public static final String RAW_CONTACT_BACKUP_ID = "raw_contact_backup_id";
+@@ -9444,7 +9538,7 @@ public final class ContactsContract {
+ 
+         /**
+          * The "deleted" flag: "0" by default, "1" if the row has been marked
+-         * for deletion. When {@link android.content.ContentResolver#delete} is
++         * for deletion. When {@link ContentResolver#delete} is
+          * called on a raw contact, updating MetadataSync table to set the flag of the raw contact
+          * as "1", then metadata sync adapter deletes the raw contact metadata on the server.
+          * <P>Type: INTEGER</P>
+-- 
+2.7.4
+

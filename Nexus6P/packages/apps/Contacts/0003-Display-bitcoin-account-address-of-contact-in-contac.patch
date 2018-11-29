@@ -1,0 +1,152 @@
+From cf941e9886d8be48732088a81917d5ea43c68b87 Mon Sep 17 00:00:00 2001
+From: martin <martin@163.com>
+Date: Tue, 13 Nov 2018 15:00:56 +0800
+Subject: [PATCH] Display bitcoin account address of contact in contact detail.
+
+Change-Id: I229a455e007df04035f35791f16c11ff2a74ca6c
+---
+ Android.mk                                         |  1 -
+ res/values-zh-rCN/strings.xml                      |  1 +
+ res/values/strings.xml                             |  3 ++
+ .../dataitem/BitcoinAccountAddressDataItem.java    | 36 ++++++++++++++++++++++
+ .../android/contacts/model/dataitem/DataItem.java  |  3 ++
+ .../quickcontact/QuickContactActivity.java         | 14 +++++++++
+ 6 files changed, 57 insertions(+), 1 deletion(-)
+ create mode 100644 src/com/android/contacts/model/dataitem/BitcoinAccountAddressDataItem.java
+
+diff --git a/Android.mk b/Android.mk
+index 54e65da..e629e54 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -23,7 +23,6 @@ LOCAL_RESOURCE_DIR := $(addprefix $(LOCAL_PATH)/, $(res_dirs)) \
+     $(support_library_root_dir)/v7/cardview/res \
+     $(support_library_root_dir)/v7/recyclerview/res
+ LOCAL_ASSET_DIR := $(addprefix $(LOCAL_PATH)/, $(asset_dirs))
+-LOCAL_DEX_PREOPT := false
+ 
+ LOCAL_AAPT_FLAGS := \
+     --auto-add-overlay \
+diff --git a/res/values-zh-rCN/strings.xml b/res/values-zh-rCN/strings.xml
+index fb2a334..2e15a60 100644
+--- a/res/values-zh-rCN/strings.xml
++++ b/res/values-zh-rCN/strings.xml
+@@ -220,6 +220,7 @@
+     <string name="header_event_entry" msgid="6738250422744401460">"活动"</string>
+     <string name="header_relation_entry" msgid="1520292958088146460">"关系"</string>
+     <string name="header_ethereum_account_address_entry">以太坊帐号</string>
++    <string name="header_bitcoin_account_address_entry">比特币帐号</string>
+     <string name="header_name_entry" msgid="1592791008096288306">"姓名"</string>
+     <string name="header_email_entry" msgid="8666093061171624478">"电子邮件地址"</string>
+     <string name="header_phone_entry" msgid="8450980572274173570">"电话号码"</string>
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index 0719450..88bb74a 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -634,6 +634,9 @@
+     <!-- Content description for the ethereum account address fields header entry [CHAR LIMIT=NONE] -->
+     <string name="header_ethereum_account_address_entry">Ethereum Account</string>
+ 
++    <!-- Content description for the bitcoin account address fields header entry [CHAR LIMIT=NONE] -->
++    <string name="header_bitcoin_account_address_entry">Bitcoin Account</string>
++
+     <!-- Content description for directions secondary button [CHAR LIMIT=NONE] -->
+     <string name="content_description_directions">directions to location</string>
+ 
+diff --git a/src/com/android/contacts/model/dataitem/BitcoinAccountAddressDataItem.java b/src/com/android/contacts/model/dataitem/BitcoinAccountAddressDataItem.java
+new file mode 100644
+index 0000000..875ac1c
+--- /dev/null
++++ b/src/com/android/contacts/model/dataitem/BitcoinAccountAddressDataItem.java
+@@ -0,0 +1,36 @@
++/*
++ * Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.contacts.model.dataitem;
++
++import android.content.ContentValues;
++import android.provider.ContactsContract;
++import android.provider.ContactsContract.CommonDataKinds.BitcoinAccountAddress;
++
++/**
++ * Represents an bitcoin account address data item, wrapping the columns in
++ * {@link ContactsContract.CommonDataKinds.BitcoinAccountAddress}.
++ */
++public class BitcoinAccountAddressDataItem extends DataItem {
++
++    /* package */ BitcoinAccountAddressDataItem(ContentValues values) {
++        super(values);
++    }
++
++    public String getAddress() {
++        return getContentValues().getAsString(BitcoinAccountAddress.ADDRESS);
++    }
++}
+diff --git a/src/com/android/contacts/model/dataitem/DataItem.java b/src/com/android/contacts/model/dataitem/DataItem.java
+index 9f70c12..7f00f68 100644
+--- a/src/com/android/contacts/model/dataitem/DataItem.java
++++ b/src/com/android/contacts/model/dataitem/DataItem.java
+@@ -35,6 +35,7 @@ import android.provider.ContactsContract.CommonDataKinds.StructuredName;
+ import android.provider.ContactsContract.CommonDataKinds.StructuredPostal;
+ import android.provider.ContactsContract.CommonDataKinds.Website;
+ import android.provider.ContactsContract.CommonDataKinds.EthereumAccountAddress;
++import android.provider.ContactsContract.CommonDataKinds.BitcoinAccountAddress;
+ import android.provider.ContactsContract.Contacts.Data;
+ import android.provider.ContactsContract.Contacts.Entity;
+ 
+@@ -94,6 +95,8 @@ public class DataItem implements Collapser.Collapsible<DataItem> {
+             return new CustomDataItem(values);
+         } else if (EthereumAccountAddress.CONTENT_ITEM_TYPE.equals(mimeType)) {
+             return new EthereumAccountAddressDataItem(values);
++        } else if (BitcoinAccountAddress.CONTENT_ITEM_TYPE.equals(mimeType)) {
++            return new BitcoinAccountAddressDataItem(values);
+         }
+ 
+         // generic
+diff --git a/src/com/android/contacts/quickcontact/QuickContactActivity.java b/src/com/android/contacts/quickcontact/QuickContactActivity.java
+index 1e312a6..06ce1de 100644
+--- a/src/com/android/contacts/quickcontact/QuickContactActivity.java
++++ b/src/com/android/contacts/quickcontact/QuickContactActivity.java
+@@ -140,6 +140,7 @@ import com.android.contacts.model.Contact;
+ import com.android.contacts.model.ContactLoader;
+ import com.android.contacts.model.RawContact;
+ import com.android.contacts.model.account.AccountType;
++import com.android.contacts.model.dataitem.BitcoinAccountAddressDataItem;
+ import com.android.contacts.model.dataitem.CustomDataItem;
+ import com.android.contacts.model.dataitem.DataItem;
+ import com.android.contacts.model.dataitem.DataKind;
+@@ -1930,6 +1931,19 @@ public class QuickContactActivity extends ContactsActivity {
+                 subHeader = res.getString(R.string.header_ethereum_account_address_entry);
+                 iconResourceId = R.drawable.quantum_ic_ethereum_vd_theme_24;
+                 icon = res.getDrawable(iconResourceId);
++                entryContextMenuInfo = new EntryContextMenuInfo(header, subHeader,
++                        dataItem.getMimeType(), dataItem.getId(), dataItem.isSuperPrimary());
++            }
++        } else if (dataItem instanceof BitcoinAccountAddressDataItem) {
++            final BitcoinAccountAddressDataItem bitcoinAccountAddress = (BitcoinAccountAddressDataItem) dataItem;
++            final String address = bitcoinAccountAddress.getAddress();
++            if (!TextUtils.isEmpty(address)) {
++                header = address;
++                subHeader = res.getString(R.string.header_bitcoin_account_address_entry);
++                iconResourceId = R.drawable.quantum_ic_bitcoin_vd_theme_24;
++                icon = res.getDrawable(iconResourceId);
++                entryContextMenuInfo = new EntryContextMenuInfo(header, subHeader,
++                        dataItem.getMimeType(), dataItem.getId(), dataItem.isSuperPrimary());
+             }
+         } else {
+             // Custom DataItem
+-- 
+2.7.4
+

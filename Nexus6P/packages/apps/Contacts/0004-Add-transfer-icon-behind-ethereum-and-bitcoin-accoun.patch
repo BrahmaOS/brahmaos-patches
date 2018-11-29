@@ -1,0 +1,102 @@
+From 35dcd1cc8f7a14771e9435ce73feda1b0af37ea0 Mon Sep 17 00:00:00 2001
+From: martin <martin@163.com>
+Date: Tue, 13 Nov 2018 18:03:40 +0800
+Subject: [PATCH] Add transfer icon behind ethereum and bitcoin account
+ address.
+
+Change-Id: Ic3eb16e924c437446a453f2fd0c594a0abc6146d
+---
+ res/drawable/quantum_ic_bitcoin_vd_theme_24.xml    |  2 +-
+ res/drawable/quantum_ic_transfer_vd_theme_24.xml   | 29 ++++++++++++++++++++++
+ .../quickcontact/QuickContactActivity.java         | 13 ++++++++--
+ 3 files changed, 41 insertions(+), 3 deletions(-)
+ create mode 100644 res/drawable/quantum_ic_transfer_vd_theme_24.xml
+
+diff --git a/res/drawable/quantum_ic_bitcoin_vd_theme_24.xml b/res/drawable/quantum_ic_bitcoin_vd_theme_24.xml
+index 567250d..15a2b3a 100644
+--- a/res/drawable/quantum_ic_bitcoin_vd_theme_24.xml
++++ b/res/drawable/quantum_ic_bitcoin_vd_theme_24.xml
+@@ -1,5 +1,5 @@
+ <?xml version="1.0" encoding="utf-8"?>
+-<!-- Copyright (C) 2016 The Android Open Source Project
++<!-- Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
+ 
+      Licensed under the Apache License, Version 2.0 (the "License");
+      you may not use this file except in compliance with the License.
+diff --git a/res/drawable/quantum_ic_transfer_vd_theme_24.xml b/res/drawable/quantum_ic_transfer_vd_theme_24.xml
+new file mode 100644
+index 0000000..8d60a6d
+--- /dev/null
++++ b/res/drawable/quantum_ic_transfer_vd_theme_24.xml
+@@ -0,0 +1,29 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++    android:width="128dp"
++    android:height="128dp"
++    android:viewportWidth="1024.0"
++    android:viewportHeight="1024.0"
++    android:tint="?attr/colorControlNormal">
++    <path
++        android:pathData="M746.92,385.51L352.38,385.51l90.35,-90.35c6.02,-6.02 6.02,-18.07 0,-21.08l-21.08,-21.08c-3.01,-6.02 -18.07,-6.02 -21.08,0l-132.52,132.52c-3.01,3.01 -6.02,6.02 -6.02,9.04 -3.01,3.01 -3.01,6.02 -3.01,6.02v30.12c0,9.04 6.02,18.07 18.07,18.07L752.94,448.75c9.04,0 18.07,-6.02 18.07,-18.07v-30.12c-6.02,-9.04 -15.06,-15.06 -24.09,-15.06zM752.94,575.25L274.07,575.25c-9.04,0 -18.07,6.02 -18.07,12.05v30.12c0,9.04 0,18.07 30.12,18.07L662.59,635.48l-81.32,78.31c-6.02,6.02 -6.02,18.07 0,21.08l21.08,21.08c6.02,6.02 18.07,6.02 21.08,0L752.94,632.47c9.04,-6.02 9.04,-12.05 9.04,-15.06v-30.12c3.01,-3.01 -6.02,-12.05 -9.04,-12.05z"
++        android:fillColor="@android:color/white"/>
++    <path
++        android:pathData="M891.48,1024L132.52,1024C60.24,1024 0,963.76 0,891.48L0,132.52C0,60.24 60.24,0 132.52,0h761.98C963.76,0 1020.99,60.24 1024,132.52v761.98c0,69.27 -60.24,129.51 -132.52,129.51zM135.53,60.24C96.38,60.24 60.24,96.38 60.24,135.53v752.94C60.24,927.62 96.38,963.76 135.53,963.76h752.94c42.16,0 75.29,-36.14 75.29,-75.29v-752.94C963.76,96.38 927.62,60.24 888.47,60.24h-752.94zM614.4,768c-6.02,0 -9.04,-3.01 -15.06,-6.02l-21.08,-21.08c-3.01,-3.01 -6.02,-6.02 -6.02,-12.05s3.01,-12.05 6.02,-15.06l75.29,-72.28L289.13,641.51c-33.13,0 -36.14,-9.04 -36.14,-21.08v-30.12c0,-6.02 9.04,-15.06 21.08,-15.06L752.94,575.25c6.02,0 15.06,9.04 18.07,18.07v30.12c0,9.04 -3.01,12.05 -12.05,18.07l-129.51,123.48c-3.01,0 -6.02,3.01 -15.06,3.01 3.01,0 3.01,0 0,0zM752.94,454.78L274.07,454.78c-12.05,0 -21.08,-9.04 -21.08,-21.08v-30.12c0,-3.01 0,-6.02 3.01,-9.04 0,-6.02 3.01,-9.04 6.02,-12.05l132.52,-132.52c3.01,-6.02 12.05,-6.02 18.07,-6.02 6.02,0 9.04,3.01 9.04,6.02l21.08,21.08c3.01,3.01 6.02,6.02 6.02,12.05s-3.01,12.05 -6.02,15.06l-84.33,84.33h388.52c12.05,0 21.08,6.02 24.09,18.07v30.12c0,15.06 -9.04,24.09 -18.07,24.09z"
++        android:fillColor="@android:color/white"/>
++</vector>
+\ No newline at end of file
+diff --git a/src/com/android/contacts/quickcontact/QuickContactActivity.java b/src/com/android/contacts/quickcontact/QuickContactActivity.java
+index 06ce1de..69cc331 100644
+--- a/src/com/android/contacts/quickcontact/QuickContactActivity.java
++++ b/src/com/android/contacts/quickcontact/QuickContactActivity.java
+@@ -1886,8 +1886,7 @@ public class QuickContactActivity extends ContactsActivity {
+             final SipAddressDataItem sip = (SipAddressDataItem) dataItem;
+             final String address = sip.getSipAddress();
+             if (!TextUtils.isEmpty(address)) {
+-                primaryContentDescription.append(res.getString(R.string.call_other)).append(
+-                        " ");
++                primaryContentDescription.append(res.getString(R.string.call_other)).append(" ");
+                 if (PhoneCapabilityTester.isSipPhone(context)) {
+                     final Uri callUri = Uri.fromParts(PhoneAccount.SCHEME_SIP, address, null);
+                     intent = CallUtil.getCallIntent(callUri);
+@@ -1931,6 +1930,11 @@ public class QuickContactActivity extends ContactsActivity {
+                 subHeader = res.getString(R.string.header_ethereum_account_address_entry);
+                 iconResourceId = R.drawable.quantum_ic_ethereum_vd_theme_24;
+                 icon = res.getDrawable(iconResourceId);
++                alternateIntent = new Intent(Intent.ACTION_SENDTO,
++                        Uri.fromParts(ContactsUtils.SCHEME_SMSTO, "18912345678", null));
++                alternateIntent.putExtra(EXTRA_ACTION_TYPE, ActionType.SMS);
++                alternateIcon = res.getDrawable(R.drawable.quantum_ic_transfer_vd_theme_24);
++                alternateContentDescription.append(res.getString(R.string.sms_custom, header));
+                 entryContextMenuInfo = new EntryContextMenuInfo(header, subHeader,
+                         dataItem.getMimeType(), dataItem.getId(), dataItem.isSuperPrimary());
+             }
+@@ -1942,6 +1946,11 @@ public class QuickContactActivity extends ContactsActivity {
+                 subHeader = res.getString(R.string.header_bitcoin_account_address_entry);
+                 iconResourceId = R.drawable.quantum_ic_bitcoin_vd_theme_24;
+                 icon = res.getDrawable(iconResourceId);
++                alternateIntent = new Intent(Intent.ACTION_SENDTO,
++                        Uri.fromParts(ContactsUtils.SCHEME_SMSTO, "18912345678", null));
++                alternateIntent.putExtra(EXTRA_ACTION_TYPE, ActionType.SMS);
++                alternateIcon = res.getDrawable(R.drawable.quantum_ic_transfer_vd_theme_24);
++                alternateContentDescription.append(res.getString(R.string.sms_custom, header));
+                 entryContextMenuInfo = new EntryContextMenuInfo(header, subHeader,
+                         dataItem.getMimeType(), dataItem.getId(), dataItem.isSuperPrimary());
+             }
+-- 
+2.7.4
+

@@ -1,0 +1,25 @@
+From 449f099e37cce770943d0965b71aa8fbceb75c55 Mon Sep 17 00:00:00 2001
+From: martin <martin@163.com>
+Date: Mon, 26 Nov 2018 10:47:29 +0800
+Subject: [PATCH] Fix Android.mk
+
+Change-Id: I8bdb41ebdf7e8cc896e96e3f44b171fbb3ad44c9
+---
+ Android.mk | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/Android.mk b/Android.mk
+index c995bf4..9419c61 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -23,7 +23,6 @@ LOCAL_RESOURCE_DIR := $(addprefix $(LOCAL_PATH)/, $(res_dirs)) \
+     $(support_library_root_dir)/v7/cardview/res \
+     $(support_library_root_dir)/v7/recyclerview/res
+ LOCAL_ASSET_DIR := $(addprefix $(LOCAL_PATH)/, $(asset_dirs))
+-LOCAL_DEX_PREOPT := false
+ 
+ LOCAL_AAPT_FLAGS := \
+     --auto-add-overlay \
+-- 
+2.7.4
+

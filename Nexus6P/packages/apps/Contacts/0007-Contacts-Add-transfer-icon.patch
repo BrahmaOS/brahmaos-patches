@@ -1,0 +1,191 @@
+From 222befe9deed0f8b77b034a191a5b76381488745 Mon Sep 17 00:00:00 2001
+From: martin <martin@163.com>
+Date: Wed, 14 Nov 2018 18:34:03 +0800
+Subject: [PATCH] [Contacts] Add transfer icon.
+
+Change-Id: I808a12496bbc51393b1e6c080cd26b9929bcff4b
+---
+ AndroidManifest.xml                                |  2 +-
+ res/drawable/quantum_ic_scan_vd_theme_24.xml       | 24 +++++++++++++++++++++
+ res/drawable/quantum_ic_transfer_vd_theme_24.xml   |  2 +-
+ res/layout/text_fields_editor_view.xml             | 21 ++++++++++++++----
+ .../contacts/editor/ContactEditorFragment.java     |  3 +++
+ .../contacts/editor/RawContactEditorView.java      |  2 --
+ .../contacts/editor/TextFieldsEditorView.java      | 25 ++++++++++++++++++++++
+ 7 files changed, 71 insertions(+), 8 deletions(-)
+ create mode 100644 res/drawable/quantum_ic_scan_vd_theme_24.xml
+
+diff --git a/AndroidManifest.xml b/AndroidManifest.xml
+index 852a730..cfdb8e2 100644
+--- a/AndroidManifest.xml
++++ b/AndroidManifest.xml
+@@ -17,7 +17,7 @@
+ <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+           package="com.android.contacts"
+           android:versionCode="1007021"
+-          android:versionName="1.7.21b1">
++          android:versionName="1.7.21b5">
+ 
+     <uses-sdk
+         android:minSdkVersion="21"
+diff --git a/res/drawable/quantum_ic_scan_vd_theme_24.xml b/res/drawable/quantum_ic_scan_vd_theme_24.xml
+new file mode 100644
+index 0000000..5c0dddf
+--- /dev/null
++++ b/res/drawable/quantum_ic_scan_vd_theme_24.xml
+@@ -0,0 +1,24 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++        android:width="24dp"
++        android:height="24dp"
++        android:viewportWidth="1024.0"
++        android:viewportHeight="1024.0"
++        android:tint="?attr/colorControlNormal">
++    <path android:fillColor="@android:color/white" android:pathData="M725.33,128h149.18C886.42,128 896,137.58 896,149.48L896,298.67a42.67,42.67 0,1 0,85.33 0L981.33,149.48A106.75,106.75 0,0 0,874.52 42.67L725.33,42.67a42.67,42.67 0,1 0,0 85.33zM896,725.33v149.18c0,11.9 -9.58,21.48 -21.48,21.48L725.33,896a42.67,42.67 0,1 0,0 85.33h149.18A106.75,106.75 0,0 0,981.33 874.52L981.33,725.33a42.67,42.67 0,1 0,-85.33 0zM298.67,896L149.48,896A21.42,21.42 0,0 1,128 874.52L128,725.33a42.67,42.67 0,1 0,-85.33 0v149.18A106.75,106.75 0,0 0,149.48 981.33L298.67,981.33a42.67,42.67 0,1 0,0 -85.33zM128,298.67a42.67,42.67 0,1 1,-85.33 0L42.67,149.48A106.75,106.75 0,0 1,149.48 42.67L298.67,42.67a42.67,42.67 0,1 1,0 85.33L149.48,128C137.58,128 128,137.58 128,149.48L128,298.67zM85.33,554.67a42.67,42.67 0,1 1,0 -85.33h853.33a42.67,42.67 0,1 1,0 85.33L85.33,554.67z"/>
++</vector>
+diff --git a/res/drawable/quantum_ic_transfer_vd_theme_24.xml b/res/drawable/quantum_ic_transfer_vd_theme_24.xml
+index 8d60a6d..d4edac9 100644
+--- a/res/drawable/quantum_ic_transfer_vd_theme_24.xml
++++ b/res/drawable/quantum_ic_transfer_vd_theme_24.xml
+@@ -26,4 +26,4 @@
+     <path
+         android:pathData="M891.48,1024L132.52,1024C60.24,1024 0,963.76 0,891.48L0,132.52C0,60.24 60.24,0 132.52,0h761.98C963.76,0 1020.99,60.24 1024,132.52v761.98c0,69.27 -60.24,129.51 -132.52,129.51zM135.53,60.24C96.38,60.24 60.24,96.38 60.24,135.53v752.94C60.24,927.62 96.38,963.76 135.53,963.76h752.94c42.16,0 75.29,-36.14 75.29,-75.29v-752.94C963.76,96.38 927.62,60.24 888.47,60.24h-752.94zM614.4,768c-6.02,0 -9.04,-3.01 -15.06,-6.02l-21.08,-21.08c-3.01,-3.01 -6.02,-6.02 -6.02,-12.05s3.01,-12.05 6.02,-15.06l75.29,-72.28L289.13,641.51c-33.13,0 -36.14,-9.04 -36.14,-21.08v-30.12c0,-6.02 9.04,-15.06 21.08,-15.06L752.94,575.25c6.02,0 15.06,9.04 18.07,18.07v30.12c0,9.04 -3.01,12.05 -12.05,18.07l-129.51,123.48c-3.01,0 -6.02,3.01 -15.06,3.01 3.01,0 3.01,0 0,0zM752.94,454.78L274.07,454.78c-12.05,0 -21.08,-9.04 -21.08,-21.08v-30.12c0,-3.01 0,-6.02 3.01,-9.04 0,-6.02 3.01,-9.04 6.02,-12.05l132.52,-132.52c3.01,-6.02 12.05,-6.02 18.07,-6.02 6.02,0 9.04,3.01 9.04,6.02l21.08,21.08c3.01,3.01 6.02,6.02 6.02,12.05s-3.01,12.05 -6.02,15.06l-84.33,84.33h388.52c12.05,0 21.08,6.02 24.09,18.07v30.12c0,15.06 -9.04,24.09 -18.07,24.09z"
+         android:fillColor="@android:color/white"/>
+-</vector>
+\ No newline at end of file
++</vector>
+diff --git a/res/layout/text_fields_editor_view.xml b/res/layout/text_fields_editor_view.xml
+index 326977d..c6cbd1f 100644
+--- a/res/layout/text_fields_editor_view.xml
++++ b/res/layout/text_fields_editor_view.xml
+@@ -27,11 +27,24 @@
+         android:layout_height="wrap_content"
+         android:orientation="vertical">
+ 
+-        <LinearLayout
+-            android:id="@+id/editors"
++        <FrameLayout
+             android:layout_width="match_parent"
+-            android:layout_height="wrap_content"
+-            android:orientation="vertical" />
++            android:layout_height="wrap_content">
++            <LinearLayout
++                android:id="@+id/editors"
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:orientation="vertical" />
++            <ImageView
++                android:id="@+id/operate"
++                android:layout_width="22dp"
++                android:layout_height="22dp"
++                android:layout_gravity="right|bottom"
++                android:layout_marginBottom="20dp"
++                android:layout_marginRight="8dp"
++                android:background="@android:color/white"
++                android:visibility="gone"/>
++        </FrameLayout>
+ 
+         <include
+             android:id="@+id/spinner"
+diff --git a/src/com/android/contacts/editor/ContactEditorFragment.java b/src/com/android/contacts/editor/ContactEditorFragment.java
+index cfde498..4ed4cc7 100644
+--- a/src/com/android/contacts/editor/ContactEditorFragment.java
++++ b/src/com/android/contacts/editor/ContactEditorFragment.java
+@@ -165,6 +165,9 @@ public class ContactEditorFragment extends Fragment implements
+     protected static final int REQUEST_CODE_JOIN = 0;
+     protected static final int REQUEST_CODE_ACCOUNTS_CHANGED = 1;
+ 
++    protected static final int REQUEST_CODE_SCAN_ETHEREUM_QR = 2;
++    protected static final int REQUEST_CODE_SCAN_BITCOIN_QR = 3;
++
+     /**
+      * An intent extra that forces the editor to add the edited contact
+      * to the default group (e.g. "My Contacts").
+diff --git a/src/com/android/contacts/editor/RawContactEditorView.java b/src/com/android/contacts/editor/RawContactEditorView.java
+index 42cb850..b7c304b 100644
+--- a/src/com/android/contacts/editor/RawContactEditorView.java
++++ b/src/com/android/contacts/editor/RawContactEditorView.java
+@@ -884,8 +884,6 @@ public class RawContactEditorView extends LinearLayout implements View.OnClickLi
+             kindSectionView = inflateKindSectionView(mKindSectionViews, kindSectionData, mimeType);
+             mKindSectionViews.addView(kindSectionView);
+ 
+-            Log.i(TAG, "====> kind: " + i + " " + mimeType);
+-
+             // Keep a pointer to the KindSectionView for each mimeType
+             mKindSectionViewMap.put(mimeType, kindSectionView);
+         }
+diff --git a/src/com/android/contacts/editor/TextFieldsEditorView.java b/src/com/android/contacts/editor/TextFieldsEditorView.java
+index c3a240a..69b80ec 100644
+--- a/src/com/android/contacts/editor/TextFieldsEditorView.java
++++ b/src/com/android/contacts/editor/TextFieldsEditorView.java
+@@ -59,6 +59,7 @@ public class TextFieldsEditorView extends LabeledEditorView {
+     private EditText[] mFieldEditTexts = null;
+     private ViewGroup mFields = null;
+     protected View mExpansionViewContainer;
++    protected ImageView mOperateView;
+     protected ImageView mExpansionView;
+     protected String mCollapseButtonDescription;
+     protected String mExpandButtonDescription;
+@@ -95,6 +96,7 @@ public class TextFieldsEditorView extends LabeledEditorView {
+         mFields = (ViewGroup) findViewById(R.id.editors);
+         mHintTextColorUnfocused = getResources().getColor(R.color.editor_disabled_text_color);
+         mExpansionView = (ImageView) findViewById(R.id.expansion_view);
++        mOperateView = findViewById(R.id.operate);
+         mCollapseButtonDescription = getResources()
+                 .getString(R.string.collapse_fields_description);
+         mCollapsedAnnouncement = getResources()
+@@ -190,6 +192,21 @@ public class TextFieldsEditorView extends LabeledEditorView {
+         mExpansionViewContainer.setVisibility(shouldExist ? View.VISIBLE : View.INVISIBLE);
+     }
+ 
++    public static int dip2px(Context context, float dpValue) {
++        final float scale = context.getResources().getDisplayMetrics().density;
++        return (int) (dpValue * scale + 0.5f);
++    }
++
++    private void setupOperateView(boolean showOperate, int iconResourceId, EditText fieldView) {
++        if (mOperateView != null) {
++            mOperateView.setVisibility(showOperate ? View.VISIBLE : View.GONE);
++            if (showOperate) {
++                mOperateView.setImageDrawable(getContext().getDrawable(iconResourceId));
++                fieldView.setPadding(0, 0, dip2px(getContext(), 40), 0);
++            }
++        }
++    }
++
+     @Override
+     protected void requestFocusForFirstEditField() {
+         if (mFieldEditTexts != null && mFieldEditTexts.length != 0) {
+@@ -275,6 +292,14 @@ public class TextFieldsEditorView extends LabeledEditorView {
+                 fieldView.setText(value);
+             }
+ 
++            // Show scan icon for ethereum and bitcoin account
++            if (ContactsContract.CommonDataKinds.EthereumAccountAddress.CONTENT_ITEM_TYPE.equals(kind.mimeType)
++                    || ContactsContract.CommonDataKinds.BitcoinAccountAddress.CONTENT_ITEM_TYPE.equals(kind.mimeType)) {
++                setupOperateView(true, R.drawable.quantum_ic_scan_vd_theme_24, fieldView);
++            } else {
++                setupOperateView(false, 0, fieldView);
++            }
++
+             // Show the delete button if we have a non-empty value
+             setDeleteButtonVisible(!TextUtils.isEmpty(value));
+ 
+-- 
+2.7.4
+
