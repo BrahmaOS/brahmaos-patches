@@ -1,0 +1,26 @@
+From 2176f838af425a55a35f3e8ea96c15be02504df7 Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Thu, 22 Nov 2018 14:31:55 +0800
+Subject: [PATCH] About: BrahmaOS version support Chinese
+
+Change-Id: Ib57adeedb373dd692351332e4a624d1c73297d77
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ res/values-zh-rCN/strings.xml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/res/values-zh-rCN/strings.xml b/res/values-zh-rCN/strings.xml
+index 8e09887..d6d5229 100644
+--- a/res/values-zh-rCN/strings.xml
++++ b/res/values-zh-rCN/strings.xml
+@@ -1132,6 +1132,7 @@
+     <string name="fcc_equipment_id" msgid="149114368246356737">"设备 ID"</string>
+     <string name="baseband_version" msgid="1848990160763524801">"基带版本"</string>
+     <string name="kernel_version" msgid="9192574954196167602">"内核版本"</string>
++    <string name="brahmaos_version">"BrahmaOS 版本"</string>
+     <string name="build_number" msgid="3075795840572241758">"版本号"</string>
+     <string name="selinux_status" msgid="6212165375172061672">"SELinux 状态"</string>
+     <string name="device_info_not_available" msgid="8062521887156825182">"无法获取"</string>
+-- 
+2.7.4
+

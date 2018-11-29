@@ -1,0 +1,35 @@
+From 9862ff21168d876633bad8b595bc3e68c69b06cf Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Tue, 27 Nov 2018 09:06:32 +0800
+Subject: [PATCH] [SystemUpdate]: fix system updates Intent has no action
+
+PreferenceInflater will set preference action.
+updatePreferenceToSpecificActivityOrRemove will overwrite the intent.
+The intent only contains Activity, doesn't has action.
+
+Change-Id: I5ef72bb8f1d47c805a67924896cb3c0c8d2ac1ba
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ .../settings/deviceinfo/SystemUpdatePreferenceController.java       | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/com/android/settings/deviceinfo/SystemUpdatePreferenceController.java b/src/com/android/settings/deviceinfo/SystemUpdatePreferenceController.java
+index d2ad6d8..de5dc8f 100644
+--- a/src/com/android/settings/deviceinfo/SystemUpdatePreferenceController.java
++++ b/src/com/android/settings/deviceinfo/SystemUpdatePreferenceController.java
+@@ -60,9 +60,9 @@ public class SystemUpdatePreferenceController extends AbstractPreferenceControll
+     @Override
+     public void displayPreference(PreferenceScreen screen) {
+         if (isAvailable()) {
+-            Utils.updatePreferenceToSpecificActivityOrRemove(mContext, screen,
+-                    KEY_SYSTEM_UPDATE_SETTINGS,
+-                    Utils.UPDATE_PREFERENCE_FLAG_SET_TITLE_TO_MATCHING_ACTIVITY);
++//            Utils.updatePreferenceToSpecificActivityOrRemove(mContext, screen,
++//                    KEY_SYSTEM_UPDATE_SETTINGS,
++//                    Utils.UPDATE_PREFERENCE_FLAG_SET_TITLE_TO_MATCHING_ACTIVITY);
+         } else {
+             removePreference(screen, KEY_SYSTEM_UPDATE_SETTINGS);
+         }
+-- 
+2.7.4
+

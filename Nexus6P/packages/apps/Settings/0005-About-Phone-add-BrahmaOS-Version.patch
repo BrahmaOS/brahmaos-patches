@@ -1,0 +1,119 @@
+From 129b1e5e4f0008adbad0b4fe9170042c6fd3e222 Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Mon, 19 Nov 2018 14:36:58 +0800
+Subject: [PATCH] About Phone: add BrahmaOS Version
+
+add BrahmaOS Versiont
+
+Change-Id: Ib2227c375fb88fbb8c021863b9465325e0fe1927
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ res/values/strings.xml                             |  2 +
+ res/xml/device_info_settings.xml                   |  6 +++
+ src/com/android/settings/DeviceInfoSettings.java   |  2 +
+ .../BrahmaosVersionPreferenceController.java       | 43 ++++++++++++++++++++++
+ 4 files changed, 53 insertions(+)
+ create mode 100644 src/com/android/settings/deviceinfo/BrahmaosVersionPreferenceController.java
+
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index 139e2ae..ecb1064 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -2636,6 +2636,8 @@
+     <string name="baseband_version">Baseband version</string>
+     <!-- About phone screen,  setting option name  [CHAR LIMIT=40] -->
+     <string name="kernel_version">Kernel version</string>
++    <!-- About phone screen,  BrahmaOS version  [CHAR LIMIT=40] -->
++    <string name="brahmaos_version">BrahmaOS version</string>
+     <!-- About phone screen,  setting option name  [CHAR LIMIT=40] -->
+     <string name="build_number">Build number</string>
+     <!-- About phone screen,  setting option name  [CHAR LIMIT=40] -->
+diff --git a/res/xml/device_info_settings.xml b/res/xml/device_info_settings.xml
+index b094175..952cebc 100644
+--- a/res/xml/device_info_settings.xml
++++ b/res/xml/device_info_settings.xml
+@@ -66,6 +66,12 @@
+                 android:title="@string/model_info"
+                 android:summary="@string/summary_placeholder"/>
+ 
++        <!-- BrahmaOS version -->
++        <Preference
++            android:key="brahmaos_version"
++            android:title="@string/brahmaos_version"
++            android:summary="@string/summary_placeholder"/>
++
+         <!-- Device firmware version -->
+         <Preference android:key="firmware_version"
+                 android:title="@string/firmware_version"
+diff --git a/src/com/android/settings/DeviceInfoSettings.java b/src/com/android/settings/DeviceInfoSettings.java
+index 7ca52e2..8f37f4b 100644
+--- a/src/com/android/settings/DeviceInfoSettings.java
++++ b/src/com/android/settings/DeviceInfoSettings.java
+@@ -27,6 +27,7 @@ import com.android.settings.dashboard.DashboardFragment;
+ import com.android.settings.dashboard.SummaryLoader;
+ import com.android.settings.deviceinfo.AdditionalSystemUpdatePreferenceController;
+ import com.android.settings.deviceinfo.BasebandVersionPreferenceController;
++import com.android.settings.deviceinfo.BrahmaosVersionPreferenceController;
+ import com.android.settings.deviceinfo.BuildNumberPreferenceController;
+ import com.android.settings.deviceinfo.DeviceModelPreferenceController;
+ import com.android.settings.deviceinfo.FccEquipmentIdPreferenceController;
+@@ -123,6 +124,7 @@ public class DeviceInfoSettings extends DashboardFragment implements Indexable {
+         controllers.add(new ManualPreferenceController(context));
+         controllers.add(new FeedbackPreferenceController(fragment, context));
+         controllers.add(new KernelVersionPreferenceController(context));
++        controllers.add(new BrahmaosVersionPreferenceController(context));
+         controllers.add(new BasebandVersionPreferenceController(context));
+         controllers.add(new FirmwareVersionPreferenceController(context, lifecycle));
+         controllers.add(new RegulatoryInfoPreferenceController(context));
+diff --git a/src/com/android/settings/deviceinfo/BrahmaosVersionPreferenceController.java b/src/com/android/settings/deviceinfo/BrahmaosVersionPreferenceController.java
+new file mode 100644
+index 0000000..9b3fdc3
+--- /dev/null
++++ b/src/com/android/settings/deviceinfo/BrahmaosVersionPreferenceController.java
+@@ -0,0 +1,43 @@
++package com.android.settings.deviceinfo;
++
++import android.content.Context;
++import android.support.v7.preference.Preference;
++
++import com.android.settings.R;
++import com.android.settings.Utils;
++import android.os.SystemProperties;
++import com.android.settings.core.PreferenceControllerMixin;
++import com.android.settingslib.core.AbstractPreferenceController;
++
++
++public class BrahmaosVersionPreferenceController extends AbstractPreferenceController implements PreferenceControllerMixin
++{
++    private static final String KEY_BRAHMAOS_VERSION = "brahmaos_version";
++    private static final String KEY_BUILD_ID = "ro.build.id";
++    private static final String buildIdValue = SystemProperties.get(KEY_BUILD_ID);
++
++    public BrahmaosVersionPreferenceController(Context context) {
++        super(context);
++    }
++
++    @Override
++    public boolean isAvailable() {
++        if (buildIdValue.contains("BrahmaOS"))
++            return true;
++        else
++            return false;
++    }
++
++    @Override
++    public String getPreferenceKey() {
++        return KEY_BRAHMAOS_VERSION;
++    }
++
++    @Override
++    public void updateState(Preference preference) {
++        super.updateState(preference);
++        String[] brahmaosVersion = buildIdValue.split("_", 2);
++        if ( brahmaosVersion[1] != null)
++            preference.setSummary(brahmaosVersion[1]);
++    }
++}
+-- 
+2.7.4
+

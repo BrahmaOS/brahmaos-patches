@@ -1,0 +1,65 @@
+From a69591c3de706b3cc66d5d5afcf9fa30d0bff175 Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Thu, 29 Nov 2018 17:28:43 +0800
+Subject: [PATCH] [deviceinfo]: get BrahmaosVersion from property
+ 'ro.build.version.brahmaos'
+
+get BrahmaosVersion from 'ro.build.version.brahmaos'
+
+Change-Id: Ie95e77b6cfc8084c849d94565e9f91276aa4a3fb
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ .../deviceinfo/BrahmaosVersionPreferenceController.java  | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/src/com/android/settings/deviceinfo/BrahmaosVersionPreferenceController.java b/src/com/android/settings/deviceinfo/BrahmaosVersionPreferenceController.java
+index 9b3fdc3..3a5e393 100644
+--- a/src/com/android/settings/deviceinfo/BrahmaosVersionPreferenceController.java
++++ b/src/com/android/settings/deviceinfo/BrahmaosVersionPreferenceController.java
+@@ -6,6 +6,7 @@ import android.support.v7.preference.Preference;
+ import com.android.settings.R;
+ import com.android.settings.Utils;
+ import android.os.SystemProperties;
++
+ import com.android.settings.core.PreferenceControllerMixin;
+ import com.android.settingslib.core.AbstractPreferenceController;
+ 
+@@ -13,8 +14,8 @@ import com.android.settingslib.core.AbstractPreferenceController;
+ public class BrahmaosVersionPreferenceController extends AbstractPreferenceController implements PreferenceControllerMixin
+ {
+     private static final String KEY_BRAHMAOS_VERSION = "brahmaos_version";
+-    private static final String KEY_BUILD_ID = "ro.build.id";
+-    private static final String buildIdValue = SystemProperties.get(KEY_BUILD_ID);
++    private static final String BRAHMAOS_VERSION_PROPERTY = "ro.build.version.brahmaos";
++    private static final String brahmaosValue = SystemProperties.get(BRAHMAOS_VERSION_PROPERTY);
+ 
+     public BrahmaosVersionPreferenceController(Context context) {
+         super(context);
+@@ -22,10 +23,11 @@ public class BrahmaosVersionPreferenceController extends AbstractPreferenceContr
+ 
+     @Override
+     public boolean isAvailable() {
+-        if (buildIdValue.contains("BrahmaOS"))
+-            return true;
+-        else
++        if (brahmaosValue == null){
+             return false;
++        }
++        else
++            return true;
+     }
+ 
+     @Override
+@@ -36,8 +38,6 @@ public class BrahmaosVersionPreferenceController extends AbstractPreferenceContr
+     @Override
+     public void updateState(Preference preference) {
+         super.updateState(preference);
+-        String[] brahmaosVersion = buildIdValue.split("_", 2);
+-        if ( brahmaosVersion[1] != null)
+-            preference.setSummary(brahmaosVersion[1]);
++        preference.setSummary(brahmaosValue);
+     }
+ }
+-- 
+2.7.4
+
