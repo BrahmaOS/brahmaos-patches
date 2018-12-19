@@ -1,0 +1,91 @@
+From 96a7cc591911627ab759f59cbcbe66afdcf583cc Mon Sep 17 00:00:00 2001
+From: martin <martin@163.com>
+Date: Thu, 13 Dec 2018 18:20:37 +0800
+Subject: [PATCH] framework add function getBitcoinPendingTxAmount
+
+Change-Id: I04881cfdaf8b8403d442ed3ca41507fa613d92af
+Signed-off-by: martin <martin@163.com>
+---
+ api/current.txt                            |  1 +
+ api/system-current.txt                     |  1 +
+ api/test-current.txt                       |  1 +
+ core/java/brahmaos/app/IWalletManager.aidl |  1 +
+ core/java/brahmaos/app/WalletManager.java  | 14 ++++++++++++++
+ 5 files changed, 18 insertions(+)
+
+diff --git a/api/current.txt b/api/current.txt
+index 0bc6a3c..c457ecd 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -52104,6 +52104,7 @@ package brahmaos.app {
+     method public abstract java.lang.String getBitcoinCurrentReceiveAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract int getBitcoinLastBlockSeenHeight(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getBitcoinLastBlockSeenTime(java.lang.String) throws android.os.RemoteException;
++    method public abstract long getBitcoinPendingTxAmount(java.lang.String) throws android.os.RemoteException;
+     method public abstract int getBitcoinPrivateKeysCount(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumBalanceStringByAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+diff --git a/api/system-current.txt b/api/system-current.txt
+index 96e3b0a..c526188 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -56062,6 +56062,7 @@ package brahmaos.app {
+     method public abstract java.lang.String getBitcoinCurrentReceiveAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract int getBitcoinLastBlockSeenHeight(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getBitcoinLastBlockSeenTime(java.lang.String) throws android.os.RemoteException;
++    method public abstract long getBitcoinPendingTxAmount(java.lang.String) throws android.os.RemoteException;
+     method public abstract int getBitcoinPrivateKeysCount(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumBalanceStringByAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+diff --git a/api/test-current.txt b/api/test-current.txt
+index 9b148c0..96790b7 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -52586,6 +52586,7 @@ package brahmaos.app {
+     method public abstract java.lang.String getBitcoinCurrentReceiveAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract int getBitcoinLastBlockSeenHeight(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getBitcoinLastBlockSeenTime(java.lang.String) throws android.os.RemoteException;
++    method public abstract long getBitcoinPendingTxAmount(java.lang.String) throws android.os.RemoteException;
+     method public abstract int getBitcoinPrivateKeysCount(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumBalanceStringByAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+diff --git a/core/java/brahmaos/app/IWalletManager.aidl b/core/java/brahmaos/app/IWalletManager.aidl
+index 3c112d1..aee7c7b 100644
+--- a/core/java/brahmaos/app/IWalletManager.aidl
++++ b/core/java/brahmaos/app/IWalletManager.aidl
+@@ -54,6 +54,7 @@ interface IWalletManager {
+     String getEthereumTransactionByHash(String networkUrl, String transactionHash);
+ 
+     long getBitcoinBalance(String address);
++    long getBitcoinPendingTxAmount(String mainAddress);
+     String transferBitcoin(String address, String receiveAddress, String password,
+                                       double amount, long fee, String remark);
+ }
+diff --git a/core/java/brahmaos/app/WalletManager.java b/core/java/brahmaos/app/WalletManager.java
+index d898ace..3ed8ad4 100644
+--- a/core/java/brahmaos/app/WalletManager.java
++++ b/core/java/brahmaos/app/WalletManager.java
+@@ -493,6 +493,20 @@ public class WalletManager {
+     }
+ 
+     /**
++     * Get the amount of pending btc.
++     *
++     * @param address it should be base-58 encoded String representation of the main address of bitcoin wallet.
++     **/
++    public long getBitcoinPendingTxAmount(String address) {
++        try {
++            return getWalletService().getBitcoinPendingTxAmount(address);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getBitcoinPendingTxAmount", re);
++        }
++        return 0;
++    }
++
++    /**
+      * @param address used to find the wallet if exist,
+      *               it should be base-58 encoded String representation of the main address of bitcoin wallet.
+      * @param receiveAddress the receive address of bitcoin wallet.
+-- 
+2.7.4
+

@@ -1,0 +1,246 @@
+From 08869ae0e3814da94ac0c3b6d998d05540f571f5 Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Fri, 14 Dec 2018 18:58:55 +0800
+Subject: [PATCH] [WalletManager]: add API to get bitcoin transaction details
+
+Change-Id: I4edbcc9b9f69695ea5dad96f94744306c95dc44f
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ api/current.txt                                    | 15 +++++
+ api/system-current.txt                             | 15 +++++
+ api/test-current.txt                               | 15 +++++
+ core/java/brahmaos/app/IWalletManager.aidl         |  2 +
+ core/java/brahmaos/app/WalletManager.java          | 10 ++++
+ core/java/brahmaos/content/TransactionDetails.aidl |  3 +
+ core/java/brahmaos/content/TransactionDetails.java | 64 ++++++++++++++++++++++
+ 7 files changed, 124 insertions(+)
+ create mode 100644 core/java/brahmaos/content/TransactionDetails.aidl
+ create mode 100644 core/java/brahmaos/content/TransactionDetails.java
+
+diff --git a/api/current.txt b/api/current.txt
+index c457ecd..b7d90c2 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -52106,6 +52106,7 @@ package brahmaos.app {
+     method public abstract java.lang.String getBitcoinLastBlockSeenTime(java.lang.String) throws android.os.RemoteException;
+     method public abstract long getBitcoinPendingTxAmount(java.lang.String) throws android.os.RemoteException;
+     method public abstract int getBitcoinPrivateKeysCount(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<brahmaos.content.TransactionDetails> getBitcoinTransactionsByTime(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumBalanceStringByAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
+@@ -52134,6 +52135,20 @@ package brahmaos.app {
+ 
+ package brahmaos.content {
+ 
++  public class TransactionDetails implements android.os.Parcelable {
++    ctor public TransactionDetails();
++    method public int describeContents();
++    method public void writeToParcel(android.os.Parcel, int);
++    field public static final android.os.Parcelable.ClassLoaderCreator<brahmaos.content.TransactionDetails> CREATOR;
++    field public long amount;
++    field public int confirmBlockHeight;
++    field public int depthInBlocks;
++    field public java.lang.String hash;
++    field public java.util.List<java.util.Map<java.lang.String, java.lang.Long>> inputs;
++    field public java.util.List<java.util.Map<java.lang.String, java.lang.Long>> outputs;
++    field public long updateTime;
++  }
++
+   public class WalletData implements android.os.Parcelable {
+     ctor public WalletData();
+     ctor public WalletData(brahmaos.content.WalletData);
+diff --git a/api/system-current.txt b/api/system-current.txt
+index c526188..09af648 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -56064,6 +56064,7 @@ package brahmaos.app {
+     method public abstract java.lang.String getBitcoinLastBlockSeenTime(java.lang.String) throws android.os.RemoteException;
+     method public abstract long getBitcoinPendingTxAmount(java.lang.String) throws android.os.RemoteException;
+     method public abstract int getBitcoinPrivateKeysCount(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<brahmaos.content.TransactionDetails> getBitcoinTransactionsByTime(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumBalanceStringByAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
+@@ -56092,6 +56093,20 @@ package brahmaos.app {
+ 
+ package brahmaos.content {
+ 
++  public class TransactionDetails implements android.os.Parcelable {
++    ctor public TransactionDetails();
++    method public int describeContents();
++    method public void writeToParcel(android.os.Parcel, int);
++    field public static final android.os.Parcelable.ClassLoaderCreator<brahmaos.content.TransactionDetails> CREATOR;
++    field public long amount;
++    field public int confirmBlockHeight;
++    field public int depthInBlocks;
++    field public java.lang.String hash;
++    field public java.util.List<java.util.Map<java.lang.String, java.lang.Long>> inputs;
++    field public java.util.List<java.util.Map<java.lang.String, java.lang.Long>> outputs;
++    field public long updateTime;
++  }
++
+   public class WalletData implements android.os.Parcelable {
+     ctor public WalletData();
+     ctor public WalletData(brahmaos.content.WalletData);
+diff --git a/api/test-current.txt b/api/test-current.txt
+index 96790b7..0d0aa67 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -52588,6 +52588,7 @@ package brahmaos.app {
+     method public abstract java.lang.String getBitcoinLastBlockSeenTime(java.lang.String) throws android.os.RemoteException;
+     method public abstract long getBitcoinPendingTxAmount(java.lang.String) throws android.os.RemoteException;
+     method public abstract int getBitcoinPrivateKeysCount(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<brahmaos.content.TransactionDetails> getBitcoinTransactionsByTime(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumBalanceStringByAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
+@@ -52616,6 +52617,20 @@ package brahmaos.app {
+ 
+ package brahmaos.content {
+ 
++  public class TransactionDetails implements android.os.Parcelable {
++    ctor public TransactionDetails();
++    method public int describeContents();
++    method public void writeToParcel(android.os.Parcel, int);
++    field public static final android.os.Parcelable.ClassLoaderCreator<brahmaos.content.TransactionDetails> CREATOR;
++    field public long amount;
++    field public int confirmBlockHeight;
++    field public int depthInBlocks;
++    field public java.lang.String hash;
++    field public java.util.List<java.util.Map<java.lang.String, java.lang.Long>> inputs;
++    field public java.util.List<java.util.Map<java.lang.String, java.lang.Long>> outputs;
++    field public long updateTime;
++  }
++
+   public class WalletData implements android.os.Parcelable {
+     ctor public WalletData();
+     ctor public WalletData(brahmaos.content.WalletData);
+diff --git a/core/java/brahmaos/app/IWalletManager.aidl b/core/java/brahmaos/app/IWalletManager.aidl
+index aee7c7b..27256ec 100644
+--- a/core/java/brahmaos/app/IWalletManager.aidl
++++ b/core/java/brahmaos/app/IWalletManager.aidl
+@@ -18,6 +18,7 @@
+ package brahmaos.app;
+ 
+ import brahmaos.content.WalletData;
++import brahmaos.content.TransactionDetails;
+ 
+ interface IWalletManager {
+     List<WalletData> createDefaultWallet(String name, String mnemonics, String password,
+@@ -57,4 +58,5 @@ interface IWalletManager {
+     long getBitcoinPendingTxAmount(String mainAddress);
+     String transferBitcoin(String address, String receiveAddress, String password,
+                                       double amount, long fee, String remark);
++    List<TransactionDetails> getBitcoinTransactionsByTime(String address);
+ }
+diff --git a/core/java/brahmaos/app/WalletManager.java b/core/java/brahmaos/app/WalletManager.java
+index 3ed8ad4..2e27a04 100644
+--- a/core/java/brahmaos/app/WalletManager.java
++++ b/core/java/brahmaos/app/WalletManager.java
+@@ -4,6 +4,7 @@ import android.annotation.SystemService;
+ import android.content.Context;
+ import brahmaos.app.IWalletManager;
+ import brahmaos.content.BrahmaContext;
++import brahmaos.content.TransactionDetails;
+ import brahmaos.content.WalletData;
+ import android.os.RemoteException;
+ import android.os.ServiceManager;
+@@ -524,6 +525,15 @@ public class WalletManager {
+         return null;
+     }
+ 
++    public List<TransactionDetails> getBitcoinTransactionsByTime(String address) {
++        try {
++            return getWalletService().getBitcoinTransactionsByTime(address);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getBitcoinTransactionsByTime", re);
++        }
++        return null;
++    }
++
+     /**
+      * Used to check wallet address.
+      *
+diff --git a/core/java/brahmaos/content/TransactionDetails.aidl b/core/java/brahmaos/content/TransactionDetails.aidl
+new file mode 100644
+index 0000000..2e3ba49
+--- /dev/null
++++ b/core/java/brahmaos/content/TransactionDetails.aidl
+@@ -0,0 +1,3 @@
++package brahmaos.content;
++
++parcelable TransactionDetails;
+diff --git a/core/java/brahmaos/content/TransactionDetails.java b/core/java/brahmaos/content/TransactionDetails.java
+new file mode 100644
+index 0000000..f53d6cb
+--- /dev/null
++++ b/core/java/brahmaos/content/TransactionDetails.java
+@@ -0,0 +1,64 @@
++package brahmaos.content;
++
++import android.os.Parcel;
++import android.os.Parcelable;
++
++import java.util.List;
++import java.util.Map;
++
++public class TransactionDetails implements Parcelable {
++    public String hash;
++    public long amount;
++    public long updateTime;
++    public int depthInBlocks;
++    public int confirmBlockHeight;
++    public List<Map<String, Long>> inputs;//<address, amount>
++    public List<Map<String, Long>> outputs;//<address, amount>
++
++    @Override
++    public int describeContents() {
++        return 0;
++    }
++
++    @Override
++    public void writeToParcel(Parcel dest, int flags) {
++        dest.writeString(hash);
++        dest.writeLong(amount);
++        dest.writeLong(updateTime);
++        dest.writeInt(depthInBlocks);
++        dest.writeList(inputs);
++        dest.writeList(outputs);
++    }
++
++    @Override
++    public String toString() {
++        return "TransactionDetails{"
++                + "hash=" + hash
++                + ", amount=" + amount
++                + ", updateTime=" + updateTime
++                + ", depthInBlocks" + depthInBlocks
++                + ", inputMaps=" + inputs
++                + ", outputMaps" + outputs;
++    }
++
++    public static final ClassLoaderCreator<TransactionDetails> CREATOR
++            = new ClassLoaderCreator<TransactionDetails>() {
++        public TransactionDetails createFromParcel(Parcel source) {
++            return createFromParcel(source, null);
++        }
++        public TransactionDetails createFromParcel(Parcel source, ClassLoader loader) {
++            final TransactionDetails datails = new TransactionDetails();
++            datails.hash = source.readString();
++            datails.amount = source.readLong();
++            datails.updateTime = source.readLong();
++            datails.depthInBlocks = source.readInt();
++            source.readList(datails.inputs, loader);
++            source.readList(datails.outputs, loader);
++
++            return datails;
++        }
++        public TransactionDetails[] newArray(int size) {
++            return new TransactionDetails[size];
++        }
++    };
++}
+-- 
+2.7.4
+

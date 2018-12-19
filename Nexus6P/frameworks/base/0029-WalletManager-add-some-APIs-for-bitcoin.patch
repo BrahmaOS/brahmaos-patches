@@ -1,0 +1,208 @@
+From c8a6b15f6413b508b4d1c99acf506b4ec0c0f94e Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Fri, 7 Dec 2018 13:42:50 +0800
+Subject: [PATCH] [WalletManager]: add some APIs for bitcoin
+
+Change-Id: Id48b64ba5c535503f00e0a51b80257c0ef3d0aea
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ api/current.txt                            | 16 +++------
+ api/system-current.txt                     | 16 +++------
+ api/test-current.txt                       | 16 +++------
+ core/java/brahmaos/app/IWalletManager.aidl |  4 +++
+ core/java/brahmaos/app/WalletManager.java  | 55 ++++++++++++++++++++++++++++++
+ 5 files changed, 71 insertions(+), 36 deletions(-)
+
+diff --git a/api/current.txt b/api/current.txt
+index 95e859f..0bc6a3c 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -52090,18 +52090,6 @@ package brahmaos.app {
+     method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+   }
+ 
+-  public abstract interface IOnETHBlanceGetListener implements android.os.IInterface {
+-    method public abstract void onETHBlanceGetError() throws android.os.RemoteException;
+-    method public abstract void onETHBlanceGetSuccess(java.lang.String) throws android.os.RemoteException;
+-  }
+-
+-  public static abstract class IOnETHBlanceGetListener.Stub extends android.os.Binder implements brahmaos.app.IOnETHBlanceGetListener {
+-    ctor public IOnETHBlanceGetListener.Stub();
+-    method public android.os.IBinder asBinder();
+-    method public static brahmaos.app.IOnETHBlanceGetListener asInterface(android.os.IBinder);
+-    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+-  }
+-
+   public abstract interface IWalletManager implements android.os.IInterface {
+     method public abstract boolean checkBitcoinDoneDownloaded(java.lang.String) throws android.os.RemoteException;
+     method public abstract boolean checkPasswordForWallet(brahmaos.content.WalletData, java.lang.String) throws android.os.RemoteException;
+@@ -52113,6 +52101,10 @@ package brahmaos.app {
+     method public abstract java.lang.String exportEthereumWalletPrivateKey(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getAllWallets() throws android.os.RemoteException;
+     method public abstract long getBitcoinBalance(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String getBitcoinCurrentReceiveAddress(java.lang.String) throws android.os.RemoteException;
++    method public abstract int getBitcoinLastBlockSeenHeight(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String getBitcoinLastBlockSeenTime(java.lang.String) throws android.os.RemoteException;
++    method public abstract int getBitcoinPrivateKeysCount(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumBalanceStringByAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
+diff --git a/api/system-current.txt b/api/system-current.txt
+index cdd4164..96e3b0a 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -56048,18 +56048,6 @@ package brahmaos.app {
+     method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+   }
+ 
+-  public abstract interface IOnETHBlanceGetListener implements android.os.IInterface {
+-    method public abstract void onETHBlanceGetError() throws android.os.RemoteException;
+-    method public abstract void onETHBlanceGetSuccess(java.lang.String) throws android.os.RemoteException;
+-  }
+-
+-  public static abstract class IOnETHBlanceGetListener.Stub extends android.os.Binder implements brahmaos.app.IOnETHBlanceGetListener {
+-    ctor public IOnETHBlanceGetListener.Stub();
+-    method public android.os.IBinder asBinder();
+-    method public static brahmaos.app.IOnETHBlanceGetListener asInterface(android.os.IBinder);
+-    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+-  }
+-
+   public abstract interface IWalletManager implements android.os.IInterface {
+     method public abstract boolean checkBitcoinDoneDownloaded(java.lang.String) throws android.os.RemoteException;
+     method public abstract boolean checkPasswordForWallet(brahmaos.content.WalletData, java.lang.String) throws android.os.RemoteException;
+@@ -56071,6 +56059,10 @@ package brahmaos.app {
+     method public abstract java.lang.String exportEthereumWalletPrivateKey(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getAllWallets() throws android.os.RemoteException;
+     method public abstract long getBitcoinBalance(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String getBitcoinCurrentReceiveAddress(java.lang.String) throws android.os.RemoteException;
++    method public abstract int getBitcoinLastBlockSeenHeight(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String getBitcoinLastBlockSeenTime(java.lang.String) throws android.os.RemoteException;
++    method public abstract int getBitcoinPrivateKeysCount(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumBalanceStringByAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
+diff --git a/api/test-current.txt b/api/test-current.txt
+index dfcd422..9b148c0 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -52572,18 +52572,6 @@ package brahmaos.app {
+     method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+   }
+ 
+-  public abstract interface IOnETHBlanceGetListener implements android.os.IInterface {
+-    method public abstract void onETHBlanceGetError() throws android.os.RemoteException;
+-    method public abstract void onETHBlanceGetSuccess(java.lang.String) throws android.os.RemoteException;
+-  }
+-
+-  public static abstract class IOnETHBlanceGetListener.Stub extends android.os.Binder implements brahmaos.app.IOnETHBlanceGetListener {
+-    ctor public IOnETHBlanceGetListener.Stub();
+-    method public android.os.IBinder asBinder();
+-    method public static brahmaos.app.IOnETHBlanceGetListener asInterface(android.os.IBinder);
+-    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+-  }
+-
+   public abstract interface IWalletManager implements android.os.IInterface {
+     method public abstract boolean checkBitcoinDoneDownloaded(java.lang.String) throws android.os.RemoteException;
+     method public abstract boolean checkPasswordForWallet(brahmaos.content.WalletData, java.lang.String) throws android.os.RemoteException;
+@@ -52595,6 +52583,10 @@ package brahmaos.app {
+     method public abstract java.lang.String exportEthereumWalletPrivateKey(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getAllWallets() throws android.os.RemoteException;
+     method public abstract long getBitcoinBalance(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String getBitcoinCurrentReceiveAddress(java.lang.String) throws android.os.RemoteException;
++    method public abstract int getBitcoinLastBlockSeenHeight(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String getBitcoinLastBlockSeenTime(java.lang.String) throws android.os.RemoteException;
++    method public abstract int getBitcoinPrivateKeysCount(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumBalanceStringByAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
+diff --git a/core/java/brahmaos/app/IWalletManager.aidl b/core/java/brahmaos/app/IWalletManager.aidl
+index 55a6da1..3c112d1 100644
+--- a/core/java/brahmaos/app/IWalletManager.aidl
++++ b/core/java/brahmaos/app/IWalletManager.aidl
+@@ -35,6 +35,10 @@ interface IWalletManager {
+     WalletData importEthereumWallet(String name, String password, String data, int dataType);
+     WalletData importBitcoinWallet(String name, String password, String data, int dataType);
+     String exportEthereumWalletPrivateKey(String address, String password);
++    int getBitcoinPrivateKeysCount(String mainAddress);
++    int getBitcoinLastBlockSeenHeight(String mainAddress);
++    String getBitcoinLastBlockSeenTime(String mainAddress);
++    String getBitcoinCurrentReceiveAddress(String mainAddress);
+     boolean checkBitcoinDoneDownloaded(String mainAddress);
+     List<WalletData> getAllWallets();
+     List<WalletData> getWalletsForChainType(String chainType);
+diff --git a/core/java/brahmaos/app/WalletManager.java b/core/java/brahmaos/app/WalletManager.java
+index 4c76ddf..d898ace 100644
+--- a/core/java/brahmaos/app/WalletManager.java
++++ b/core/java/brahmaos/app/WalletManager.java
+@@ -12,6 +12,7 @@ import android.util.Log;
+ 
+ import java.math.BigDecimal;
+ import java.math.BigInteger;
++import java.util.Date;
+ import java.util.HashMap;
+ import java.util.List;
+ 
+@@ -246,6 +247,60 @@ public class WalletManager {
+     }
+ 
+     /**
++     * Used to get the total private keys count of this bitcoin wallet.
++     *
++     * @return -1 means has error such as wallet not exist or fail to get kit etc.
++     **/
++    public int getBitcoinPrivateKeysCount(String mainAddress) {
++        try {
++            return getWalletService().getBitcoinPrivateKeysCount(mainAddress);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getBitcoinPrivateKeysCount", re);
++        }
++        return -1;
++    }
++
++    /**
++     * Used to get the last block seen height of this bitcoin wallet.
++     *
++     * @return -1 means has error such as wallet not exist or fail to get kit etc.
++     **/
++    public int getBitcoinLastBlockSeenHeight(String mainAddress) {
++        try {
++            return getWalletService().getBitcoinLastBlockSeenHeight(mainAddress);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getBitcoinLastBlockSeenHeight", re);
++        }
++        return -1;
++    }
++
++    /**
++     * Used to get the string value of last block seen time of this bitcoin wallet.
++     *
++     **/
++    public String getBitcoinLastBlockSeenTime(String mainAddress) {
++        try {
++            return getWalletService().getBitcoinLastBlockSeenTime(mainAddress);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getBitcoinLastBlockSeenTime", re);
++        }
++        return null;
++    }
++
++    /**
++     * Used to get the current receive address of this bitcoin wallet.
++     *
++     **/
++    public String getBitcoinCurrentReceiveAddress(String mainAddress) {
++        try {
++            return getWalletService().getBitcoinCurrentReceiveAddress(mainAddress);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getBitcoinCurrentReceiveAddress", re);
++        }
++        return null;
++    }
++
++    /**
+      * Used to check wether the bitcoin wallet has done downloaded.
+      * If not yet, the receiver will receive broadcast of chain download progress sent from WalletManager.
+      **/
+-- 
+2.7.4
+

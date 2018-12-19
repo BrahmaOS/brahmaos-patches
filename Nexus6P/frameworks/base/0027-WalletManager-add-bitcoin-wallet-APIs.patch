@@ -1,0 +1,640 @@
+From 25991caed2cc934146d166b400c19b889c23d410 Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Mon, 26 Nov 2018 09:28:45 +0800
+Subject: [PATCH] [WalletManager]: add bitcoin wallet APIs
+
+-fix ethereum import by keystore issue
+-add new api to get ethereum balance
+
+Change-Id: I096b473f1d0a7d5a36b6d4725f5d2fd9b6adea89
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ api/current.txt                                 |  11 +-
+ api/system-current.txt                          |  11 +-
+ api/test-current.txt                            |  11 +-
+ core/java/brahmaos/app/IWalletManager.aidl      |  13 +-
+ core/java/brahmaos/app/WalletManager.java       | 232 ++++++++++++++++++++----
+ core/java/brahmaos/content/BrahmaConstants.java |   1 +
+ core/java/brahmaos/content/BrahmaIntent.java    |  26 +++
+ core/java/brahmaos/content/WalletData.java      |   6 +-
+ core/res/AndroidManifest.xml                    |   9 +
+ 9 files changed, 282 insertions(+), 38 deletions(-)
+ create mode 100644 core/java/brahmaos/content/BrahmaIntent.java
+
+diff --git a/api/current.txt b/api/current.txt
+index 9509bc8..28095c4 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -52103,22 +52103,30 @@ package brahmaos.app {
+   }
+ 
+   public abstract interface IWalletManager implements android.os.IInterface {
+-    method public abstract brahmaos.content.WalletData createDefaultETHWallet(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract boolean checkBitcoinDoneDownloaded(java.lang.String) throws android.os.RemoteException;
++    method public abstract brahmaos.content.WalletData createBitcoinWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<brahmaos.content.WalletData> createDefaultWallet(java.lang.String, java.lang.String, java.lang.String, boolean) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData createEthereumWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> createWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int deleteWalletByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getAllWallets() throws android.os.RemoteException;
++    method public abstract long getBitcoinBalance(java.lang.String) throws android.os.RemoteException;
+     method public abstract void getEthereumBalanceByAddress(java.lang.String, java.lang.String, java.lang.String, brahmaos.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
++    method public abstract java.lang.String getEthereumBalanceStringByAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData getWalletDataByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getWalletsForChainType(java.lang.String) throws android.os.RemoteException;
++    method public abstract brahmaos.content.WalletData importBitcoinWallet(java.lang.String, java.lang.String, java.lang.String, int) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData importEthereumWallet(java.lang.String, java.lang.String, java.lang.String, int) throws android.os.RemoteException;
+     method public abstract boolean isValidAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String transferBitcoin(java.lang.String, java.lang.String, java.lang.String, double, long, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String transferEthereum(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, double, double, long, java.lang.String) throws android.os.RemoteException;
++    method public abstract int updateBitcoinWalletPassword(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int updateEthereumWalletPassword(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int updateWalletAvatarForAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int updateWalletNameForAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract int updateWalletPasswordForAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+   }
+ 
+   public static abstract class IWalletManager.Stub extends android.os.Binder implements brahmaos.app.IWalletManager {
+@@ -52144,6 +52152,7 @@ package brahmaos.content {
+     field public boolean isDefault;
+     field public java.lang.String keyPath;
+     field public java.lang.String keyStore;
++    field public java.lang.String kitFileName;
+     field public long lastUpdateTime;
+     field public java.lang.String mnemonicStr;
+     field public java.lang.String name;
+diff --git a/api/system-current.txt b/api/system-current.txt
+index bbaccfc..57e0309 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -56061,22 +56061,30 @@ package brahmaos.app {
+   }
+ 
+   public abstract interface IWalletManager implements android.os.IInterface {
+-    method public abstract brahmaos.content.WalletData createDefaultETHWallet(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract boolean checkBitcoinDoneDownloaded(java.lang.String) throws android.os.RemoteException;
++    method public abstract brahmaos.content.WalletData createBitcoinWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<brahmaos.content.WalletData> createDefaultWallet(java.lang.String, java.lang.String, java.lang.String, boolean) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData createEthereumWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> createWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int deleteWalletByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getAllWallets() throws android.os.RemoteException;
++    method public abstract long getBitcoinBalance(java.lang.String) throws android.os.RemoteException;
+     method public abstract void getEthereumBalanceByAddress(java.lang.String, java.lang.String, java.lang.String, brahmaos.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
++    method public abstract java.lang.String getEthereumBalanceStringByAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData getWalletDataByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getWalletsForChainType(java.lang.String) throws android.os.RemoteException;
++    method public abstract brahmaos.content.WalletData importBitcoinWallet(java.lang.String, java.lang.String, java.lang.String, int) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData importEthereumWallet(java.lang.String, java.lang.String, java.lang.String, int) throws android.os.RemoteException;
+     method public abstract boolean isValidAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String transferBitcoin(java.lang.String, java.lang.String, java.lang.String, double, long, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String transferEthereum(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, double, double, long, java.lang.String) throws android.os.RemoteException;
++    method public abstract int updateBitcoinWalletPassword(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int updateEthereumWalletPassword(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int updateWalletAvatarForAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int updateWalletNameForAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract int updateWalletPasswordForAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+   }
+ 
+   public static abstract class IWalletManager.Stub extends android.os.Binder implements brahmaos.app.IWalletManager {
+@@ -56102,6 +56110,7 @@ package brahmaos.content {
+     field public boolean isDefault;
+     field public java.lang.String keyPath;
+     field public java.lang.String keyStore;
++    field public java.lang.String kitFileName;
+     field public long lastUpdateTime;
+     field public java.lang.String mnemonicStr;
+     field public java.lang.String name;
+diff --git a/api/test-current.txt b/api/test-current.txt
+index 7e6902d..ef342cf 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -52585,22 +52585,30 @@ package brahmaos.app {
+   }
+ 
+   public abstract interface IWalletManager implements android.os.IInterface {
+-    method public abstract brahmaos.content.WalletData createDefaultETHWallet(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract boolean checkBitcoinDoneDownloaded(java.lang.String) throws android.os.RemoteException;
++    method public abstract brahmaos.content.WalletData createBitcoinWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<brahmaos.content.WalletData> createDefaultWallet(java.lang.String, java.lang.String, java.lang.String, boolean) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData createEthereumWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> createWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int deleteWalletByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getAllWallets() throws android.os.RemoteException;
++    method public abstract long getBitcoinBalance(java.lang.String) throws android.os.RemoteException;
+     method public abstract void getEthereumBalanceByAddress(java.lang.String, java.lang.String, java.lang.String, brahmaos.app.IOnETHBlanceGetListener) throws android.os.RemoteException;
++    method public abstract java.lang.String getEthereumBalanceStringByAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData getWalletDataByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getWalletsForChainType(java.lang.String) throws android.os.RemoteException;
++    method public abstract brahmaos.content.WalletData importBitcoinWallet(java.lang.String, java.lang.String, java.lang.String, int) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData importEthereumWallet(java.lang.String, java.lang.String, java.lang.String, int) throws android.os.RemoteException;
+     method public abstract boolean isValidAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String transferBitcoin(java.lang.String, java.lang.String, java.lang.String, double, long, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String transferEthereum(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, double, double, long, java.lang.String) throws android.os.RemoteException;
++    method public abstract int updateBitcoinWalletPassword(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int updateEthereumWalletPassword(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int updateWalletAvatarForAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int updateWalletNameForAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract int updateWalletPasswordForAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+   }
+ 
+   public static abstract class IWalletManager.Stub extends android.os.Binder implements brahmaos.app.IWalletManager {
+@@ -52626,6 +52634,7 @@ package brahmaos.content {
+     field public boolean isDefault;
+     field public java.lang.String keyPath;
+     field public java.lang.String keyStore;
++    field public java.lang.String kitFileName;
+     field public long lastUpdateTime;
+     field public java.lang.String mnemonicStr;
+     field public java.lang.String name;
+diff --git a/core/java/brahmaos/app/IWalletManager.aidl b/core/java/brahmaos/app/IWalletManager.aidl
+index fd90a9f..bf1ffdc 100644
+--- a/core/java/brahmaos/app/IWalletManager.aidl
++++ b/core/java/brahmaos/app/IWalletManager.aidl
+@@ -21,19 +21,26 @@ import brahmaos.content.WalletData;
+ import brahmaos.app.IOnETHBlanceGetListener;
+ 
+ interface IWalletManager {
+-    WalletData createDefaultETHWallet(String name, String mnemonics, String password);
++    List<WalletData> createDefaultWallet(String name, String mnemonics, String password,
++                                         boolean isCreation);
+     List<WalletData> createWallet(String name, String password);
+     WalletData createEthereumWallet(String name,String password);
++    WalletData createBitcoinWallet(String name, String password);
+     int deleteWalletByAddress(String address);
+     int updateWalletNameForAddress(String newName, String address);
+     int updateWalletAvatarForAddress(String newAvatar, String address);
+     int updateEthereumWalletPassword(String address, String oldPassword, String newPassword);
++    int updateBitcoinWalletPassword(String address, String oldPassword, String newPassword);
++    int updateWalletPasswordForAddress(String address, String oldPassword, String newPassword);
+     WalletData importEthereumWallet(String name, String password, String data, int dataType);
++    WalletData importBitcoinWallet(String name, String password, String data, int dataType);
++    boolean checkBitcoinDoneDownloaded(String mainAddress);
+     List<WalletData> getAllWallets();
+     List<WalletData> getWalletsForChainType(String chainType);
+     WalletData getWalletDataByAddress(String address);
+ 
+     boolean isValidAddress(String address, String chainType);
++    String getEthereumBalanceStringByAddress(String networkUrl, String addr, String tokenAddr);
+     void getEthereumBalanceByAddress(String networkUrl, String address, String tokenAddress,
+                                      in IOnETHBlanceGetListener listener);
+     String getEthereumGasPrice(String networkUrl);
+@@ -42,4 +49,8 @@ interface IWalletManager {
+                                      String destinationAddress, double amount,
+                                      double gasPrice, long gasLimit, String remark);
+     String getEthereumTransactionByHash(String networkUrl, String transactionHash);
++
++    long getBitcoinBalance(String address);
++    String transferBitcoin(String address, String receiveAddress, String password,
++                                      double amount, long fee, String remark);
+ }
+diff --git a/core/java/brahmaos/app/WalletManager.java b/core/java/brahmaos/app/WalletManager.java
+index a5c11a0..654e0b8 100644
+--- a/core/java/brahmaos/app/WalletManager.java
++++ b/core/java/brahmaos/app/WalletManager.java
+@@ -40,6 +40,10 @@ public class WalletManager {
+ 
+     public static final String MAINNET_URL = "https://mainnet.infura.io/Gy3Csyt4bzKIGsctm3g0";
+ 
++    /**define the min confirm block count of BTC transfer**/
++    public static final int MIN_CONFIRMATIONS = 6;
++    public static final int BYTES_PER_BTC_KB = 1000;
++
+     /*
+      ** The second param of function getEthereumAccountBalanceByAddress.
+      **
+@@ -81,11 +85,12 @@ public class WalletManager {
+      *
+      * @hide
+      */
+-    public WalletData createDefaultETHWallet(String name, String mnemonics, String password) {
++    public List<WalletData> createDefaultWallet(String name, String mnemonics, String password,
++                                          boolean isCreation) {
+         try {
+-            return getWalletService().createDefaultETHWallet(name, mnemonics, password);
++            return getWalletService().createDefaultWallet(name, mnemonics, password, isCreation);
+         } catch (RemoteException re) {
+-            Log.e(TAG, "Error calling IWalletManager#createDefaultETHWallet", re);
++            Log.e(TAG, "Error calling IWalletManager#createDefaultWallet", re);
+         }
+         return null;
+     }
+@@ -108,8 +113,19 @@ public class WalletManager {
+         return null;
+     }
+ 
++    public WalletData createBitcoinWallet(String name, String password) {
++        try {
++            return getWalletService().createBitcoinWallet(name, password);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#createBitcoinWallet", re);
++        }
++        return null;
++    }
++
+     /**
+-     * @param address should be with prefix 0x
++     * @param address ethereum wallet address should be start with prefix 0x,
++     *                and bitcoin wallet should be base-58 encoded String representation
++     *                of the main address.
+      **/
+     public int deleteWalletByAddress(String address) {
+         try {
+@@ -120,6 +136,12 @@ public class WalletManager {
+         return CODE_OTHER_ERROR;
+     }
+ 
++    /**
++     * Used to update wallet data by address.
++     * @param address ethereum wallet address should be start with prefix 0x,
++     *                and bitcoin wallet should be base-58 encoded String representation
++     *                of the main address.
++     **/
+     public int updateWalletNameForAddress(String newName, String address) {
+         try {
+             return getWalletService().updateWalletNameForAddress(newName, address);
+@@ -129,6 +151,12 @@ public class WalletManager {
+         return CODE_OTHER_ERROR;
+     }
+ 
++    /**
++     * Used to update wallet data by address.
++     * @param address ethereum wallet address should be start with prefix 0x,
++     *                and bitcoin wallet should be base-58 encoded String representation
++     *                of the main address.
++     **/
+     public int updateWalletAvatarForAddress(String newAvatar, String address) {
+         try {
+             return getWalletService().updateWalletAvatarForAddress(newAvatar, address);
+@@ -138,6 +166,10 @@ public class WalletManager {
+         return CODE_OTHER_ERROR;
+     }
+ 
++    /**
++     * Used to update ethereum wallet data by address.
++     * @param address ethereum wallet address should be start with prefix 0x.
++     **/
+     public int updateEthereumWalletPassword(String address, String oldPassword, String newPassword) {
+         try {
+             return getWalletService().updateEthereumWalletPassword(address, oldPassword, newPassword);
+@@ -148,6 +180,34 @@ public class WalletManager {
+     }
+ 
+     /**
++     * Used to update bitcoin wallet data by address.
++     * @param address it should be base-58 encoded String representation of the main address of bitcoin wallet .
++     **/
++    public int updateBitcoinWalletPassword(String address, String oldPassword, String newPassword) {
++        try {
++            return getWalletService().updateBitcoinWalletPassword(address, oldPassword, newPassword);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#updateBitcoinWalletPassword", re);
++        }
++        return CODE_OTHER_ERROR;
++    }
++
++    /**
++     * Used to update wallet data by address.
++     * @param address ethereum wallet address should be start with prefix 0x,
++     *                and bitcoin wallet should be base-58 encoded String representation
++     *                of the main address.
++     **/
++    public int updateWalletPasswordForAddress(String address, String oldPassword, String newPassword) {
++        try {
++            return getWalletService().updateWalletPasswordForAddress(address, oldPassword, newPassword);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#updateWalletPasswordForAddress", re);
++        }
++        return CODE_OTHER_ERROR;
++    }
++
++    /**
+      * @param data the content used to generate wallet, for Ethereum it will be
+      *             private key (hex string without 0x)
+      *             OR mnemonics string
+@@ -168,11 +228,117 @@ public class WalletManager {
+     }
+ 
+     /**
+-     * Result returned by callback function onETHBlanceGetError()
++     * @param data the content used to generate wallet, for Bitcoin it will just be
++     *             mnemonics string for now.
++     * @param dataType the value of
++     *                  {@link #IMPORT_BY_MNEMONICS},
++     * @return the object of WalletData, if null means failed to import the wallet.
++     **/
++    public WalletData importBitcoinWallet(String name, String password, String data, int dataType) {
++        try {
++            return getWalletService().importBitcoinWallet(name, password, data, dataType);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#importBitcoinWallet", re);
++        }
++        return null;
++    }
++
++    /**
++     * Used to check wether the bitcoin wallet has done downloaded.
++     * If not yet, the receiver will receive broadcast of chain download progress sent from WalletManager.
++     **/
++    public boolean checkBitcoinDoneDownloaded(String mainAddress) {
++        try {
++            return getWalletService().checkBitcoinDoneDownloaded(mainAddress);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#checkBitcoinDoneDownloaded", re);
++        }
++        return false;
++    }
++
++    /**
++     * @return all wallets' information exist in brahma os.
++     **/
++    public List<WalletData> getAllWallets() {
++        try {
++            return getWalletService().getAllWallets();
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getAllWallets", re);
++        }
++        return null;
++    }
++
++    /**
++     * @param chainType public value defined in this {@link WalletManager},
++     *                 such as WALLET_CHAIN_TYPE_BTC, WALLET_CHAIN_TYPE_ETH
++     * @return the WalletData list for the chainType
++     **/
++    public List<WalletData> getWalletsForChainType(String chainType) {
++        try {
++            return getWalletService().getWalletsForChainType(chainType);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getWalletsForChainType", re);
++        }
++        return null;
++    }
++
++    /**
++     * Used to find the exist wallet's information by wallet address.
++     * @param address ethereum wallet address should be start with prefix 0x,
++     *                and bitcoin wallet should be base-58 encoded String representation
++     *                of the main address.
++     * **/
++    public WalletData getWalletDataByAddress(String address) {
++        try {
++            return getWalletService().getWalletDataByAddress(address);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getWalletDataByAddress", re);
++        }
++        return null;
++    }
++
++    /**
++     * Return the String value of 'wei' of the balance get from the mainnet.
++     *
++     * @param addr ethereum wallet address start with prefix 0x
++     * @param tokenAddr the defined token address start with prefix 0x
++     *
++     * @return the String value of 'wei' of the balance. If null, means failed to get the balance.
++     **/
++    public String getEthereumBalanceStringByAddress(String addr, String tokenAddr) {
++        return getEthereumBalanceStringByAddress(MAINNET_URL, addr, tokenAddr);
++    }
++
++    /**
++     * Similar to {@link #getEthereumBalanceStringByAddress(String, String)}
++     *
++     * Return the String value of 'wei' of the balance get from the networkUrl.
++     * Developer can use test URL by setting param networkUrl.
++     *
++     * @param addr ethereum wallet address start with prefix 0x
++     * @param tokenAddr the defined token address start with prefix 0x
++     *
++     * @return the String value of 'wei' of the balance. If null, means failed to get the balance.
++     **/
++    public String getEthereumBalanceStringByAddress(String networkUrl, String addr, String tokenAddr) {
++        try {
++            return getWalletService().getEthereumBalanceStringByAddress(networkUrl,
++                    addr, tokenAddr);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getEthereumBalanceStringByAddress", re);
++        }
++        return null;
++    }
++
++    /**
++     * Balance returned by callback function onETHBlanceGetError()
+      *  and onETHBlanceGetSuccess(String blance) of {@link OnETHBlanceGetListener}.
+      *
+-     * Note: result returned in onETHBlanceGetSuccess is the BigInteger's string value.
++     * Note: result returned in onETHBlanceGetSuccess is the BigInteger's string value means number of wei.
++     *
++     * @deprecated use {@link #getEthereumBalanceStringByAddress(String, String)} instead.
+      **/
++    @Deprecated
+     public void getEthereumBalanceByAddress(String address, String tokenAddress,
+                                             OnETHBlanceGetListener listener) {
+         getEthereumBalanceByAddress(MAINNET_URL, address, tokenAddress, listener);
+@@ -185,8 +351,12 @@ public class WalletManager {
+      * Result returned by callback function onETHBlanceGetError()
+      *  and onETHBlanceGetSuccess(String blance) of {@link OnETHBlanceGetListener}.
+      *
+-     * Note: result returned in onETHBlanceGetSuccess is the BigInteger's string value.
++     * Note: result returned in onETHBlanceGetSuccess is the BigInteger's string value,
++     *       number of wei of this monetary value.
++     *
++     * @deprecated use {@link #getEthereumBalanceStringByAddress(String, String, String)} instead.
+      **/
++    @Deprecated
+     public void getEthereumBalanceByAddress(String networkUrl, String address,
+                                                    String tokenAddress,
+                                                    OnETHBlanceGetListener listener) {
+@@ -227,10 +397,9 @@ public class WalletManager {
+         return null;
+     }
+ 
+-
+     /**
+-     * @param accountAddress The address of ethereum wallet.
+-     * @param tokenAddress The address of token.
++     * @param accountAddress The address of ethereum wallet starts with prefix 0x.
++     * @param tokenAddress The address of token starts with prefix 0x.
+      *                    If is null means ethereum wallet, otherwise means token wallet.
+      * @return The string value of transaction hash.
+      **/
+@@ -248,8 +417,8 @@ public class WalletManager {
+      *                                              double, long, String)}
+      * Developer can use test URL by setting param networkUrl.
+      *
+-     * @param accountAddress The address of ethereum wallet.
+-     * @param tokenAddress The address of token.
++     * @param accountAddress The address of ethereum wallet starts with prefix 0x.
++     * @param tokenAddress The address of token starts with prefix 0x.
+      *                    If is null means ethereum wallet, otherwise means token wallet.
+      * @return The string value of transaction hash.
+      **/
+@@ -290,37 +459,34 @@ public class WalletManager {
+         return null;
+     }
+ 
+-    public List<WalletData> getAllWallets() {
+-        try {
+-            return getWalletService().getAllWallets();
+-        } catch (RemoteException re) {
+-            Log.e(TAG, "Error calling IWalletManager#getAllWallets", re);
+-        }
+-        return null;
+-    }
+-
+     /**
+-     * @param chainType public value defined in this {@link WalletManager},
+-     *                 such as WALLET_CHAIN_TYPE_BTC, WALLET_CHAIN_TYPE_ETH
+-     * @return the WalletData list for the chainType
++     * Get the number of Satoshis of this monetary value.
++     *
++     * @param address it should be base-58 encoded String representation of the main address of bitcoin wallet.
+      **/
+-    public List<WalletData> getWalletsForChainType(String chainType) {
++    public long getBitcoinBalance(String address) {
+         try {
+-            return getWalletService().getWalletsForChainType(chainType);
++            return getWalletService().getBitcoinBalance(address);
+         } catch (RemoteException re) {
+-            Log.e(TAG, "Error calling IWalletManager#getWalletsForChainType", re);
++            Log.e(TAG, "Error calling IWalletManager#getBitcoinBalance", re);
+         }
+-        return null;
++        return 0;
+     }
+ 
+     /**
+-     * Used to find the exist wallet's information by wallet address.
+-     * **/
+-    public WalletData getWalletDataByAddress(String address) {
++     * @param address used to find the wallet if exist,
++     *               it should be base-58 encoded String representation of the main address of bitcoin wallet.
++     * @param receiveAddress the receive address of bitcoin wallet.
++     * @param amount number of BTC of the transfer amount. For user's convenience, we use BTC unit for amount instead of Satoshi.
++     * @param fee munber of Satoshi per byte of the transfer fee.
++     **/
++    public String transferBitcoin(String address, String receiveAddress, String password,
++                                  double amount, long fee, String remark) {
+         try {
+-            return getWalletService().getWalletDataByAddress(address);
++            return getWalletService().transferBitcoin(address, receiveAddress, password,
++                    amount, fee, remark);
+         } catch (RemoteException re) {
+-            Log.e(TAG, "Error calling IWalletManager#getWalletDataByAddress", re);
++            Log.e(TAG, "Error calling IWalletManager#transferBitcoin", re);
+         }
+         return null;
+     }
+diff --git a/core/java/brahmaos/content/BrahmaConstants.java b/core/java/brahmaos/content/BrahmaConstants.java
+index 0ad98ac..f80c0fe 100644
+--- a/core/java/brahmaos/content/BrahmaConstants.java
++++ b/core/java/brahmaos/content/BrahmaConstants.java
+@@ -6,6 +6,7 @@ import java.util.Arrays;
+ public class BrahmaConstants {
+ 
+     /** Used to generating private key for the different key path by mnemonics**/
++    public static final String BIP_BTC_PATH = "M/44H/0H/0H/0/0";
+     public static final String BIP_ETH_PATH = "M/44H/60H/0H/0/0";
+     public static final String BIP_BRM_PATH = "M/44H/60H/0H/0/1";
+     public static final String BIP_BRM_OS_PATH = "M/44H/2048H/0H/0/0";
+diff --git a/core/java/brahmaos/content/BrahmaIntent.java b/core/java/brahmaos/content/BrahmaIntent.java
+new file mode 100644
+index 0000000..0409ee7
+--- /dev/null
++++ b/core/java/brahmaos/content/BrahmaIntent.java
+@@ -0,0 +1,26 @@
++package brahmaos.content;
++
++public class BrahmaIntent {
++
++    public static final String ACTION_WALLETAPPKIT_SETUP_COMPLETE = "brahma.intent.action.WALLETAPPKIT_SETUP_COMPLETE";
++
++    public static final String ACTION_CHAIN_DOWNLOAD_STARTED = "brahma.intent.action.CHAIN_DOWNLOAD_STARTED";
++    public static final String ACTION_CHAIN_DOWNLOAD_PROGRESS = "brahma.intent.action.CHAIN_DOWNLOAD_PROGRESS";
++    public static final String ACTION_START_DOWNLOAD = "brahma.intent.action.START_DOWNLOAD";
++    public static final String ACTION_DONE_DOWNLOAD = "brahma.intent.action.DONE_DOWNLOAD";
++    public static final String ACTION_TRANSACTION_CONFIDENCE_CHANGED = "brahma.intent.action.TRANSACTION_CONFIDENCE_CHANGED";
++    public static final String ACTION_TRANSACTION_BROADCAST_COMPLETE = "brahma.intent.action.TRANSACTION_BROADCAST_COMPLETE";
++
++    public static final String EXTRA_WALLET_FILE_NAME = "brahma.intent.extra.WALLET_FILE_NAME";
++    public static final String EXTRA_PEER = "brahma.intent.extra.PEER";
++    public static final String EXTRA_BLOCKS_LEFT = "brahma.intent.extra.BLOCKS_LEFT";
++
++    public static final String EXTRA_PCT = "brahma.intent.extra.PCT";
++    public static final String EXTRA_BLOCKS_SO_FAR = "brahma.intent.extra.BLOCKS_SO_FAR";
++    public static final String EXTRA_DATE_STRING = "brahma.intent.extra.DATE_STRING";
++
++    public static final String EXTRA_BLOCKS = "brahma.intent.extra.BLOCKS";
++
++    public static final String EXTRA_TRANSACTION_HASH = "brahma.intent.extra.TRANSACTION_HASH";
++    public static final String EXTRA_DEPTH_IN_BLOCKS = "brahma.intent.extra.DEPTH_IN_BLOCKS";
++}
+diff --git a/core/java/brahmaos/content/WalletData.java b/core/java/brahmaos/content/WalletData.java
+index 01cf292..e36b32d 100644
+--- a/core/java/brahmaos/content/WalletData.java
++++ b/core/java/brahmaos/content/WalletData.java
+@@ -12,8 +12,9 @@ public class WalletData implements Parcelable {
+     public String keyPath;
+     public String address;
+     public String keyStore;
+-    public String privateKeyStr;
++    public String privateKeyStr;//not used currently
+     public String mnemonicStr;
++    public String kitFileName;//for BTC to record file name of .spvchain and .wallet
+ 
+     public WalletData() {
+     }
+@@ -29,6 +30,7 @@ public class WalletData implements Parcelable {
+         keyStore = orig.keyStore;
+         privateKeyStr = orig.privateKeyStr;
+         mnemonicStr = orig.mnemonicStr;
++        kitFileName = orig.kitFileName;
+     }
+ 
+     @Override
+@@ -48,6 +50,7 @@ public class WalletData implements Parcelable {
+         dest.writeString(keyStore);
+         dest.writeString(privateKeyStr);
+         dest.writeString(mnemonicStr);
++        dest.writeString(kitFileName);
+     }
+ 
+     public static final Parcelable.Creator<WalletData> CREATOR
+@@ -71,6 +74,7 @@ public class WalletData implements Parcelable {
+         keyStore = source.readString();
+         privateKeyStr = source.readString();
+         mnemonicStr = source.readString();
++        kitFileName = source.readString();
+     }
+ 
+ }
+diff --git a/core/res/AndroidManifest.xml b/core/res/AndroidManifest.xml
+index cd1dc17..c7dfaf6 100644
+--- a/core/res/AndroidManifest.xml
++++ b/core/res/AndroidManifest.xml
+@@ -551,6 +551,15 @@
+     <protected-broadcast android:name="android.media.tv.action.CHANNEL_BROWSABLE_REQUESTED" />
+     <protected-broadcast android:name="com.android.server.InputMethodManagerService.SHOW_INPUT_METHOD_PICKER" />
+ 
++    <!-- Added for bitcoin WalletManager -->
++    <protected-broadcast android:name="brahma.intent.action.WALLETAPPKIT_SETUP_COMPLETE" />
++    <protected-broadcast android:name="brahma.intent.action.CHAIN_DOWNLOAD_STARTED" />
++    <protected-broadcast android:name="brahma.intent.action.CHAIN_DOWNLOAD_PROGRESS" />
++    <protected-broadcast android:name="brahma.intent.action.START_DOWNLOAD" />
++    <protected-broadcast android:name="brahma.intent.action.DONE_DOWNLOAD" />
++    <protected-broadcast android:name="brahma.intent.action.TRANSACTION_CONFIDENCE_CHANGED" />
++    <protected-broadcast android:name="brahma.intent.action.TRANSACTION_BROADCAST_COMPLETE" />
++
+     <!-- ====================================================================== -->
+     <!--                          RUNTIME PERMISSIONS                           -->
+     <!-- ====================================================================== -->
+-- 
+2.7.4
+
