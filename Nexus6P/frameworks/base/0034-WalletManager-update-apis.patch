@@ -1,0 +1,61 @@
+From 1e29291c9e0aaf99f9602eef78775ad840d305ea Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Wed, 19 Dec 2018 17:53:43 +0800
+Subject: [PATCH] [WalletManager]: update apis
+
+Change-Id: I160de86bb0c6bab110b3adef4d44d60decddc3e8
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ api/current.txt        | 2 ++
+ api/system-current.txt | 2 ++
+ api/test-current.txt   | 2 ++
+ 3 files changed, 6 insertions(+)
+
+diff --git a/api/current.txt b/api/current.txt
+index b7d90c2..dd869c1 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -52141,8 +52141,10 @@ package brahmaos.content {
+     method public void writeToParcel(android.os.Parcel, int);
+     field public static final android.os.Parcelable.ClassLoaderCreator<brahmaos.content.TransactionDetails> CREATOR;
+     field public long amount;
++    field public int bytesLength;
+     field public int confirmBlockHeight;
+     field public int depthInBlocks;
++    field public long fee;
+     field public java.lang.String hash;
+     field public java.util.List<java.util.Map<java.lang.String, java.lang.Long>> inputs;
+     field public java.util.List<java.util.Map<java.lang.String, java.lang.Long>> outputs;
+diff --git a/api/system-current.txt b/api/system-current.txt
+index 09af648..ec6b92e 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -56099,8 +56099,10 @@ package brahmaos.content {
+     method public void writeToParcel(android.os.Parcel, int);
+     field public static final android.os.Parcelable.ClassLoaderCreator<brahmaos.content.TransactionDetails> CREATOR;
+     field public long amount;
++    field public int bytesLength;
+     field public int confirmBlockHeight;
+     field public int depthInBlocks;
++    field public long fee;
+     field public java.lang.String hash;
+     field public java.util.List<java.util.Map<java.lang.String, java.lang.Long>> inputs;
+     field public java.util.List<java.util.Map<java.lang.String, java.lang.Long>> outputs;
+diff --git a/api/test-current.txt b/api/test-current.txt
+index 0d0aa67..3009b32 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -52623,8 +52623,10 @@ package brahmaos.content {
+     method public void writeToParcel(android.os.Parcel, int);
+     field public static final android.os.Parcelable.ClassLoaderCreator<brahmaos.content.TransactionDetails> CREATOR;
+     field public long amount;
++    field public int bytesLength;
+     field public int confirmBlockHeight;
+     field public int depthInBlocks;
++    field public long fee;
+     field public java.lang.String hash;
+     field public java.util.List<java.util.Map<java.lang.String, java.lang.Long>> inputs;
+     field public java.util.List<java.util.Map<java.lang.String, java.lang.Long>> outputs;
+-- 
+2.7.4
+
