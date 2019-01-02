@@ -1,0 +1,85 @@
+From 0f37d7affdfcb8730e8d68cf5c56167eeb821f88 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Thu, 20 Dec 2018 14:01:25 +0800
+Subject: [PATCH] [DSNManagerService] modify by make update-api
+
+Change-Id: I49bab3f2254e94d45ce6c8281ec089d941aa07bd
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ api/current.txt        | 12 ------------
+ api/system-current.txt | 12 ------------
+ api/test-current.txt   | 12 ------------
+ 3 files changed, 36 deletions(-)
+
+diff --git a/api/current.txt b/api/current.txt
+index 5f0e2c9..a4805bd 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -52118,18 +52118,6 @@ package brahmaos.app {
+     method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+   }
+ 
+-  public abstract interface IOnETHBlanceGetListener implements android.os.IInterface {
+-    method public abstract void onETHBlanceGetError() throws android.os.RemoteException;
+-    method public abstract void onETHBlanceGetSuccess(java.lang.String) throws android.os.RemoteException;
+-  }
+-
+-  public static abstract class IOnETHBlanceGetListener.Stub extends android.os.Binder implements brahmaos.app.IOnETHBlanceGetListener {
+-    ctor public IOnETHBlanceGetListener.Stub();
+-    method public android.os.IBinder asBinder();
+-    method public static brahmaos.app.IOnETHBlanceGetListener asInterface(android.os.IBinder);
+-    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+-  }
+-
+   public abstract interface IWalletManager implements android.os.IInterface {
+     method public abstract boolean checkBitcoinDoneDownloaded(java.lang.String) throws android.os.RemoteException;
+     method public abstract boolean checkPasswordForWallet(brahmaos.content.WalletData, java.lang.String) throws android.os.RemoteException;
+diff --git a/api/system-current.txt b/api/system-current.txt
+index dc4cd53..dd7dafc 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -56076,18 +56076,6 @@ package brahmaos.app {
+     method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+   }
+ 
+-  public abstract interface IOnETHBlanceGetListener implements android.os.IInterface {
+-    method public abstract void onETHBlanceGetError() throws android.os.RemoteException;
+-    method public abstract void onETHBlanceGetSuccess(java.lang.String) throws android.os.RemoteException;
+-  }
+-
+-  public static abstract class IOnETHBlanceGetListener.Stub extends android.os.Binder implements brahmaos.app.IOnETHBlanceGetListener {
+-    ctor public IOnETHBlanceGetListener.Stub();
+-    method public android.os.IBinder asBinder();
+-    method public static brahmaos.app.IOnETHBlanceGetListener asInterface(android.os.IBinder);
+-    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+-  }
+-
+   public abstract interface IWalletManager implements android.os.IInterface {
+     method public abstract boolean checkBitcoinDoneDownloaded(java.lang.String) throws android.os.RemoteException;
+     method public abstract boolean checkPasswordForWallet(brahmaos.content.WalletData, java.lang.String) throws android.os.RemoteException;
+diff --git a/api/test-current.txt b/api/test-current.txt
+index 3376eb5..e065bd0 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -52600,18 +52600,6 @@ package brahmaos.app {
+     method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+   }
+ 
+-  public abstract interface IOnETHBlanceGetListener implements android.os.IInterface {
+-    method public abstract void onETHBlanceGetError() throws android.os.RemoteException;
+-    method public abstract void onETHBlanceGetSuccess(java.lang.String) throws android.os.RemoteException;
+-  }
+-
+-  public static abstract class IOnETHBlanceGetListener.Stub extends android.os.Binder implements brahmaos.app.IOnETHBlanceGetListener {
+-    ctor public IOnETHBlanceGetListener.Stub();
+-    method public android.os.IBinder asBinder();
+-    method public static brahmaos.app.IOnETHBlanceGetListener asInterface(android.os.IBinder);
+-    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+-  }
+-
+   public abstract interface IWalletManager implements android.os.IInterface {
+     method public abstract boolean checkBitcoinDoneDownloaded(java.lang.String) throws android.os.RemoteException;
+     method public abstract boolean checkPasswordForWallet(brahmaos.content.WalletData, java.lang.String) throws android.os.RemoteException;
+-- 
+2.7.4
+
