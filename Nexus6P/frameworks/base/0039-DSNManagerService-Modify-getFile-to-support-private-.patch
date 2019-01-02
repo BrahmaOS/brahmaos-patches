@@ -1,0 +1,82 @@
+From 2a69a531599dfecdd9da2d4d4da73950150f4f71 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Wed, 26 Dec 2018 17:52:02 +0800
+Subject: [PATCH] [DSNManagerService] Modify getFile to support private key
+ decrypt file
+
+Change-Id: I1021b1596fd6efb0fc657c762fbe3921dfae9752
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ .../brahmaos/app/server/DSNManagerService.java     | 37 ++++++++++++----------
+ 1 file changed, 21 insertions(+), 16 deletions(-)
+
+diff --git a/services/core/java/brahmaos/app/server/DSNManagerService.java b/services/core/java/brahmaos/app/server/DSNManagerService.java
+index c4dbfd6..45f0252 100644
+--- a/services/core/java/brahmaos/app/server/DSNManagerService.java
++++ b/services/core/java/brahmaos/app/server/DSNManagerService.java
+@@ -303,16 +303,16 @@ public class DSNManagerService extends IDSNManager.Stub {
+ 
+     @Override
+     public void getFile(String cid, String password, IGetFileCallback cb) {
++        Log.d(TAG, "getFile input parameters:" + cid + ":" + password);
+         StringBuffer fileNameBuffer = new StringBuffer();
+         fileNameBuffer.append(PATH_HD_PREFIX);
+         fileNameBuffer.append("/");
+         fileNameBuffer.append(cid);
+         String fileNameBufferString = fileNameBuffer.toString();
+         mDSNManagerHandle = new IPFS("/ip4/127.0.0.1/tcp/5001");
+-       // File filePath = new File(PATH_PREFIX);
+-       // createDirToStoreage(filePath);
+-        Log.d(TAG,  ":" + "getFile");
++
+         try {
++            /*get file from IPFS*/
+             int len;
+             byte[] buffer = new byte[4096];
+             InputStream in = mDSNManagerHandle.catStream(Multihash.fromBase58(cid));
+@@ -328,24 +328,29 @@ public class DSNManagerService extends IDSNManager.Stub {
+             } catch(IOException | RemoteException e) {
+                     e.printStackTrace();
+             }
+-            fileNameBuffer.append("-decrypt");
+-            File fileOutput = new File(fileNameBufferString);
+-            String fileNameDecrypt = fileNameBuffer.toString();
+-            File fileDest = new File(fileNameDecrypt);
++
++            /* get fileOutput file cipher*/
++            File fileCipher = new File(fileNameBufferString);
++            String fileDestName = fileNameBuffer.append("-systemdecrypt").toString();
++            File fileDest = new File(fileDestName);
++
++            /* system public Private key decrypt file*/
+             if (password != null) {
+                     DataCryptoUtils dc = new DataCryptoUtils();
+-                    int decryptResult = dc.decryptWithDefaultPrivateKey(mContext, fileOutput, fileDest, password, 64);
++                    int decryptResult = dc.decryptWithDefaultPrivateKey(mContext, fileCipher, fileDest, password, 64);
++                    if(decryptResult != 0) {
++                        fileCipher.delete();
++                        cb.onCallbackComplete(false);
++                        return;
++                    } else {
++                        fileCipher.delete();
++                    }
+             }
+-
+-        } catch(IOException e) {
+-            e.printStackTrace();
+-        }
+-        try {
+             cb.onCallbackComplete(true);
+-        } catch(RemoteException e) {
+-            Log.d(TAG,"onError:"+ e);
++        } catch(IOException | RemoteException e) {
++            e.printStackTrace();
+         }
+-
++        return;
+     }
+ 
+     private String getSystemAccountId() {
+-- 
+2.7.4
+
