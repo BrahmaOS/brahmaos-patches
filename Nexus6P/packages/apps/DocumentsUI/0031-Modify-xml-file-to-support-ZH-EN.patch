@@ -1,0 +1,1153 @@
+From 7f4a387f7eea7d3d54b59bf9aa0c079097acd04b Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Mon, 24 Dec 2018 10:01:07 +0800
+Subject: [PATCH] Modify xml file to support ZH EN
+
+- modify dialog to support ZH EN
+- modify xml file to support ZH EN
+- modify dialog to support show or hid password
+
+Change-Id: Id396bfbf57631f1969ea3bbf1963e5fa6e29de6d
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ res/layout/activity_dsn_transmission.xml           |   4 +-
+ res/layout/dialog_dsn_custom_decrypt.xml           |   4 +-
+ res/layout/dialog_dsn_custom_encrypt.xml           |   4 +-
+ res/layout/dialog_dsn_select_encrypt.xml           |   9 +-
+ res/layout/dialog_dsn_system_decrypt.xml           |  54 +++++++++++
+ res/layout/dialog_dsn_system_encrypt.xml           |  54 +++++++++++
+ res/layout/dsn_dialog_scan.xml                     |   9 +-
+ res/layout/fragment_dsn_setting.xml                |  17 ++--
+ res/layout/item_dsn_downloadfilesqueue.xml         |   3 +
+ res/layout/item_dsn_uploadfilesqueue.xml           |  17 ++--
+ res/values-en-rGB/strings.xml                      |  45 ++++++++-
+ res/values-zh-rCN/strings.xml                      |  45 ++++++++-
+ res/values/strings.xml                             |  43 +++++----
+ src/com/android/documentsui/BaseActivity.java      |   8 +-
+ .../DSN/dirlist/NoItemRecycleAdapter.java          |   1 -
+ .../DSN/dirlist/UploadRecycleAdapter.java          |   2 +-
+ .../documentsui/DSN/task/DownloadFilesJob.java     |   4 +-
+ .../documentsui/dirlist/DirectoryFragment.java     |   6 +-
+ .../android/documentsui/files/ActionHandler.java   | 101 +++++++++++----------
+ .../documentsui/files/DSNFilesActivity.java        |  78 +++++++++++++---
+ src/com/android/documentsui/ui/MessageBuilder.java |  10 +-
+ 21 files changed, 390 insertions(+), 128 deletions(-)
+ create mode 100644 res/layout/dialog_dsn_system_decrypt.xml
+ create mode 100644 res/layout/dialog_dsn_system_encrypt.xml
+
+diff --git a/res/layout/activity_dsn_transmission.xml b/res/layout/activity_dsn_transmission.xml
+index 2239bf8..0820640 100644
+--- a/res/layout/activity_dsn_transmission.xml
++++ b/res/layout/activity_dsn_transmission.xml
+@@ -19,7 +19,7 @@
+             android:gravity="center"
+             android:padding="10dp"
+             android:textSize="16sp"
+-            android:text="上传" />
++            android:text="@string/rb_transmission_upload_title" />
+ 
+         <RadioButton
+             android:id="@+id/home_rb_ticker"
+@@ -30,7 +30,7 @@
+             android:gravity="center"
+             android:padding="10dp"
+             android:textSize="16sp"
+-            android:text="下载" />
++            android:text="@string/rb_transmission_download_title" />
+ 
+     </RadioGroup>
+ 
+diff --git a/res/layout/dialog_dsn_custom_decrypt.xml b/res/layout/dialog_dsn_custom_decrypt.xml
+index 59ebbba..ebf8a59 100644
+--- a/res/layout/dialog_dsn_custom_decrypt.xml
++++ b/res/layout/dialog_dsn_custom_decrypt.xml
+@@ -31,7 +31,7 @@
+             android:layout_height="wrap_content"
+             android:textColor="@color/colorGray"
+             android:textSize="16sp"
+-            android:text="显示密码"
++            android:text="@string/dialog_cb_showpassword"
+             />
+         <TextView
+             android:id="@+id/textView4"
+@@ -40,7 +40,7 @@
+             android:layout_marginLeft="2dp"
+             android:textSize="16sp"
+             android:textColor="@color/colorGray"
+-            android:text="文件解密密码包含字母或数字，不能使用特殊字符，长度在6-12之间。" />
++            android:text="@string/dialog_tv_pasword_hint" />
+     </LinearLayout>
+ 
+     <LinearLayout
+diff --git a/res/layout/dialog_dsn_custom_encrypt.xml b/res/layout/dialog_dsn_custom_encrypt.xml
+index 788168a..ebf8a59 100644
+--- a/res/layout/dialog_dsn_custom_encrypt.xml
++++ b/res/layout/dialog_dsn_custom_encrypt.xml
+@@ -31,7 +31,7 @@
+             android:layout_height="wrap_content"
+             android:textColor="@color/colorGray"
+             android:textSize="16sp"
+-            android:text="显示密码"
++            android:text="@string/dialog_cb_showpassword"
+             />
+         <TextView
+             android:id="@+id/textView4"
+@@ -40,7 +40,7 @@
+             android:layout_marginLeft="2dp"
+             android:textSize="16sp"
+             android:textColor="@color/colorGray"
+-            android:text="文件加密密码包含字母或数字，不能使用特殊字符，长度在6-12之间。" />
++            android:text="@string/dialog_tv_pasword_hint" />
+     </LinearLayout>
+ 
+     <LinearLayout
+diff --git a/res/layout/dialog_dsn_select_encrypt.xml b/res/layout/dialog_dsn_select_encrypt.xml
+index 6826ce0..34c515d 100644
+--- a/res/layout/dialog_dsn_select_encrypt.xml
++++ b/res/layout/dialog_dsn_select_encrypt.xml
+@@ -29,7 +29,7 @@
+                 android:layout_height="wrap_content"
+                 android:textSize="18sp"
+                 android:paddingLeft="16dp"
+-                android:text="Without the password" />
++                android:text="@string/dialog_noencrypt_content" />
+             <RadioButton
+                 android:id="@+id/radioButtonB"
+                 android:layout_width="match_parent"
+@@ -37,7 +37,8 @@
+                 android:layout_marginTop="14dp"
+                 android:textSize="18sp"
+                 android:paddingLeft="16dp"
+-                android:text="Systematic encryption" />
++                android:visibility="gone"
++                android:text="@string/dialog_systemencrypt_content" />
+             <RadioButton
+                 android:id="@+id/radioButtonC"
+                 android:layout_width="match_parent"
+@@ -45,7 +46,7 @@
+                 android:layout_marginTop="14dp"
+                 android:textSize="18sp"
+                 android:paddingLeft="16dp"
+-                android:text="Custom encryption" />
++                android:text="@string/dialog_customencrypt_content" />
+         </RadioGroup>
+     </LinearLayout>>
+     <LinearLayout
+@@ -54,6 +55,4 @@
+         android:background="@color/colorMoreLightGray"
+         android:layout_marginTop="@dimen/space_normal"
+         />
+-
+-
+ </LinearLayout>
+diff --git a/res/layout/dialog_dsn_system_decrypt.xml b/res/layout/dialog_dsn_system_decrypt.xml
+new file mode 100644
+index 0000000..18ef6e5
+--- /dev/null
++++ b/res/layout/dialog_dsn_system_decrypt.xml
+@@ -0,0 +1,54 @@
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:gravity="center_horizontal"
++    android:orientation="vertical">
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="1dp"
++        android:background="@color/colorMoreLightGray"
++        android:layout_marginTop="@dimen/space_normal"
++        />
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:orientation="vertical"
++        android:layout_marginTop="@dimen/space_normal"
++        android:paddingLeft="16dp"
++        android:paddingRight="16dp"
++        >
++        <EditText
++            android:id="@+id/FactRstDialogPsw"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:password="true"
++            android:textColor="@color/colorBlue"
++            android:singleLine="true"/>
++        <CheckBox
++            android:id="@+id/checkBox"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:textColor="@color/colorGray"
++            android:textSize="16sp"
++           android:text="@string/dialog_cb_showpassword"
++            />
++        <TextView
++            android:id="@+id/textView4"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:layout_marginLeft="2dp"
++            android:textSize="16sp"
++            android:textColor="@color/colorGray"
++            android:text="@string/dialog_tv_pasword_hint" />
++    </LinearLayout>
++
++    <LinearLayout
++        android:layout_marginTop="16dp"
++        android:layout_width="match_parent"
++        android:layout_height="1dp"
++        android:background="@color/colorMoreLightGray"
++        />
++</LinearLayout>
++
++
++
+diff --git a/res/layout/dialog_dsn_system_encrypt.xml b/res/layout/dialog_dsn_system_encrypt.xml
+new file mode 100644
+index 0000000..e50908d
+--- /dev/null
++++ b/res/layout/dialog_dsn_system_encrypt.xml
+@@ -0,0 +1,54 @@
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:gravity="center_horizontal"
++    android:orientation="vertical">
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="1dp"
++        android:background="@color/colorMoreLightGray"
++        android:layout_marginTop="@dimen/space_normal"
++        />
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:orientation="vertical"
++        android:layout_marginTop="@dimen/space_normal"
++        android:paddingLeft="16dp"
++        android:paddingRight="16dp"
++        >
++
++        <EditText
++            android:id="@+id/FactRstDialogPsw"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:password="true"
++            android:textColor="@color/colorBlue"
++            android:singleLine="true"/>
++        <CheckBox
++            android:id="@+id/checkBox"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:textColor="@color/colorGray"
++            android:textSize="16sp"
++            android:text="@string/dialog_cb_showpassword"/>
++        <TextView
++            android:id="@+id/textView4"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:layout_marginLeft="2dp"
++            android:textSize="16sp"
++            android:textColor="@color/colorGray"
++            android:text="@string/dialog_tv_pasword_hint" />
++    </LinearLayout>
++
++    <LinearLayout
++        android:layout_marginTop="16dp"
++        android:layout_width="match_parent"
++        android:layout_height="1dp"
++        android:background="@color/colorMoreLightGray"
++        />
++</LinearLayout>
++
++
++
+diff --git a/res/layout/dsn_dialog_scan.xml b/res/layout/dsn_dialog_scan.xml
+index 7269fb1..3cf4469 100644
+--- a/res/layout/dsn_dialog_scan.xml
++++ b/res/layout/dsn_dialog_scan.xml
+@@ -19,7 +19,7 @@
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:textColor="@color/colorSubTitle"
+-            android:text="File name:"
++            android:text="@string/tv_file_name_title"
+             android:textSize="@dimen/font_size_subheading"/>
+         <TextView
+             android:id="@+id/tv_name_content"
+@@ -30,7 +30,6 @@
+             android:layout_marginRight="6dp"
+             android:layout_marginTop="@dimen/space_unit"
+             android:textSize="14sp"
+-            android:text="xxxx"
+             android:textColor="@color/colorSubContent"/>
+     </RelativeLayout>
+     <RelativeLayout
+@@ -43,7 +42,7 @@
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:textColor="@color/colorSubTitle"
+-            android:text="File Size:"
++            android:text="@string/tv_file_size_title"
+             android:textSize="@dimen/font_size_subheading"/>
+         <TextView
+             android:id="@+id/tv_size_content"
+@@ -54,7 +53,6 @@
+             android:layout_marginRight="6dp"
+             android:layout_marginTop="@dimen/space_unit"
+             android:textSize="14sp"
+-            android:text="xxxx"
+             android:textColor="@color/colorSubContent"/>
+       </RelativeLayout>
+     <RelativeLayout
+@@ -67,7 +65,7 @@
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:textColor="@color/colorSubTitle"
+-            android:text="File MIME-Type:"
++            android:text="@string/tv_file_type_title"
+             android:textSize="@dimen/font_size_subheading"/>
+         <TextView
+             android:id="@+id/tv_type_content"
+@@ -78,7 +76,6 @@
+             android:layout_marginRight="6dp"
+             android:layout_marginTop="@dimen/space_unit"
+             android:textSize="14sp"
+-            android:text="xxxx"
+             android:textColor="@color/colorSubContent"/>
+     </RelativeLayout>
+ </LinearLayout>
+diff --git a/res/layout/fragment_dsn_setting.xml b/res/layout/fragment_dsn_setting.xml
+index 25d57da..d0a3489 100644
+--- a/res/layout/fragment_dsn_setting.xml
++++ b/res/layout/fragment_dsn_setting.xml
+@@ -20,7 +20,7 @@
+                 android:id="@+id/tv_name_title"
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+-                android:text="选择加密模式"
++                android:text="@string/menu_encrypt_mode"
+                 android:textSize="18sp"
+                 android:textColor="@color/colorDark"/>
+             <Switch
+@@ -60,7 +60,7 @@
+                     android:textSize="18sp"
+                     android:textColor="@color/colorGray"
+                     android:layout_gravity="center_vertical"
+-                    android:text="无需加密模式" />
++                    android:text="@string/menu_noencrypt_mode" />
+                 <TextView
+                     android:id="@+id/textView10"
+                     android:layout_width="wrap_content"
+@@ -69,7 +69,7 @@
+                     android:textSize="14sp"
+                     android:textColor="@color/colorGray"
+                     android:layout_gravity="center_vertical"
+-                    android:text="无需加密模式在上传下载文件时不用设置密码" />
++                    android:text="@string/menu_noencrypt_mode_content"  />
+             </LinearLayout>
+ 
+             <RadioButton
+@@ -84,6 +84,7 @@
+             android:layout_marginTop="10dp"
+             android:layout_height="80dp"
+             android:gravity="center_vertical"
++            android:visibility="gone"
+             android:paddingEnd="@dimen/space_normal"
+             android:paddingStart="@dimen/space_normal">
+             <LinearLayout
+@@ -98,7 +99,7 @@
+                     android:textSize="18sp"
+                     android:textColor="@color/colorGray"
+                     android:layout_gravity="center_vertical"
+-                    android:text="默认加密模式" />
++                    android:text="@string/menu_systemencrypt_mode" />
+                 <TextView
+                     android:id="@+id/textView14"
+                     android:layout_width="wrap_content"
+@@ -107,7 +108,7 @@
+                     android:textSize="14sp"
+                     android:textColor="@color/colorGray"
+                     android:layout_gravity="center_vertical"
+-                    android:text="默认模式密码为Brahma OS系统帐号密码" />
++                    android:text="@string/menu_systemencrypt_mode_content" />
+             </LinearLayout>
+ 
+             <RadioButton
+@@ -135,7 +136,7 @@
+                     android:textSize="18sp"
+                     android:textColor="@color/colorGray"
+                     android:layout_gravity="center_vertical"
+-                    android:text="每次加密模式" />
++                    android:text="@string/menu_customencrypt_mode" />
+                 <TextView
+                     android:id="@+id/textView"
+                     android:layout_marginTop="6dp"
+@@ -144,7 +145,7 @@
+                     android:textSize="14sp"
+                     android:textColor="@color/colorGray"
+                     android:layout_gravity="center_vertical"
+-                    android:text="每次加密在每次上传和下载文件时都需要手动输入密码，具有安全性" />
++                    android:text="@string/menu_customencrypt_mode_content" />
+             </LinearLayout>
+ 
+             <RadioButton
+@@ -155,4 +156,4 @@
+         </RelativeLayout>
+ 
+     </LinearLayout>
+-</LinearLayout>
+\ No newline at end of file
++</LinearLayout>
+diff --git a/res/layout/item_dsn_downloadfilesqueue.xml b/res/layout/item_dsn_downloadfilesqueue.xml
+index 722ada2..1aa7122 100644
+--- a/res/layout/item_dsn_downloadfilesqueue.xml
++++ b/res/layout/item_dsn_downloadfilesqueue.xml
+@@ -34,6 +34,9 @@
+                 <TextView
+                     android:id="@+id/tv_dsn_name"
+                     android:textAlignment="center"
++                    android:singleLine="true"
++                    android:maxEms="30"
++                    android:ellipsize="end"
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:textColor="@color/color_dsn_size"
+diff --git a/res/layout/item_dsn_uploadfilesqueue.xml b/res/layout/item_dsn_uploadfilesqueue.xml
+index 3a45da7..67ab835 100644
+--- a/res/layout/item_dsn_uploadfilesqueue.xml
++++ b/res/layout/item_dsn_uploadfilesqueue.xml
+@@ -32,12 +32,14 @@
+                 android:layout_height="wrap_content"
+                 android:orientation="horizontal">
+                 <TextView
+-                    android:id="@+id/tv_dsn_short_name"
++                    android:id="@+id/tv_dsn_name"
+                     android:textAlignment="center"
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
++                    android:singleLine="true"
++                    android:maxEms="30"
++                    android:ellipsize="end"
+                     android:textColor="@color/color_dsn_size"
+-                    android:text="IMG_2018_0891.jpg"
+                     android:textSize="@dimen/font_size_subheading"/>
+             </LinearLayout>
+         <RelativeLayout
+@@ -45,13 +47,12 @@
+                 android:layout_height="wrap_content">
+             <TextView
+                 android:layout_alignParentLeft="true"
+-                android:id="@+id/tv_dsn_date"
++                android:id="@+id/tv_dsn_size"
+                 android:textAlignment="center"
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_unit"
+                 android:textSize="@dimen/font_size_body"
+-                android:text="283KB"
+                 android:textColor="@color/colorGray"/>
+             </RelativeLayout>
+         </LinearLayout>
+@@ -59,16 +60,14 @@
+         <RelativeLayout
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+-            android:layout_alignParentRight="true"
+-            >
+-
++            android:layout_alignParentRight="true">
+             <ImageView
+                 android:layout_centerInParent="true"
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+                 android:src="@drawable/ring"/>
+-            <dsnmanagersample.samples.brahmaos.io.myapplication.PercentCircle
+-                android:id="@+id/percentCircle"
++            <com.android.documentsui.DSN.dirlist.PercentCircle
++                android:id="@+id/pc_dsn"
+                 android:layout_centerInParent="true"
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+diff --git a/res/values-en-rGB/strings.xml b/res/values-en-rGB/strings.xml
+index 44c728b..d3fab84 100644
+--- a/res/values-en-rGB/strings.xml
++++ b/res/values-en-rGB/strings.xml
+@@ -167,6 +167,25 @@
+       <item quantity="other">These files were converted to another format: <xliff:g id="LIST_1">%1$s</xliff:g></item>
+       <item quantity="one">This file was converted to another format: <xliff:g id="LIST_0">%1$s</xliff:g></item>
+     </plurals>
++    <!-- Dialog text shown to users when asking if they want to Upload a file (a confirmation) -->
++    <string name="upload_filename_confirmation_message">Upload \"<xliff:g id="name" example="cat.jpg">%1$s</xliff:g>\"?</string>
++    <!-- Dialog text shown to users when asking if they want to Upload a folder (a confirmation) -->
++    <string name="upload_foldername_confirmation_message">Upload folder \"<xliff:g id="name" example="Photos">%1$s</xliff:g>\" and its contents?</string>
++    <!-- Dialog text shown to users when asking if they want to Upload files (a confirmation). -->
++    <plurals name="upload_files_confirmation_message">
++        <item quantity="one">Upload <xliff:g id="count" example="1">%1$d</xliff:g> file?</item>
++        <item quantity="other">Upload <xliff:g id="count" example="3">%1$d</xliff:g> files?</item>
++    </plurals>
++    <!-- Dialog text shown to users when asking if they want to Upload folders (a confirmation). -->
++    <plurals name="upload_folders_confirmation_message">
++        <item quantity="one">Upload <xliff:g id="count" example="1">%1$d</xliff:g> folder and its contents?</item>
++        <item quantity="other">Upload <xliff:g id="count" example="3">%1$d</xliff:g> folders and their contents?</item>
++    </plurals>
++    <!-- Dialog text shown to users when asking if they want to Upload mixed type items: files and folders (a confirmation). -->
++    <plurals name="upload_items_confirmation_message">
++        <item quantity="one">Upload <xliff:g id="count" example="1">%1$d</xliff:g> item?</item>
++        <item quantity="other">Upload <xliff:g id="count" example="3">%1$d</xliff:g> items?</item>
++    </plurals>
+     <plurals name="clipboard_files_clipped" formatted="false" msgid="4847061634862926902">
+       <item quantity="other">Copied <xliff:g id="COUNT_1">%1$d</xliff:g> items to clipboard.</item>
+       <item quantity="one">Copied <xliff:g id="COUNT_0">%1$d</xliff:g> item to clipboard.</item>
+@@ -228,5 +247,29 @@
+     <string name="root_dsnsetting">DSN Setting</string>
+     <string name="root_dsnremote">DSN Remote</string>
+     <string name="menu_upload">Upload files</string>
+-
++    <string name="menu_encrypt_mode">"Select Encrypt Mode"</string>
++    <string name="menu_noencrypt_mode">"No Encrypt Mode"</string>
++    <string name="menu_noencrypt_mode_content">"No encrypt mode no need to set password when upload file to DSN."</string>
++    <string name="menu_systemencrypt_mode">"System Encrypt Mode"</string>
++    <string name="menu_systemencrypt_mode_content">"Default mode the password is Brahma OS system account password." </string>
++    <string name="menu_customencrypt_mode">"Custom Encrypt Mode"</string>
++    <string name="menu_customencrypt_mode_content">"Need to input password every time when upload the file to DSN.With security." </string>
++    <string name="menu_decrypt">"Decrypt"</string>
++    <string name="dialog_noencrypt_title">"No Encrypt"</string>
++    <string name="dialog_systemencrypt_title">"System Encrypt"</string>
++    <string name="dialog_customencrypt_title">"Custom Encrypt"</string>
++    <string name="dialog_decrypt_title">"File decrypt"</string>
++    <string name="dialog_set_title">"SET"</string>
++    <string name="dialog_ipfs_content_alert">"Please open IPFS Switch in Settings."</string>
++    <string name="dialog_noencrypt_content">"Without the password"</string>
++    <string name="dialog_systemencrypt_content">"System encryption"</string>
++    <string name="dialog_customencrypt_content">"Custom encryption"</string>
++    <string name="dialog_cb_showpassword">"show password"</string>
++    <string name="dialog_tv_pasword_hint">"File Encryption the password contains letters or numbers, can not use special characters, the length is between 6-12. "</string>
++    <string name="rb_transmission_upload_title">"Upload"</string>
++    <string name="rb_transmission_download_title">"Download"</string>
++    <string name="tv_file_name_title">"File Name:"</string>
++    <string name="tv_file_size_title">"File Size:"</string>
++    <string name="tv_file_type_title">"File MIME-Type:"</string>
++    <string name="dialog_qrscan_return_title">"Download File from DSN"</string>
+ </resources>
+diff --git a/res/values-zh-rCN/strings.xml b/res/values-zh-rCN/strings.xml
+index 29c9f51..b432b37 100644
+--- a/res/values-zh-rCN/strings.xml
++++ b/res/values-zh-rCN/strings.xml
+@@ -204,6 +204,25 @@
+       <item quantity="other">要删除 <xliff:g id="COUNT_1">%1$d</xliff:g> 项吗？</item>
+       <item quantity="one">要删除 <xliff:g id="COUNT_0">%1$d</xliff:g> 项吗？</item>
+     </plurals>
++
++    <string name="upload_filename_confirmation_message">"上传 "<xliff:g id="name" example="cat.jpg">%1$s</xliff:g>”吗？"</string>
++
++    <string name="upload_foldername_confirmation_message">上传 文件夹 \"<xliff:g id="name" example="Photos">%1$s</xliff:g>”及其中的内容吗？"</string>
++
++    <plurals name="upload_files_confirmation_message">
++        <item quantity="one">上传 <xliff:g id="count" example="1">%1$d</xliff:g> 个文件吗？</item>
++        <item quantity="other">上传 <xliff:g id="count" example="3">%1$d</xliff:g> 个文件吗？</item>
++    </plurals>
++    <!-- Dialog text shown to users when asking if they want to Upload folders (a confirmation). -->
++    <plurals name="upload_folders_confirmation_message">
++        <item quantity="one">上传 <xliff:g id="count" example="1">%1$d</xliff:g> 个文件夹及其中的内容吗？</item>
++        <item quantity="other">上传 <xliff:g id="count" example="3">%1$d</xliff:g> 个文件夹及其中的内容吗？</item>
++    </plurals>
++    <!-- Dialog text shown to users when asking if they want to Upload mixed type items: files and folders (a confirmation). -->
++    <plurals name="upload_items_confirmation_message">
++        <item quantity="one">上传 <xliff:g id="count" example="1">%1$d</xliff:g> 项吗？</item>
++        <item quantity="other">上传 <xliff:g id="count" example="3">%1$d</xliff:g> 项吗？</item>
++    </plurals>
+     <string name="images_shortcut_label" msgid="2545168016070493574">"图片"</string>
+     <string name="archive_loading_failed" msgid="7243436722828766996">"无法打开归档文件以进行浏览。文件已损坏或所采用的格式不受支持。"</string>
+     <string name="name_conflict" msgid="28407269328862986">"已存在同名文件。"</string>
+@@ -230,5 +249,29 @@
+     <string name="menu_upload">上传文件</string>
+     <string name="lable_upload_empty">无任何上传文件</string>
+     <string name="lable_download_empty">无任何下载文件</string>
+-
++    <string name="menu_encrypt_mode">"选择加密模式"</string>
++    <string name="menu_noencrypt_mode">"无需加密模式"</string>
++    <string name="menu_noencrypt_mode_content">"无需加密模式在上传文件时不用设置密码。"</string>
++    <string name="menu_systemencrypt_mode">"系统加密模式"</string>
++    <string name="menu_systemencrypt_mode_content">"默认模式密码为Brahma OS系统帐号密码。"</string>
++    <string name="menu_customencrypt_mode">"每次加密模式"</string>
++    <string name="menu_customencrypt_mode_content">"每次加密在每次上传文件时都需要手动输入密码，具有安全性。"</string>
++    <string name="menu_decrypt">"解密"</string>
++    <string name="dialog_noencrypt_title">"无加密"</string>
++    <string name="dialog_systemencrypt_title">"系统加密"</string>
++    <string name="dialog_customencrypt_title">"自定义加密"</string>
++    <string name="dialog_decrypt_title">"文件解密"</string>
++    <string name="dialog_set_title">"设置"</string>
++    <string name="dialog_ipfs_content_alert">"请在设置中打开IPFS开关。"</string>
++    <string name="dialog_noencrypt_content">"无需加密"</string>
++    <string name="dialog_systemencrypt_content">"系统加密"</string>
++    <string name="dialog_customencrypt_content">"自定义加密"</string>
++    <string name="dialog_cb_showpassword">"显示密码"</string>
++    <string name="dialog_tv_pasword_hint">"文件加密密码包含字母或数字，不能使用特殊字符，长度在6-12之间。"</string>
++    <string name="rb_transmission_upload_title">"上传"</string>
++    <string name="rb_transmission_download_title">"下载"</string>
++    <string name="tv_file_name_title">"文件名字："</string>
++    <string name="tv_file_size_title">"文件大小："</string>
++    <string name="tv_file_type_title">"文件MIME类型："</string>
++    <string name="dialog_qrscan_return_title">"从DSN中下载此文件"</string>
+ </resources>
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index 0704132..b3acc2c 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -373,24 +373,24 @@
+         <item quantity="other">Delete <xliff:g id="count" example="3">%1$d</xliff:g> items?</item>
+     </plurals>
+ 
+-    <!-- Dialog text shown to users when asking if they want to backup a file (a confirmation) -->
+-    <string name="backup_filename_confirmation_message">Backup \"<xliff:g id="name" example="cat.jpg">%1$s</xliff:g>\"?</string>
+-    <!-- Dialog text shown to users when asking if they want to delete a folder (a confirmation) -->
+-    <string name="backup_foldername_confirmation_message">Backup folder \"<xliff:g id="name" example="Photos">%1$s</xliff:g>\" and its contents?</string>
+-    <!-- Dialog text shown to users when asking if they want to delete files (a confirmation). -->
+-    <plurals name="backup_files_confirmation_message">
+-        <item quantity="one">Backup <xliff:g id="count" example="1">%1$d</xliff:g> file?</item>
+-        <item quantity="other">Backup <xliff:g id="count" example="3">%1$d</xliff:g> files?</item>
++    <!-- Dialog text shown to users when asking if they want to Upload a file (a confirmation) -->
++    <string name="upload_filename_confirmation_message">Upload \"<xliff:g id="name" example="cat.jpg">%1$s</xliff:g>\"?</string>
++    <!-- Dialog text shown to users when asking if they want to Upload a folder (a confirmation) -->
++    <string name="upload_foldername_confirmation_message">Upload folder \"<xliff:g id="name" example="Photos">%1$s</xliff:g>\" and its contents?</string>
++    <!-- Dialog text shown to users when asking if they want to Upload files (a confirmation). -->
++    <plurals name="upload_files_confirmation_message">
++        <item quantity="one">Upload <xliff:g id="count" example="1">%1$d</xliff:g> file?</item>
++        <item quantity="other">Upload <xliff:g id="count" example="3">%1$d</xliff:g> files?</item>
+     </plurals>
+-    <!-- Dialog text shown to users when asking if they want to delete folders (a confirmation). -->
+-    <plurals name="backup_folders_confirmation_message">
+-        <item quantity="one">Backup <xliff:g id="count" example="1">%1$d</xliff:g> folder and its contents?</item>
+-        <item quantity="other">Backup <xliff:g id="count" example="3">%1$d</xliff:g> folders and their contents?</item>
++    <!-- Dialog text shown to users when asking if they want to Upload folders (a confirmation). -->
++    <plurals name="upload_folders_confirmation_message">
++        <item quantity="one">Upload <xliff:g id="count" example="1">%1$d</xliff:g> folder and its contents?</item>
++        <item quantity="other">Upload <xliff:g id="count" example="3">%1$d</xliff:g> folders and their contents?</item>
+     </plurals>
+-    <!-- Dialog text shown to users when asking if they want to delete mixed type items: files and folders (a confirmation). -->
+-    <plurals name="backup_items_confirmation_message">
+-        <item quantity="one">Backup <xliff:g id="count" example="1">%1$d</xliff:g> item?</item>
+-        <item quantity="other">Backup <xliff:g id="count" example="3">%1$d</xliff:g> items?</item>
++    <!-- Dialog text shown to users when asking if they want to Upload mixed type items: files and folders (a confirmation). -->
++    <plurals name="upload_items_confirmation_message">
++        <item quantity="one">Upload <xliff:g id="count" example="1">%1$d</xliff:g> item?</item>
++        <item quantity="other">Upload <xliff:g id="count" example="3">%1$d</xliff:g> items?</item>
+     </plurals>
+ 
+ 
+@@ -470,4 +470,15 @@
+     <string name="root_dsnprocesslist">DSN Transmission List</string>
+     <string name="root_dsnsetting">DSN Setting</string>
+     <string name="root_dsnremote">DSN Remote</string>
++    <string name="dialog_noencrypt_content">"Without the password."</string>
++    <string name="dialog_systemencrypt_content">"System encryption."</string>
++    <string name="dialog_customencrypt_content">"Custom encryption."</string>
++    <string name="dialog_cb_showpassword">"show password"</string>
++    <string name="dialog_tv_pasword_hint">"File Encryption the password contains letters or numbers, can not use special characters, the length is between 6-12. "</string>
++    <string name="rb_transmission_upload_title">"Upload"</string>
++    <string name="rb_transmission_download_title">"Download"</string>
++    <string name="tv_file_name_title">"File Name:"</string>
++    <string name="tv_file_size_title">"File Size:"</string>
++    <string name="tv_file_type_title">"File MIME-Type:"</string>
++    <string name="dialog_qrscan_return_title">"Download File from DSN"</string>
+ </resources>
+diff --git a/src/com/android/documentsui/BaseActivity.java b/src/com/android/documentsui/BaseActivity.java
+index 35ff21e..8808d95 100644
+--- a/src/com/android/documentsui/BaseActivity.java
++++ b/src/com/android/documentsui/BaseActivity.java
+@@ -682,20 +682,20 @@ public abstract class BaseActivity
+                         tv_type_content.setText(type);
+                         dialog.setView(view);
+                         //dialog.setIcon(R.drawable.dsn_dialog_lable);
+-                        dialog.setTitle("Download File from DSN");
+-                        dialog.setNegativeButton("cancle", new DialogInterface.OnClickListener() {
++                        dialog.setTitle(this.getString(R.string.dialog_qrscan_return_title));
++                        dialog.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                 dialog.dismiss();
+                             }})
+-                           .setPositiveButton("ok", new DialogInterface.OnClickListener() {
++                           .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                 DownloadFilesList list = DownloadFilesList.getInstance();
+                                 DownloadFilesList.Item item = new DownloadFilesList.Item(mObjectMeta.getObjectName(), mObjectMeta.getMimeType(),
+                                     mObjectMeta.getObjectSize(),0);
+                                 list.addItem(item);
+-                                DownloadFilesJob mDownloadFilesJob= new DownloadFilesJob(getApplicationContext(), mObjectMeta, item);
++                                DownloadFilesJob mDownloadFilesJob= new DownloadFilesJob(getApplicationContext(), mObjectMeta, item, null);
+                                 Thread mThreadJob = new Thread(mDownloadFilesJob);
+                                 mThreadJob.start();
+ 
+diff --git a/src/com/android/documentsui/DSN/dirlist/NoItemRecycleAdapter.java b/src/com/android/documentsui/DSN/dirlist/NoItemRecycleAdapter.java
+index 99487b1..b75fce8 100644
+--- a/src/com/android/documentsui/DSN/dirlist/NoItemRecycleAdapter.java
++++ b/src/com/android/documentsui/DSN/dirlist/NoItemRecycleAdapter.java
+@@ -70,7 +70,6 @@ public class NoItemRecycleAdapter extends RecyclerView.Adapter<NoItemRecycleAdap
+ 
+     }
+ 
+-
+ }
+ 
+ 
+diff --git a/src/com/android/documentsui/DSN/dirlist/UploadRecycleAdapter.java b/src/com/android/documentsui/DSN/dirlist/UploadRecycleAdapter.java
+index ed1bea3..f7503e0 100644
+--- a/src/com/android/documentsui/DSN/dirlist/UploadRecycleAdapter.java
++++ b/src/com/android/documentsui/DSN/dirlist/UploadRecycleAdapter.java
+@@ -45,7 +45,7 @@ public class UploadRecycleAdapter extends RecyclerView.Adapter<UploadRecycleAdap
+     }
+ 
+     public UploadViewHodler onCreateViewHolder(ViewGroup parent, int viewType) {
+-        View itemView = View.inflate(context, R.layout.item_dsn_downloadfilesqueue, null);
++        View itemView = View.inflate(context, R.layout.item_dsn_uploadfilesqueue, null);
+         return new UploadViewHodler(itemView);
+     }
+ 
+diff --git a/src/com/android/documentsui/DSN/task/DownloadFilesJob.java b/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
+index cee1d9b..57f0fa0 100644
+--- a/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
++++ b/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
+@@ -85,11 +85,13 @@ public class DownloadFilesJob implements Runnable {
+     private String mHashKey;
+     private int mLength;
+     private int mLockMode;
++    private String mPassword;
+ 
+-    public DownloadFilesJob(Context appContext, ObjectMeta objectMeta, DownloadFilesList.Item item) {
++    public DownloadFilesJob(Context appContext, ObjectMeta objectMeta, DownloadFilesList.Item item, String password) {
+         mObjectMeta = objectMeta;
+         mappContext = appContext;
+         mItem = item;
++        mPassword = password;
+     }
+     @Override
+     public void run(){
+diff --git a/src/com/android/documentsui/dirlist/DirectoryFragment.java b/src/com/android/documentsui/dirlist/DirectoryFragment.java
+index 205c68c..2287e4e 100644
+--- a/src/com/android/documentsui/dirlist/DirectoryFragment.java
++++ b/src/com/android/documentsui/dirlist/DirectoryFragment.java
+@@ -656,9 +656,9 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+                 int status = mManager.getDSNManagerStatus();
+                 if (status == 0 || status == -1) {
+                     new  AlertDialog.Builder(mActivity)
+-                        .setTitle("Alert" )
+-                        .setMessage("Please open IPFS Switch in Settings" )
+-                        .setPositiveButton("ok",  null )
++                        .setTitle(mActivity.getString(android.R.string.dialog_alert_title))
++                        .setMessage(mActivity.getString(R.string.dialog_ipfs_content_alert) )
++                        .setPositiveButton(android.R.string.ok,  null)
+                         .show();
+                         return true;
+                 }
+diff --git a/src/com/android/documentsui/files/ActionHandler.java b/src/com/android/documentsui/files/ActionHandler.java
+index d37e0c1..ae57388 100644
+--- a/src/com/android/documentsui/files/ActionHandler.java
++++ b/src/com/android/documentsui/files/ActionHandler.java
+@@ -130,15 +130,16 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+     private boolean  isEncryptEnable;
+     private int isEncryptMode;
+     private AlertDialog encryptModeDialog;
+-    private EditText customEncryptEditText;
+-    private CheckBox customEncryptCheckBox;
+-    private AlertDialog customAlertDialog;
+-    private View customView;
+ 
++    private EditText editText;
++    private CheckBox checkBox;
++
++    private AlertDialog alertDialog;
++    private View SystemEncryptDialogView;
++    private View CustomEncryptDialogView;
+ 
+     private AlertDialog decryptModeDialog;
+-    private EditText customDecryptEditText;
+-    private CheckBox customDecryptCheckBox;
++
+     private View customDecryptView;
+ 
+     ActionHandler(
+@@ -337,7 +338,6 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+         }
+     }
+ 
+-
+     @Override
+     public void deleteSelectedDocuments() {
+         Metrics.logUserAction(mActivity, Metrics.USER_ACTION_DELETE);
+@@ -391,8 +391,8 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+     private class TextChangeWatcher implements TextWatcher{
+             @Override
+             public void onTextChanged(CharSequence s, int start, int before, int count) {
+-                Button btnOk = ((AlertDialog) customAlertDialog).getButton(DialogInterface.BUTTON_POSITIVE);
+-                boolean isMatch = onPairPassword(customEncryptEditText.getText().toString());
++                Button btnOk = ((AlertDialog) alertDialog).getButton(DialogInterface.BUTTON_POSITIVE);
++                boolean isMatch = onPairPassword(editText.getText().toString());
+                 Log.d(TAG, "dailogFactoryCustomEncrypt:" + isMatch);
+                 if(isMatch) {
+                     btnOk.setEnabled(true);
+@@ -416,11 +416,11 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+             Log.d(TAG, "onCheckedChanged: "+isChecked);
+ 
+             if(isChecked) {
+-                customEncryptEditText.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
++                editText.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
+             } else {
+-                customEncryptEditText.setTransformationMethod(PasswordTransformationMethod.getInstance());
++                editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
+             }
+-            customEncryptEditText.setSelection(customEncryptEditText.getText().toString().length());
++            editText.setSelection(editText.getText().toString().length());
+         }
+     }
+ 
+@@ -465,17 +465,18 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+          } else {
+                 if (isEncryptMode ==ConfigConst.WITHOUT_ENCRYPTION) {
+                     noEncryptdialog.show();
+-                } else if (isEncryptMode ==ConfigConst.SYSTEM_ENCRYPTION) {
++                } else if (isEncryptMode == ConfigConst.SYSTEM_ENCRYPTION) {
+                     systemEncryptdialog.show();
+-                } else if (isEncryptMode ==ConfigConst.CUSTOM_ENCRYPTION) {
++                    alertDialog = systemEncryptdialog;
++                } else if (isEncryptMode == ConfigConst.CUSTOM_ENCRYPTION) {
+                     customEncryptdialog.show();
+-                    customAlertDialog = customEncryptdialog;
+-                    Button btnOk = ((AlertDialog) customAlertDialog).getButton(DialogInterface.BUTTON_POSITIVE);
++                    alertDialog = customEncryptdialog;
++                    Button btnOk = ((AlertDialog) alertDialog).getButton(DialogInterface.BUTTON_POSITIVE);
+                     btnOk.setEnabled(false);
+-                    customEncryptEditText = (EditText)customView.findViewById(R.id.FactRstDialogPsw);
+-                    customEncryptCheckBox = (CheckBox)customView.findViewById(R.id.checkBox);
+-                    customEncryptEditText.addTextChangedListener(new TextChangeWatcher());
+-                    customEncryptCheckBox.setOnCheckedChangeListener(new CheckedChanageListener());
++                    editText = (EditText)CustomEncryptDialogView.findViewById(R.id.FactRstDialogPsw);
++                    checkBox = (CheckBox)CustomEncryptDialogView.findViewById(R.id.checkBox);
++                    editText.addTextChangedListener(new TextChangeWatcher());
++                    checkBox.setOnCheckedChangeListener(new CheckedChanageListener());
+                 }
+             }
+     }
+@@ -484,15 +485,15 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+         AlertDialog dialog =
+                 new AlertDialog.Builder(mActivity)
+                        //.setTitle(mMessages.generateUploadMessage(docs))
+-                       .setTitle("No Encrypt")
+-                        .setNegativeButton("CANCLE",
++                       .setTitle(mActivity.getString(R.string.dialog_noencrypt_title))
++                        .setNegativeButton(android.R.string.cancel,
+                             new DialogInterface.OnClickListener() {
+                                 @Override
+                                 public void onClick(DialogInterface dialog, int which) {
+                                     if(encryptModeDialog != null)
+                                         encryptModeDialog.show();
+                                 }
+-                        }).setPositiveButton("OK",
++                        }).setPositiveButton(android.R.string.ok,
+                             new DialogInterface.OnClickListener() {
+                                 @Override
+                                 public void onClick(DialogInterface dialog, int which) {
+@@ -518,15 +519,15 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+         AlertDialog dialog =
+                 new AlertDialog.Builder(mActivity)
+                        // .setTitle(mMessages.generateUploadMessage(docs))
+-                        .setTitle("System Encrypt")
+-                        .setNegativeButton("CANCLE",
++                        .setTitle(mActivity.getString(R.string.dialog_systemencrypt_title))
++                        .setNegativeButton(android.R.string.cancel,
+                             new DialogInterface.OnClickListener() {
+                                 @Override
+                                 public void onClick(DialogInterface dialog, int which) {
+                                     if(encryptModeDialog != null)
+                                         encryptModeDialog.show();
+                                 }
+-                        }).setPositiveButton("OK",
++                        }).setPositiveButton(android.R.string.ok,
+                             new DialogInterface.OnClickListener() {
+                                 @Override
+                                 public void onClick(DialogInterface dialog, int which) {
+@@ -553,15 +554,15 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+         AlertDialog dialog =
+                 new AlertDialog.Builder(mActivity)
+                        // .setTitle(mMessages.generateUploadMessage(docs))
+-                       .setTitle("Custom Encrypt")
+-                        .setNegativeButton("CANCLE",
++                       .setTitle(mActivity.getString(R.string.dialog_customencrypt_title))
++                        .setNegativeButton(android.R.string.cancel,
+                             new DialogInterface.OnClickListener() {
+                                 @Override
+                                 public void onClick(DialogInterface dialog, int which) {
+                                     if(encryptModeDialog != null)
+                                         encryptModeDialog.show();
+                                 }
+-                        }).setPositiveButton("OK",
++                        }).setPositiveButton(android.R.string.ok,
+                             new DialogInterface.OnClickListener() {
+                                 @Override
+                                 public void onClick(DialogInterface dialog, int which) {
+@@ -573,15 +574,15 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+                                         edit.commit();
+                                         Log.d(TAG, "dailogFactoryCustomEncrypt save to SharedPreferences"+ String.valueOf(isEncryptEnable) + "::" +String.valueOf(isEncryptMode) );
+                                     }
+-                                    String mPassword = (customEncryptEditText != null)? customEncryptEditText.getText().toString() : null;
++                                    String mPassword = (editText != null)? editText.getText().toString() : null;
+                                     Uri uriParent = (srcParent == null ? null : srcParent.derivedUri);
+                                     UploadJob uploadJob= new UploadJob(mActivity.getApplicationContext(), srcs, uriParent, ConfigConst.CUSTOM_ENCRYPTION, mPassword);
+                                     Thread mThreadJob = new Thread(uploadJob);
+                                     mThreadJob.start();
+                             }
+                 }).create();
+-        customView = LayoutInflater.from(mActivity).inflate(R.layout.dialog_dsn_custom_encrypt,null);
+-        dialog.setView(customView);
++        CustomEncryptDialogView = LayoutInflater.from(mActivity).inflate(R.layout.dialog_dsn_custom_encrypt, null);
++        dialog.setView(CustomEncryptDialogView);
+         return dialog;
+ 
+     }
+@@ -602,7 +603,7 @@ public AlertDialog dailogEncryptModeSelection(List<DocumentInfo> docs, int encry
+          AlertDialog dialog =
+                  new AlertDialog.Builder(mActivity)
+                  .setTitle(mMessages.generateUploadMessage(docs))
+-                 .setNeutralButton("SET",
++                 .setNeutralButton(mActivity.getString(R.string.dialog_set_title),
+                  new DialogInterface.OnClickListener() {
+                      @Override
+                      public void onClick(DialogInterface dialog, int which) {
+@@ -613,13 +614,13 @@ public AlertDialog dailogEncryptModeSelection(List<DocumentInfo> docs, int encry
+                          }};
+                          openRoot(mDSNSettingRoot);
+                      }
+-                 }).setNegativeButton("CANCLE",
++                 }).setNegativeButton(android.R.string.cancel,
+                  new DialogInterface.OnClickListener() {
+                      @Override
+                      public void onClick(DialogInterface dialog, int which) {
+ 
+                      }
+-                 }).setPositiveButton("OK",
++                 }).setPositiveButton(android.R.string.ok,
+                     new DialogInterface.OnClickListener() {
+                          @Override
+                          public void onClick(DialogInterface dialog, int which) {
+@@ -627,15 +628,17 @@ public AlertDialog dailogEncryptModeSelection(List<DocumentInfo> docs, int encry
+                                 noDialog.show();
+                             }  else if(itemChoice == 1) {
+                                 systemDialog.show();
++                                alertDialog = systemDialog;
+                             } else if(itemChoice == 2) {
+                                 customDialog.show();
+-                                customAlertDialog = customDialog;
+-                                Button btnOk = ((AlertDialog) customAlertDialog).getButton(DialogInterface.BUTTON_POSITIVE);
++                                alertDialog = customDialog;
++                                Button btnOk = ((AlertDialog) alertDialog).getButton(DialogInterface.BUTTON_POSITIVE);
+                                 btnOk.setEnabled(false);
+-                                customEncryptEditText = (EditText)customView.findViewById(R.id.FactRstDialogPsw);
+-                                customEncryptCheckBox = (CheckBox)customView.findViewById(R.id.checkBox);
+-                                customEncryptEditText.addTextChangedListener(new TextChangeWatcher());
+-                                customEncryptCheckBox.setOnCheckedChangeListener(new CheckedChanageListener());
++                                editText = (EditText)CustomEncryptDialogView.findViewById(R.id.FactRstDialogPsw);
++                                checkBox = (CheckBox)CustomEncryptDialogView.findViewById(R.id.checkBox);
++                                editText.addTextChangedListener(new TextChangeWatcher());
++                                checkBox.setOnCheckedChangeListener(new CheckedChanageListener());
++
+                             }
+                      }
+                  }).create();
+@@ -696,7 +699,13 @@ public AlertDialog dailogEncryptModeSelection(List<DocumentInfo> docs, int encry
+         }
+         AlertDialog customDecryptdialog = dailogFactoryCustomDecrypt(srcParent, srcs);
+         customDecryptdialog.show();
+-        customDecryptEditText = (EditText)customDecryptView.findViewById(R.id.FactRstDialogPsw);
++        alertDialog = customDecryptdialog;
++        Button btnOk = ((AlertDialog) alertDialog).getButton(DialogInterface.BUTTON_POSITIVE);
++        btnOk.setEnabled(false);
++        editText = (EditText)customDecryptView.findViewById(R.id.FactRstDialogPsw);
++        checkBox = (CheckBox)customDecryptView.findViewById(R.id.checkBox);
++        editText.addTextChangedListener(new TextChangeWatcher());
++        checkBox.setOnCheckedChangeListener(new CheckedChanageListener());
+ 
+         /*
+         Uri uriParent = (srcParent == null ? null : srcParent.derivedUri);
+@@ -710,15 +719,15 @@ public AlertDialog dailogEncryptModeSelection(List<DocumentInfo> docs, int encry
+         AlertDialog dialog =
+                 new AlertDialog.Builder(mActivity)
+                        // .setTitle(mMessages.generateUploadMessage(docs))
+-                       .setTitle("File decrypt")
+-                        .setNegativeButton("CANCLE",
++                       .setTitle(mActivity.getString(R.string.dialog_decrypt_title))
++                        .setNegativeButton(android.R.string.cancel,
+                             new DialogInterface.OnClickListener() {
+                                 @Override
+                                 public void onClick(DialogInterface dialog, int which) {
+                                     if(encryptModeDialog != null)
+                                         encryptModeDialog.show();
+                                 }
+-                        }).setPositiveButton("OK",
++                        }).setPositiveButton(android.R.string.ok,
+                             new DialogInterface.OnClickListener() {
+                                 @Override
+                                 public void onClick(DialogInterface dialog, int which) {
+@@ -730,7 +739,7 @@ public AlertDialog dailogEncryptModeSelection(List<DocumentInfo> docs, int encry
+                                         edit.commit();
+                                         Log.d(TAG, "dailogFactoryCustomDecrypt save to SharedPreferences"+ String.valueOf(isEncryptEnable) + "::" +String.valueOf(isEncryptMode) );
+                                     }
+-                                    String mPassword = (customDecryptEditText != null)? customDecryptEditText.getText().toString() : null;
++                                    String mPassword = (editText != null)? editText.getText().toString() : null;
+                                     Log.d(TAG, "dailogFactoryCustomDecrypt" + mPassword);
+ 
+                                     Uri uriParent = (srcParent == null ? null : srcParent.derivedUri);
+diff --git a/src/com/android/documentsui/files/DSNFilesActivity.java b/src/com/android/documentsui/files/DSNFilesActivity.java
+index 11cf256..97739e2 100644
+--- a/src/com/android/documentsui/files/DSNFilesActivity.java
++++ b/src/com/android/documentsui/files/DSNFilesActivity.java
+@@ -46,6 +46,10 @@ import android.widget.TextView;
+ import android.text.format.Formatter;
+ import android.widget.RelativeLayout;
+ import android.widget.LinearLayout;
++import android.widget.EditText;
++import android.widget.CheckBox;
++import android.content.DialogInterface;
++import android.view.LayoutInflater;
+ 
+ import com.android.documentsui.AbstractActionHandler.CommonAddons;
+ import com.android.documentsui.Injector.Injected;
+@@ -145,6 +149,9 @@ public class DSNFilesActivity extends AppCompatActivity  {
+     private PreferencesMonitor mPreferencesMonitor;
+     private ObjectMeta mObjectMeta;
+     private LinearLayout layoutAccountAddressQRCode;
++    private View decryptView;
++    private EditText decryptEditText;
++    private CheckBox decryptCheckBox;
+ 
+ 
+    // protected  void refreshDirectory(int anim);
+@@ -362,38 +369,79 @@ public class DSNFilesActivity extends AppCompatActivity  {
+                 .show();
+             return;
+         }
+-        ConfirmationCallback result = (@Result int code) -> {
+-            // share the news with our caller, be it good or bad.
++        if(mObjectMeta.getEncryptFlag() == ConfigConst.SYSTEM_ENCRYPTION) {
++            AlertDialog decryptdialog = dailogFactorySystemDecrypt();
++            decryptdialog.show();
++            decryptEditText = (EditText)decryptView.findViewById(R.id.FactRstDialogPsw);
+ 
+-            if (code != ConfirmationCallback.CONFIRM) {
+-                return;
+-            }
+-            FileOperation operation = new FileOperation.Builder()
+-                    .withOpType(FileOperationService.OPERATION_DOWNLOADDOCUMENTSFROMDSN)
+-                    .build();
+ 
+-            startDownloadFileJob(operation, mDialogs::showFileOperationStatus,
+-                    FileOperations.createJobId());
+-        };
+ 
+-        mDialogs.confirmdownloadDocumentsFromDSN(docs, result);
++        } else {
++
++            ConfirmationCallback result = (@Result int code) -> {
++                // share the news with our caller, be it good or bad.
++
++                if (code != ConfirmationCallback.CONFIRM) {
++                    return;
++                }
++                FileOperation operation = new FileOperation.Builder()
++                        .withOpType(FileOperationService.OPERATION_DOWNLOADDOCUMENTSFROMDSN)
++                        .build();
++
++                startDownloadFileJob(operation, mDialogs::showFileOperationStatus,
++                        FileOperations.createJobId(), null);
++            };
++
++            mDialogs.confirmdownloadDocumentsFromDSN(docs, result);
++       }
+     }
+ 
++    public AlertDialog dailogFactorySystemDecrypt() {
++
++        AlertDialog dialog =
++                new AlertDialog.Builder(this)
++                       .setTitle("Account password")
++                        .setNegativeButton("CANCLE",
++                            new DialogInterface.OnClickListener() {
++                                @Override
++                                public void onClick(DialogInterface dialog, int which) {
++
++                                }
++                        }).setPositiveButton("OK",
++                            new DialogInterface.OnClickListener() {
++                                @Override
++                                public void onClick(DialogInterface dialog, int which) {
++                                    String mPassword = (decryptEditText != null)? decryptEditText.getText().toString() : null;
++                                    Log.d(TAG, "dailogFactoryCustomDecrypt" + mPassword);
++                                    FileOperation operation = new FileOperation.Builder()
++                                        .withOpType(FileOperationService.OPERATION_DOWNLOADDOCUMENTSFROMDSN)
++                                        .build();
++                                    startDownloadFileJob(operation, mDialogs::showFileOperationStatus,
++                                        FileOperations.createJobId(), mPassword);
++                            }
++                }).create();
++        decryptView = LayoutInflater.from(this).inflate(R.layout.dialog_dsn_system_decrypt,null);
++        dialog.setView(decryptView);
++        return dialog;
++
++    }
++
++
+ 
+     protected final @Nullable DirectoryFragment getDirectoryFragment() {
+         return DirectoryFragment.get(getFragmentManager());
+     }
+ 
+     public void startDownloadFileJob(FileOperation operation, Callback callback,
+-            @Nullable String jobId) {
++            @Nullable String jobId, String password) {
+ 
+-        callback.onOperationResult(Callback.STATUS_ACCEPTED, operation.getOpType(),1);
++        callback.onOperationResult(Callback.STATUS_ACCEPTED, operation.getOpType(), 1);
+         DownloadFilesList list = DownloadFilesList.getInstance();
+         DownloadFilesList.Item item = new DownloadFilesList.Item(mObjectMeta.getObjectName(), mObjectMeta.getMimeType(),
+             mObjectMeta.getObjectSize(),0);
+ 
+         list.addItem(item);
+-        DownloadFilesJob mDownloadFilesJob= new DownloadFilesJob(this, mObjectMeta, item);
++        DownloadFilesJob mDownloadFilesJob= new DownloadFilesJob(this, mObjectMeta, item, password);
+         Thread mThreadJob = new Thread(mDownloadFilesJob);
+         mThreadJob.start();
+     }
+diff --git a/src/com/android/documentsui/ui/MessageBuilder.java b/src/com/android/documentsui/ui/MessageBuilder.java
+index 07be4b4..474494f 100644
+--- a/src/com/android/documentsui/ui/MessageBuilder.java
++++ b/src/com/android/documentsui/ui/MessageBuilder.java
+@@ -96,22 +96,22 @@ public class MessageBuilder {
+             // broken bidirectional support.
+             String displayName = BidiFormatter.getInstance().unicodeWrap(docs.get(0).displayName);
+             message = dirsCount == 0
+-                    ? mContext.getString(R.string.backup_filename_confirmation_message,
++                    ? mContext.getString(R.string.upload_filename_confirmation_message,
+                             displayName)
+-                    : mContext.getString(R.string.backup_foldername_confirmation_message,
++                    : mContext.getString(R.string.upload_foldername_confirmation_message,
+                             displayName);
+         } else if (dirsCount == 0) {
+             // Deleting only files in cwd
+             message = Shared.getQuantityString(mContext,
+-                    R.plurals.backup_files_confirmation_message, docs.size());
++                    R.plurals.upload_files_confirmation_message, docs.size());
+         } else if (dirsCount == docs.size()) {
+             // Deleting only folders in cwd
+             message = Shared.getQuantityString(mContext,
+-                    R.plurals.backup_folders_confirmation_message, docs.size());
++                    R.plurals.upload_folders_confirmation_message, docs.size());
+         } else {
+             // Deleting mixed items (files and folders) in cwd
+             message = Shared.getQuantityString(mContext,
+-                    R.plurals.backup_items_confirmation_message, docs.size());
++                    R.plurals.upload_items_confirmation_message, docs.size());
+         }
+         return message;
+     }
+-- 
+2.7.4
+
