@@ -1,0 +1,73 @@
+From 4999868e4b9eb72a44358602c7af70cccbd31a58 Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Tue, 4 Dec 2018 14:00:29 +0800
+Subject: [PATCH] [System Update]: Change Android Version to BrahmaOS Version
+
+Change-Id: I22425a8401b2853187d5044415663cc056a092ef
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ res/values-zh-rHK/strings.xml                                       | 2 +-
+ res/values/strings.xml                                              | 2 +-
+ .../settings/deviceinfo/SystemUpdatePreferenceController.java       | 6 ++++--
+ 3 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/res/values-zh-rHK/strings.xml b/res/values-zh-rHK/strings.xml
+index f6fd6c2..169df2d 100644
+--- a/res/values-zh-rHK/strings.xml
++++ b/res/values-zh-rHK/strings.xml
+@@ -3354,7 +3354,7 @@
+     <string name="location_on_summary" msgid="5127631544018313587">"開啟 / <xliff:g id="LOCATION_MODE">%1$s</xliff:g>"</string>
+     <string name="location_off_summary" msgid="6474350053215707957">"關閉"</string>
+     <string name="backup_disabled" msgid="485189128759595412">"已停用備份功能"</string>
+-    <string name="about_summary" msgid="924181828102801010">"已更新至 Android <xliff:g id="VERSION">%1$s</xliff:g>"</string>
++    <string name="about_summary" msgid="924181828102801010">"已更新至 BrahmaOS <xliff:g id="VERSION">%1$s</xliff:g>"</string>
+     <string name="disabled_by_policy_title" msgid="627023216027648534">"不允許執行此操作"</string>
+     <string name="disabled_by_policy_title_adjust_volume" msgid="7399450998356045023">"無法變更音量"</string>
+     <string name="disabled_by_policy_title_outgoing_calls" msgid="7919816644946067058">"不允許撥打電話"</string>
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index ecb1064..fdcd9eb 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -8109,7 +8109,7 @@
+     <string name="backup_disabled">Back up disabled</string>
+ 
+     <!-- Summary of device info page [CHAR LIMIT=NONE] -->
+-    <string name="about_summary">Updated to Android <xliff:g id="version" example="6.0">%1$s</xliff:g></string>
++    <string name="about_summary">Updated to BrahmaOS <xliff:g id="version" example="6.0">%1$s</xliff:g></string>
+ 
+     <!-- Title for dialog displayed when user clicks on a setting locked by an admin [CHAR LIMIT=30] -->
+     <string name="disabled_by_policy_title">Action not allowed</string>
+diff --git a/src/com/android/settings/deviceinfo/SystemUpdatePreferenceController.java b/src/com/android/settings/deviceinfo/SystemUpdatePreferenceController.java
+index de5dc8f..73e6774 100644
+--- a/src/com/android/settings/deviceinfo/SystemUpdatePreferenceController.java
++++ b/src/com/android/settings/deviceinfo/SystemUpdatePreferenceController.java
+@@ -19,6 +19,7 @@ import android.content.Context;
+ import android.content.Intent;
+ import android.os.Build;
+ import android.os.PersistableBundle;
++import android.os.SystemProperties;
+ import android.os.UserManager;
+ import android.support.v7.preference.Preference;
+ import android.support.v7.preference.PreferenceScreen;
+@@ -38,6 +39,8 @@ public class SystemUpdatePreferenceController extends AbstractPreferenceControll
+ 
+     private static final String TAG = "SysUpdatePrefContr";
+ 
++    private static final String BRAHMAOS_VERSION_PROPERTY = "ro.build.version.brahmaos";
++
+     private static final String KEY_SYSTEM_UPDATE_SETTINGS = "system_update_settings";
+ 
+     private final UserManager mUm;
+@@ -84,8 +87,7 @@ public class SystemUpdatePreferenceController extends AbstractPreferenceControll
+ 
+     @Override
+     public void updateState(Preference preference) {
+-        preference.setSummary(mContext.getString(R.string.about_summary,
+-                Build.VERSION.RELEASE));
++        preference.setSummary(mContext.getString(R.string.about_summary, SystemProperties.get(BRAHMAOS_VERSION_PROPERTY)));
+     }
+ 
+     /**
+-- 
+2.7.4
+
