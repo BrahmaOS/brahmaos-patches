@@ -1,0 +1,25 @@
+From b3999d757467d7eac562c0d771c548d831279c9d Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Mon, 31 Dec 2018 15:16:21 +0800
+Subject: [PATCH] add whitelist for DSNManagerController
+
+Change-Id: Ia2dc112f74ae3bc1930915876781c4537b6bf772
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ core/tasks/check_boot_jars/package_whitelist.txt | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/core/tasks/check_boot_jars/package_whitelist.txt b/core/tasks/check_boot_jars/package_whitelist.txt
+index b9a01da..f21a8a7 100644
+--- a/core/tasks/check_boot_jars/package_whitelist.txt
++++ b/core/tasks/check_boot_jars/package_whitelist.txt
+@@ -254,3 +254,6 @@ org\.apache\.xalan\.xslt
+ # Packages in the google namespace across all bootclasspath jars.
+ com\.google\.android\..*
+ com\.google\.vr\.platform.*
++com\.google\.gson.*
++com\.fasterxml\.jackson.*
++barhmaos\.app\.util.*
+-- 
+2.7.4
+
