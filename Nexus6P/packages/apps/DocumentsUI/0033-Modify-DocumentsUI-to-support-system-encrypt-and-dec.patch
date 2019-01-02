@@ -1,0 +1,258 @@
+From 77e5afdc7d5894f6b56aa49db378dfd55630c178 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Wed, 26 Dec 2018 17:58:09 +0800
+Subject: [PATCH] Modify DocumentsUI to support system encrypt and decrypt
+
+- modify xml to support EN and ZH
+- support public key encrypt and private key ecrypt
+
+Change-Id: I1676552d4615eb8521abab0d28563d764e0729f5
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ res/layout/fragment_dsn_setting.xml                |  1 -
+ res/values-en-rGB/strings.xml                      |  1 +
+ res/values-zh-rCN/strings.xml                      |  1 +
+ res/values/strings.xml                             |  1 +
+ .../documentsui/DSN/task/DownloadFilesJob.java     | 24 +++++++---
+ .../android/documentsui/DSN/util/CommonUtil.java   |  9 ++++
+ .../documentsui/files/DSNFilesActivity.java        | 53 ++++++++++++++++++++--
+ 7 files changed, 79 insertions(+), 11 deletions(-)
+
+diff --git a/res/layout/fragment_dsn_setting.xml b/res/layout/fragment_dsn_setting.xml
+index d0a3489..a75f50e 100644
+--- a/res/layout/fragment_dsn_setting.xml
++++ b/res/layout/fragment_dsn_setting.xml
+@@ -84,7 +84,6 @@
+             android:layout_marginTop="10dp"
+             android:layout_height="80dp"
+             android:gravity="center_vertical"
+-            android:visibility="gone"
+             android:paddingEnd="@dimen/space_normal"
+             android:paddingStart="@dimen/space_normal">
+             <LinearLayout
+diff --git a/res/values-en-rGB/strings.xml b/res/values-en-rGB/strings.xml
+index b710c5c..76c7588 100644
+--- a/res/values-en-rGB/strings.xml
++++ b/res/values-en-rGB/strings.xml
+@@ -274,4 +274,5 @@
+     <string name="dialog_qrscan_return_title">"Download File from DSN"</string>
+     <string name="activity_dsn_remote_title">"Remote File"</string>
+     <string name="menu_preview_title">"Preview"</string>
++    <string name="dialog_account_pssword_title">"Account Password"</string>
+ </resources>
+diff --git a/res/values-zh-rCN/strings.xml b/res/values-zh-rCN/strings.xml
+index d33a822..0d8aaa5 100644
+--- a/res/values-zh-rCN/strings.xml
++++ b/res/values-zh-rCN/strings.xml
+@@ -276,4 +276,5 @@
+     <string name="dialog_qrscan_return_title">"从DSN中下载此文件"</string>
+     <string name="activity_dsn_remote_title">"远程文件"</string>
+     <string name="menu_preview_title">"预览"</string>
++    <string name="dialog_account_pssword_title">"账户密码"</string>
+ </resources>
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index c0fc0c2..5aba954 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -483,4 +483,5 @@
+     <string name="dialog_qrscan_return_title">"Download File from DSN"</string>
+     <string name="activity_dsn_remote_title">"Remote File"</string>
+     <string name="menu_preview_title">"Preview"</string>
++    <string name="dialog_account_pssword_title">"Account Password"</string>
+ </resources>
+diff --git a/src/com/android/documentsui/DSN/task/DownloadFilesJob.java b/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
+index 57f0fa0..87ed691 100644
+--- a/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
++++ b/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
+@@ -102,7 +102,7 @@ public class DownloadFilesJob implements Runnable {
+         mLockMode = mObjectMeta.getEncryptFlag();
+ 
+         DSNManager mManager = (DSNManager) mappContext.getSystemService(DSNMANAGER_SERVICE);
+-        mManager.getFile(mHashKey, null, new GetFileCallbackListener() {
++        mManager.getFile(mHashKey, mPassword, new GetFileCallbackListener() {
+ 
+             @Override
+             public void onGetFileProcess(long filesize, long uploadsize){
+@@ -117,9 +117,12 @@ public class DownloadFilesJob implements Runnable {
+             @Override
+             public void onCallbackComplete(boolean status){
+                 if(status == true) {
+-                    if(mLockMode == ConfigConst.WITHOUT_ENCRYPTION ||
+-                        mLockMode == ConfigConst.SYSTEM_ENCRYPTION) {
+-                        generateCommonFile(mHashKey, mObjectName);
++                    if(mLockMode == ConfigConst.WITHOUT_ENCRYPTION) {
++                        generateCommonFile(mHashKey, mObjectName, ConfigConst.WITHOUT_ENCRYPTION);
++
++                    } else if(mLockMode == ConfigConst.SYSTEM_ENCRYPTION){
++
++                        generateCommonFile(mHashKey, mObjectName, ConfigConst.SYSTEM_ENCRYPTION);
+ 
+                     } else if (mLockMode == ConfigConst.CUSTOM_ENCRYPTION) {
+                         generateDSNMetaFile(mHashKey, mObjectName, mMimeType, mLockMode);
+@@ -131,14 +134,23 @@ public class DownloadFilesJob implements Runnable {
+         });
+     }
+ 
+-    void generateCommonFile(String hashKey, String fileName) {
++    void generateCommonFile(String hashKey, String fileName, int mode) {
+         if(hashKey == fileName)
+             return;
+         String noSuffixName = PATH_HD_PREFIX + '/';
+         String suffixName = PATH_HD_PREFIX + '/';
+         String renameFileName = null;
+         File newFile = new File(PATH_HD_PREFIX + "/" + fileName);
+-        File oldFile = new File(PATH_HD_PREFIX + "/" + hashKey);
++        File oldFile = null;
++
++
++        if(mode == ConfigConst.SYSTEM_ENCRYPTION) {
++            oldFile = new File(PATH_HD_PREFIX + "/" + hashKey + "-systemdecrypt");
++
++        } else {
++            oldFile = new File(PATH_HD_PREFIX + "/" + hashKey);
++        }
++
+         int repeatSuf = 0;
+         Log.d(TAG, "generateCommonFile:" + fileName + hashKey);
+         String[] strArray = fileName.split("\\.");
+diff --git a/src/com/android/documentsui/DSN/util/CommonUtil.java b/src/com/android/documentsui/DSN/util/CommonUtil.java
+index 8f29c7f..e35aa6b 100644
+--- a/src/com/android/documentsui/DSN/util/CommonUtil.java
++++ b/src/com/android/documentsui/DSN/util/CommonUtil.java
+@@ -37,6 +37,7 @@ import java.math.BigInteger;
+ import java.text.SimpleDateFormat;
+ import java.util.Date;
+ import java.util.List;
++import java.util.regex.Pattern;
+ 
+ import com.google.gson.Gson;
+ import com.google.gson.JsonArray;
+@@ -48,6 +49,7 @@ import com.google.gson.JsonParseException;
+ 
+ public class CommonUtil {
+     public static int MNEMONIC_WORD_LENGTH = 12;
++    private static String pattern = "^[a-zA-Z0-9]\\w{5,15}";
+ 
+     public static String generateSimpleAddress(String fullAddress) {
+         String simpleName = fullAddress;
+@@ -182,4 +184,11 @@ public class CommonUtil {
+         return sdf.format(new Date(seconds * 1000));
+     }
+ 
++    /**
++     * Input password return match true or not match false
++     * */
++    public static boolean onPairPassword(String passWord) {
++        return Pattern.matches(pattern, passWord);
++    }
++
+ }
+diff --git a/src/com/android/documentsui/files/DSNFilesActivity.java b/src/com/android/documentsui/files/DSNFilesActivity.java
+index de1ba87..d28fa4b 100644
+--- a/src/com/android/documentsui/files/DSNFilesActivity.java
++++ b/src/com/android/documentsui/files/DSNFilesActivity.java
+@@ -50,6 +50,13 @@ import android.widget.EditText;
+ import android.widget.CheckBox;
+ import android.content.DialogInterface;
+ import android.view.LayoutInflater;
++import android.text.Editable;
++import android.text.TextWatcher;
++import android.widget.CompoundButton;
++import android.text.method.HideReturnsTransformationMethod;
++import android.text.method.PasswordTransformationMethod;
++import android.widget.Button;
++
+ 
+ import com.android.documentsui.AbstractActionHandler.CommonAddons;
+ import com.android.documentsui.Injector.Injected;
+@@ -76,6 +83,7 @@ import com.android.documentsui.sorting.SortModel;
+ import com.android.documentsui.Injector.ContentScoped;
+ import com.android.documentsui.ui.MessageBuilder;
+ import com.android.documentsui.services.FileOperationService.OpType;
++import com.android.documentsui.DSN.util.CommonUtil;
+ 
+ import java.util.ArrayList;
+ import java.util.Date;
+@@ -152,6 +160,7 @@ public class DSNFilesActivity extends AppCompatActivity  {
+     private View decryptView;
+     private EditText decryptEditText;
+     private CheckBox decryptCheckBox;
++    private AlertDialog decryptdialog;
+ 
+ 
+    // protected  void refreshDirectory(int anim);
+@@ -357,6 +366,7 @@ public class DSNFilesActivity extends AppCompatActivity  {
+         }
+         return true;
+     }
++
+     public void downloadDocumentsFromDSN() {
+         List<DocumentInfo> docs = null;
+         DSNManager mManager = (DSNManager) getApplicationContext().getSystemService(DSNMANAGER_SERVICE);
+@@ -370,11 +380,12 @@ public class DSNFilesActivity extends AppCompatActivity  {
+             return;
+         }
+         if(mObjectMeta.getEncryptFlag() == ConfigConst.SYSTEM_ENCRYPTION) {
+-            AlertDialog decryptdialog = dailogFactorySystemDecrypt();
++            decryptdialog = dailogFactorySystemDecrypt();
+             decryptdialog.show();
+             decryptEditText = (EditText)decryptView.findViewById(R.id.FactRstDialogPsw);
+-
+-
++            decryptEditText.addTextChangedListener(new TextChangeWatcher());
++            decryptCheckBox = (CheckBox)decryptView.findViewById(R.id.checkBox);
++            decryptCheckBox.setOnCheckedChangeListener(new CheckedChanageListener());
+ 
+         } else {
+ 
+@@ -395,12 +406,46 @@ public class DSNFilesActivity extends AppCompatActivity  {
+             mDialogs.confirmdownloadDocumentsFromDSN(docs, result);
+        }
+     }
++    private class TextChangeWatcher implements TextWatcher{
++            @Override
++            public void onTextChanged(CharSequence s, int start, int before, int count) {
++                Button btnOk = ((AlertDialog) decryptdialog).getButton(DialogInterface.BUTTON_POSITIVE);
++                boolean isMatch = CommonUtil.onPairPassword(decryptEditText.getText().toString());
++                Log.d(TAG, "dailogFactoryCustomEncrypt:" + isMatch);
++                if(isMatch) {
++                    btnOk.setEnabled(true);
++                } else {
++                    btnOk.setEnabled(false);
++                }
++            }
++            @Override
++            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
++
++            }
++            @Override
++            public void afterTextChanged(Editable s) {
++
++            }
++    }
++    private class CheckedChanageListener implements    CompoundButton.OnCheckedChangeListener {
++        @Override
++        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
++            Log.d(TAG, "onCheckedChanged: "+isChecked);
++
++            if(isChecked) {
++                decryptEditText.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
++            } else {
++                decryptEditText.setTransformationMethod(PasswordTransformationMethod.getInstance());
++            }
++            decryptEditText.setSelection(decryptEditText.getText().toString().length());
++        }
++    }
+ 
+     public AlertDialog dailogFactorySystemDecrypt() {
+ 
+         AlertDialog dialog =
+                 new AlertDialog.Builder(this)
+-                       .setTitle("Account password")
++                       .setTitle(this.getString(R.string.dialog_account_pssword_title))
+                         .setNegativeButton(android.R.string.cancel,
+                             new DialogInterface.OnClickListener() {
+                                 @Override
+-- 
+2.7.4
+
