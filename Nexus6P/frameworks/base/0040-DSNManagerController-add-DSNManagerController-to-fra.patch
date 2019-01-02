@@ -1,0 +1,839 @@
+From 3bb971fc4edd20958f9608d7e4fd1807178cef0f Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Mon, 31 Dec 2018 09:09:32 +0800
+Subject: [PATCH] [DSNManagerController] add DSNManagerController to framework
+
+- add DSNManagerController to framework
+- support addfile getfile listfile interface function.
+
+Change-Id: I7e3f61fabbcf7484e8cc5d02f363177bb149d1c7
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ Android.mk                                         |   6 +-
+ core/java/brahmaos/app/DSNManagerController.java   | 343 +++++++++++++++++++++
+ core/java/brahmaos/app/ListFileCallback.java       |   2 +-
+ .../brahmaos/app/ListFileCallbackListener.java     |   5 +-
+ core/java/brahmaos/app/config/ConfigConstant.java  |  26 ++
+ core/java/brahmaos/app/http/GetJson.java           |  27 ++
+ core/java/brahmaos/app/http/OkhttpWorker.java      |  63 ++++
+ .../java/brahmaos/app/http/ResponseObjectMeta.java | 125 ++++++++
+ core/java/brahmaos/app/util/CommonUtil.java        | 137 ++++++++
+ 9 files changed, 728 insertions(+), 6 deletions(-)
+ create mode 100644 core/java/brahmaos/app/DSNManagerController.java
+ create mode 100644 core/java/brahmaos/app/config/ConfigConstant.java
+ create mode 100644 core/java/brahmaos/app/http/GetJson.java
+ create mode 100644 core/java/brahmaos/app/http/OkhttpWorker.java
+ create mode 100644 core/java/brahmaos/app/http/ResponseObjectMeta.java
+ create mode 100644 core/java/brahmaos/app/util/CommonUtil.java
+
+diff --git a/Android.mk b/Android.mk
+index f1f23ef..fa76041 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -622,7 +622,11 @@ LOCAL_STATIC_JAVA_LIBRARIES :=                          \
+ 
+ 
+ LOCAL_STATIC_JAVA_LIBRARIES +=                          \
+-    hamcrest-core junit-4.12 multibase multihash
++    hamcrest-core junit-4.12 multibase multihash       \
++    jackson-core \
++    jackson \
++    jackson-databind \
++    gson
+ 
+ include hardware/interfaces/cas/1.0/CasHal.mk
+ 
+diff --git a/core/java/brahmaos/app/DSNManagerController.java b/core/java/brahmaos/app/DSNManagerController.java
+new file mode 100644
+index 0000000..b1c6b82
+--- /dev/null
++++ b/core/java/brahmaos/app/DSNManagerController.java
+@@ -0,0 +1,343 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package brahmaos.app;
++
++import io.ipfs.api.MerkleNode;
++import io.ipfs.api.NamedStreamable;
++import io.ipfs.multihash.Multihash;
++import io.ipfs.api.IPFS;
++import io.ipfs.api.NamedStreamable;
++import io.ipfs.api.Multipart.AddFileMultipartCallback;
++
++import java.lang.String.*;
++import java.util.Date;
++import java.util.List;
++import java.util.Map;
++import java.util.HashMap;
++import java.io.File;
++import java.io.IOException;
++import java.io.FileInputStream;
++import java.io.FileOutputStream;
++import java.io.InputStream;
++import java.util.concurrent.TimeUnit;
++import java.io.StringWriter;
++import java.io.PrintWriter;
++
++import android.os.UserHandle;
++import android.os.UserManager;
++import android.os.RemoteException;
++import android.content.Context;
++import android.util.Log;
++import android.provider.Settings;
++
++import com.android.okhttp.OkHttpClient;
++import com.android.okhttp.Request;
++import com.android.okhttp.Response;
++import com.android.okhttp.Callback;
++import com.android.okhttp.RequestBody;
++import com.android.okhttp.MediaType;
++
++import com.fasterxml.jackson.core.JsonProcessingException;
++import com.fasterxml.jackson.databind.ObjectMapper;
++
++import brahmaos.util.DataCryptoUtils;
++import brahmaos.app.config.ConfigConstant;
++import brahmaos.app.GetFileCallbackListener;
++import brahmaos.app.ListFileCallbackListener;
++import brahmaos.app.ListFileCallbackListener;
++import brahmaos.app.AddFileCallbackListener;
++import brahmaos.app.http.OkhttpWorker;
++import brahmaos.app.http.ResponseObjectMeta;
++import brahmaos.app.http.GetJson;
++import brahmaos.app.util.CommonUtil;
++
++import com.google.gson.Gson;
++import com.google.gson.reflect.TypeToken;
++import com.google.gson.JsonObject;
++import com.google.gson.JsonParser;
++import com.google.gson.JsonArray;
++import com.google.gson.JsonElement;
++
++
++import static android.provider.Settings.System.IPFSCONTLLER_STATUS;
++
++public class DSNManagerController {
++    private static final String TAG = "DSNManagerController";
++    private final String PATH_HD_PREFIX = "/storage/emulated/0/LocalHD";
++    private final String PATH_ENCRYPT_PREFIX = "/storage/emulated/0";
++
++    /*default is close*/
++    private final Context mContext;
++    private IPFS mDSNManagerHandle;
++    private String accountStr;
++    private static int PthreadNum = 1;
++    private static int DSNMANAGER_STATUS = 0;
++    public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
++
++    public DSNManagerController(Context context) {
++        mContext = context;
++    }
++
++    /**
++     * add File to DSN.
++     *
++     * @param path file absolute path;
++     * @param mode encrypt mode system custom;
++     * @param password the password ;
++     * @param cb callback to client;
++     *
++     * @return void
++     **/
++    public void addFile(String path, int mode, String password, AddFileCallbackListener cb) {
++        Log.d(TAG, "start addFile:" + path + ":" + String.valueOf(mode) + ":" + password);
++        if (path == null) {
++            Log.e(TAG, "exit DSNManagerService addFile path is null or not exits");
++            return;
++        }
++        DataCryptoUtils dc = new DataCryptoUtils();
++        File srcFile = new File(path);
++        StringBuffer fileNameBuffer = new StringBuffer();
++        fileNameBuffer.append(PATH_ENCRYPT_PREFIX);
++        fileNameBuffer.append("/");
++        fileNameBuffer.append(srcFile.getName());
++        String fileNameBufferString = fileNameBuffer.toString();
++
++        File fileEncrypt = new File(fileNameBufferString);
++        File destFile = null;
++        int cipherResult = 0;
++        String fileModifiedTime = CommonUtil.getFileModifiedTime(srcFile, null);
++        // file encrypt
++        if(mode == ConfigConstant.SYSTEM_ENCRYPTION) {
++            cipherResult = dc.encryptWithDefaultPublicKey(mContext, srcFile , fileEncrypt, 64);
++        } else if (mode == ConfigConstant.CUSTOM_ENCRYPTION) {
++            cipherResult = dc.aes128EncryptFiles(srcFile, fileEncrypt, password, 64);
++        } else {
++            cipherResult = 0;
++            fileEncrypt = srcFile;
++        }
++        if(cipherResult != 0) {
++            Log.e(TAG, "encrypt error!" + ":" +cipherResult);
++            cb.onCallbackComplete(false, null);
++            return;
++        }
++
++        destFile = fileEncrypt;
++
++        String fileCreateTime = CommonUtil.getNowTime(null);
++        String fileType = CommonUtil.getMimeType(path);
++        String accountStr = getSystemAccountId();
++        NamedStreamable.FileWrapper fileWrapper = new NamedStreamable.FileWrapper(destFile);
++        mDSNManagerHandle = new IPFS("/ip4/127.0.0.1/tcp/5001");
++        List<MerkleNode> addResult = null;
++        int blockCount = 0;
++        // add file to IPFS
++        try {
++            addResult = mDSNManagerHandle.add(fileWrapper, new AddFileMultipartCallback() {
++                @Override
++                public void onUploadProcess(long fileSize, long hasUpload) {
++                    cb.onUploadProcess(fileSize,hasUpload);
++                }
++            } );
++            blockCount = getBlockCount(addResult.get(0), mDSNManagerHandle);
++        } catch(IOException e) {
++            Log.e(TAG,"IPFS add file:" + e);
++        }
++        // generate http body
++        Map<String,Object> body = getObjectMetaMap(addResult.get(0), accountStr,
++            fileModifiedTime, fileCreateTime, fileType, blockCount, mode);
++        // okhttp call
++        OkhttpWorker okhttpWorker = new OkhttpWorker();
++        final OkHttpClient okhttpClient = okhttpWorker.getOkhttpClient();
++        // generate http rebody
++        try {
++            ObjectMapper mapper = new ObjectMapper();
++            String json = mapper.writeValueAsString(body);
++            RequestBody rebody = RequestBody.create(JSON, json);
++            //Okhttp post
++            Request request = okhttpWorker.getPostRequest("metas", "X-Client-Platform", "BrahmaOS", rebody);
++
++            //okhttp enqueue call
++            okhttpClient.newCall(request).enqueue(new Callback(){
++                 @Override
++                 public void onFailure(Request request, IOException e){
++                    StringWriter sw = new StringWriter();
++                    PrintWriter pw = new PrintWriter(sw);
++                    e.printStackTrace(pw);
++                    cb.onError(sw.toString());
++                    cb.onCallbackComplete(false, body);
++                 }
++                 @Override
++                 public void onResponse(Response response) throws IOException {
++                    cb.onCompleted(response.body().string());
++                    cb.onCallbackComplete(true, body);
++                 }
++            });
++            cb.onCallbackComplete(true, body);
++        }catch(JsonProcessingException e){
++                StringWriter sw = new StringWriter();
++                PrintWriter pw = new PrintWriter(sw);
++                e.printStackTrace(pw);
++                cb.onCompleted(sw.toString());
++                cb.onCallbackComplete(true, body);
++        }
++
++        if( mode != ConfigConstant.WITHOUT_ENCRYPTION && cipherResult == 0) {
++            Log.d(TAG,"Encrypt file delete ");
++            fileEncrypt.delete();
++        }
++
++        return;
++    }
++
++    /**
++     * List File objectMeta from DSN.
++     *
++     * @param cid file absolute path;
++     * @param page encrypt mode system custom;
++     * @param count the password ;
++     * @param cb callback to client;
++     *
++     * @return void
++     **/
++    public void listFile(String cid, int page, int count, ListFileCallbackListener cb) {
++        Log.d(TAG, "listFile:" + "page:" + page + "count" + count);
++        String accountStr = getSystemAccountId();
++
++         // okhttp call
++         OkhttpWorker okhttpWorker = new OkhttpWorker();
++         final OkHttpClient okhttpClient = okhttpWorker.getOkhttpClient();
++         // okhttp get
++         Request request = okhttpWorker.getGetRequest("metas", accountStr, page, count);
++         okhttpClient.newCall(request).enqueue(new Callback(){
++             @Override
++             public void onFailure(Request request, IOException e) {
++                StringWriter sw = new StringWriter();
++                PrintWriter pw = new PrintWriter(sw);
++                e.printStackTrace(pw);
++                cb.onError(sw.toString());
++                cb.onCallbackComplete(false);
++             }
++
++             @Override
++             public void onResponse(Response response) throws IOException {
++                String responseString = response.body().string();
++
++                cb.onNext(responseString);
++                cb.onCallbackComplete(true);
++
++                Gson gson = new Gson();
++                GetJson getGson = gson.fromJson(responseString, new TypeToken<GetJson>(){}.getType());
++                String string = gson.toJson(getGson.data.get("objects"));
++
++                List<ResponseObjectMeta> userBeanA = new Gson().fromJson(string, new TypeToken<List<ResponseObjectMeta>>() {}.getType());
++
++                for (ResponseObjectMeta user : userBeanA) {
++                     Log.d(TAG, user.toString());
++                }
++             }
++
++         });
++    }
++    /**
++     * get File from DSN.
++     *
++     * @param cid file hashkey;
++     * @param password encrypt mode without encrypt,system and custom;
++     * @param GetFileCallbackListener callback to client;
++     *
++     * @return void
++     **/
++    public void getFile(String cid, String password, GetFileCallbackListener cb) {
++        Log.d(TAG, "getFile input parameters:" + cid + ":" + password);
++        StringBuffer fileNameBuffer = new StringBuffer();
++        fileNameBuffer.append(PATH_HD_PREFIX);
++        fileNameBuffer.append("/");
++        fileNameBuffer.append(cid);
++        String fileNameBufferString = fileNameBuffer.toString();
++        mDSNManagerHandle = new IPFS("/ip4/127.0.0.1/tcp/5001");
++
++        try {
++            /*get file from IPFS*/
++            int len;
++            byte[] buffer = new byte[4096];
++            InputStream in = mDSNManagerHandle.catStream(Multihash.fromBase58(cid));
++            long getFileSize = 0;
++            try{
++                FileOutputStream fileOutput = new FileOutputStream(fileNameBufferString);
++                while ((len = in.read(buffer)) >= 0){
++                    fileOutput.write(buffer, 0, len);
++                    getFileSize = getFileSize + len;
++                    cb.onGetFileProcess(0, getFileSize);
++                }
++            } catch(IOException e) {
++                    e.printStackTrace();
++            }
++
++            /* get fileOutput file cipher*/
++            File fileCipher = new File(fileNameBufferString);
++            String fileDestName = fileNameBuffer.append("-systemdecrypt").toString();
++            File fileDest = new File(fileDestName);
++
++            /* system public Private key decrypt file*/
++            if (password != null) {
++                DataCryptoUtils dc = new DataCryptoUtils();
++                int decryptResult = dc.decryptWithDefaultPrivateKey(mContext, fileCipher, fileDest, password, 64);
++                if(decryptResult != 0) {
++                    fileCipher.delete();
++                    cb.onCallbackComplete(false);
++                    return;
++                } else {
++                    fileCipher.delete();
++                }
++            }
++            cb.onCallbackComplete(true);
++        } catch(IOException e) {
++            e.printStackTrace();
++        }
++        return;
++    }
++
++    private String getSystemAccountId() {
++        final UserManager um = (UserManager)mContext.getSystemService(Context.USER_SERVICE);
++        int userId = UserHandle.myUserId();
++        return um.getUserBrahmaAccount(userId);
++    }
++
++    private int getBlockCount(MerkleNode node, IPFS mIPFS)throws IOException {
++        List<MerkleNode> lsResult = mIPFS.ls(node.hash);
++        return lsResult.get(0).links.size();
++    }
++
++    private Map<String,Object> getObjectMetaMap(MerkleNode node, String accountStr, String modifyTime,
++            String createTime, String fileType, int blockCnt, int encryptMode) {
++        Map<String,Object> body = new HashMap<String, Object>();
++        body.put("account_id", accountStr);
++        body.put("object_key", node.hash.toString());
++        body.put("mime_type", fileType);
++        body.put("object_name", node.name.get());
++        if(node.size.isPresent())
++            body.put("object_size", node.size.get());
++        else
++            body.put("object_size", node.largeSize.get());
++        body.put("object_create_time", modifyTime);
++        body.put("object_sync_time", createTime);
++        body.put("object_block_cnt", blockCnt);
++        body.put("encrypt_flag", encryptMode);
++        return body;
++    }
++
++}
+diff --git a/core/java/brahmaos/app/ListFileCallback.java b/core/java/brahmaos/app/ListFileCallback.java
+index 8a96bd8..592ea27 100644
+--- a/core/java/brahmaos/app/ListFileCallback.java
++++ b/core/java/brahmaos/app/ListFileCallback.java
+@@ -23,7 +23,7 @@ public class ListFileCallback extends IListFileCallback.Stub {
+ 
+     @Override
+     public void onNext(DSNMateObjectData mateObjectData){
+-        listener.onNext(mateObjectData);
++        //listener.onNext(mateObjectData);
+     }
+ 
+     @Override
+diff --git a/core/java/brahmaos/app/ListFileCallbackListener.java b/core/java/brahmaos/app/ListFileCallbackListener.java
+index 30fe038..700899a 100644
+--- a/core/java/brahmaos/app/ListFileCallbackListener.java
++++ b/core/java/brahmaos/app/ListFileCallbackListener.java
+@@ -1,15 +1,12 @@
+ package brahmaos.app;
+ 
+-import brahmaos.app.DSNMateObjectData;
+-
+-
+ public interface ListFileCallbackListener {
+ 
+     void onCompleted(String status);
+ 
+     void onError(String status);
+ 
+-    void onNext(DSNMateObjectData mateObjectData);
++    void onNext(String json);
+ 
+     void onCallbackComplete(boolean result);
+ 
+diff --git a/core/java/brahmaos/app/config/ConfigConstant.java b/core/java/brahmaos/app/config/ConfigConstant.java
+new file mode 100644
+index 0000000..4c7aafd
+--- /dev/null
++++ b/core/java/brahmaos/app/config/ConfigConstant.java
+@@ -0,0 +1,26 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package brahmaos.app.config;
++
++public class ConfigConstant {
++    public static final int WITHOUT_ENCRYPTION = 0;
++    public static final int SYSTEM_ENCRYPTION = 1;
++    public static final int CUSTOM_ENCRYPTION = 2;
++    public static final String IS_ENCRYPTENABLE = "isEncryptEnable";
++    public static final String IS_ENCRYPTMODE = "isEncryptMode";
++
++}
+diff --git a/core/java/brahmaos/app/http/GetJson.java b/core/java/brahmaos/app/http/GetJson.java
+new file mode 100644
+index 0000000..b545db5
+--- /dev/null
++++ b/core/java/brahmaos/app/http/GetJson.java
+@@ -0,0 +1,27 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package brahmaos.app.http;
++
++import java.util.Map;
++
++
++public class GetJson {
++    public int ret;
++    public Map<String, Object> data;
++
++}
++
+diff --git a/core/java/brahmaos/app/http/OkhttpWorker.java b/core/java/brahmaos/app/http/OkhttpWorker.java
+new file mode 100644
+index 0000000..50ba5a9
+--- /dev/null
++++ b/core/java/brahmaos/app/http/OkhttpWorker.java
+@@ -0,0 +1,63 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package brahmaos.app.http;
++
++import com.android.okhttp.OkHttpClient;
++
++import com.android.okhttp.Request;
++import com.android.okhttp.Response;
++import com.android.okhttp.Callback;
++import com.android.okhttp.RequestBody;
++import com.android.okhttp.MediaType;
++import java.util.concurrent.TimeUnit;
++import android.util.Log;
++
++public class OkhttpWorker  {
++
++    public final String TAG = "OkhttpWorker" ;
++    private static int connectTimeout = 10;
++    private static int readTimeout = 30;
++    private static int writeTimeout = 30;
++    private static String baseUrl = "http://dev.brahmaos.io:20001";
++
++    public OkHttpClient getOkhttpClient() {
++         final OkHttpClient client = new OkHttpClient();
++         client.setConnectTimeout(connectTimeout, TimeUnit.SECONDS);
++         client.setWriteTimeout(writeTimeout, TimeUnit.SECONDS);
++         client.setReadTimeout(readTimeout, TimeUnit.SECONDS);
++         return client;
++    }
++
++    public Request getPostRequest(String append, String headPlatform, String name, RequestBody body) {
++        String urlPath = baseUrl + '/' + append;
++        Log.d(TAG, "getPostRequest uriPath:" + urlPath);
++        Request request = new Request.Builder()
++                         .url(urlPath)
++                         .addHeader(headPlatform, name)
++                         .post(body)
++                         .build();
++        return request;
++    }
++
++    public Request getGetRequest(String append, String account, int page, int count) {
++        String uriPath = baseUrl + '/' + append + '/' + account +
++                            "?page=" + String.valueOf(page) + "&count=" +String.valueOf(count);
++        Log.d(TAG, "getGetRequest uriPath:" + uriPath);
++        Request request = new Request.Builder().url(uriPath).build();
++        return request;
++    }
++}
+diff --git a/core/java/brahmaos/app/http/ResponseObjectMeta.java b/core/java/brahmaos/app/http/ResponseObjectMeta.java
+new file mode 100644
+index 0000000..1052f78
+--- /dev/null
++++ b/core/java/brahmaos/app/http/ResponseObjectMeta.java
+@@ -0,0 +1,125 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package brahmaos.app.http;
++
++
++public class ResponseObjectMeta {
++
++    private String account_id;
++
++    private String object_key;
++
++    private String mime_type;
++
++    private String object_name;
++
++    private int object_size;
++
++    private String object_create_time;
++
++    private String object_sync_time;
++
++    private int object_block_cnt;
++
++    private int encrypt_flag;
++
++    // account_id
++    public String getAccountId() {
++        return account_id;
++    }
++    public void setAccountId(String accountId) {
++        this.account_id = accountId;
++    }
++    // object_key
++    public String getObjectKey() {
++        return object_key;
++    }
++
++    public void setObjectKey(String objectKey) {
++        this.object_key = objectKey;
++    }
++    // mime_type
++    public String getMimeType() {
++        return mime_type;
++    }
++
++    public void setMimeType(String mimeType) {
++        this.mime_type = mimeType;
++    }
++    // object_name
++    public String getObjectName() {
++        return object_name;
++    }
++
++    public void setObjectName(String objectName) {
++        this.object_name = objectName;
++    }
++    // object_size
++    public int getObjectSize() {
++        return object_size;
++    }
++
++    public void setObjectSize(int objectSize) {
++        this.object_size = objectSize;
++    }
++    // object_create_time
++    public String getObjectCreateTime() {
++        return object_create_time;
++    }
++
++    public void setObjectCreateTime(String objectCreateTime) {
++        this.object_create_time = objectCreateTime;
++    }
++    // object_sync_time
++    public String getObjectSyncTime() {
++        return object_sync_time;
++    }
++
++    public void setObjectSyncTime(String objectSyncTime) {
++        this.object_sync_time = objectSyncTime;
++    }
++    // object_block_cnt
++    public int getObjectBlockCnt() {
++        return object_block_cnt;
++    }
++
++    public void setObjectBlockCnt(int objectBlockCnt) {
++        this.object_block_cnt = objectBlockCnt;
++    }
++
++    // encrypt_flag
++    public int getEncryptFlag() {
++        return encrypt_flag;
++    }
++
++    public void setEncryptFlag(int encryptFlag) {
++        this.encrypt_flag = encryptFlag;
++    }
++
++    public String toString() {
++        return "ObjectMetaPost{" +
++                "account_id='" + account_id + '\'' +
++                ", object_key='" + object_key + '\'' +
++                ", mime_type='" + mime_type + '\'' +
++                ", object_name=" + object_name +
++                ", object_size=" + object_size +
++                ", object_create_time=" + object_create_time +
++                ", object_sync_time=" + object_sync_time +
++                '}';
++    }
++}
++
+diff --git a/core/java/brahmaos/app/util/CommonUtil.java b/core/java/brahmaos/app/util/CommonUtil.java
+new file mode 100644
+index 0000000..eaf69c5
+--- /dev/null
++++ b/core/java/brahmaos/app/util/CommonUtil.java
+@@ -0,0 +1,137 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package brahmaos.app.util;
++
++import android.Manifest;
++import android.app.Activity;
++import android.app.KeyguardManager;
++import android.content.Context;
++import android.content.pm.PackageManager;
++import android.hardware.fingerprint.FingerprintManager;
++import android.os.Build;
++import android.util.DisplayMetrics;
++import android.util.Log;
++
++import java.io.ByteArrayInputStream;
++import java.io.ByteArrayOutputStream;
++import java.io.ObjectInputStream;
++import java.io.ObjectOutputStream;
++
++import java.math.BigDecimal;
++import java.math.BigInteger;
++import java.text.SimpleDateFormat;
++import java.util.Date;
++import java.util.List;
++import java.io.File;
++
++import java.net.FileNameMap;
++import java.net.URLConnection;
++
++public class CommonUtil {
++    public static int MNEMONIC_WORD_LENGTH = 12;
++
++    public static String generateSimpleAddress(String fullAddress) {
++        String simpleName = fullAddress;
++        if (fullAddress.length() > 18) {
++            simpleName = fullAddress.substring(0, 10) + "..." + fullAddress.substring(fullAddress.length() - 8);
++        }
++        return simpleName;
++    }
++
++    public static BigDecimal getAccountFromWei(BigInteger value) {
++        BigDecimal bigDecimal = new BigDecimal(value);
++        return bigDecimal.divide(new BigDecimal(Math.pow(10, 18)), 4, BigDecimal.ROUND_HALF_UP);
++    }
++
++    public static String parseAccountContent(String value) {
++        return value.replaceAll("\\s*", "");
++    }
++
++    public static BigInteger convertWeiFromEther(BigDecimal value) {
++        return value.multiply(new BigDecimal(Math.pow(10, 18))).toBigInteger();
++    }
++
++    public static boolean isPasswordValid(String password) {
++        return password.length() > 4;
++    }
++
++    public static boolean judgeFileExist(String filePath){
++        if(filePath == null)
++            return false;
++        File file=new File(filePath);
++        if(file.exists())
++            return true;
++        else
++            return false;
++    }
++
++    public static String getFileModifiedTime(File file, String format){
++        String formatDefault = null;
++        if (format == null || format.isEmpty()){
++            formatDefault = "yyyy/MM/dd HH:mm:ss";
++        }
++        SimpleDateFormat dateFormat = new SimpleDateFormat(formatDefault);
++        return dateFormat.format(new Date(file.lastModified()));
++    }
++    public static String getNowTime(String format){
++        String formatDefault = null;
++        if (format == null || format.isEmpty()){
++            formatDefault = "yyyy/MM/dd HH:mm:ss";
++        }
++        Date nowDate = new Date();
++        SimpleDateFormat dateFormat = new SimpleDateFormat(formatDefault);
++        return dateFormat.format(nowDate);
++    }
++    /**
++     * unit：px
++     */
++    public static int getScreenWidth(Activity context) {
++        DisplayMetrics dm = new DisplayMetrics();
++        context.getWindowManager().getDefaultDisplay().getMetrics(dm);
++        return dm.widthPixels;
++    }
++
++    /**
++     * unit：px
++     */
++    public static int getScreenHeight(Activity context) {
++        DisplayMetrics dm = new DisplayMetrics();
++        context.getWindowManager().getDefaultDisplay().getMetrics(dm);
++        return dm.heightPixels;
++    }
++
++    public static int dip2px(Context context, float dpValue) {
++        final float scale = context.getResources().getDisplayMetrics().density;
++        return (int) (dpValue * scale + 0.5f);
++    }
++
++    public static boolean isValidMnemonics(String mnemonics) {
++        String[] mnemonicList = mnemonics.split(" ");
++        return mnemonicList.length == MNEMONIC_WORD_LENGTH;
++    }
++
++    public static String getMimeType(String fileUrl) {
++        String type = null;
++        try {
++            FileNameMap fileNameMap = URLConnection.getFileNameMap();
++            type = fileNameMap.getContentTypeFor(fileUrl);
++        }catch(Exception e){
++            Log.e("CommonUtil","getMimeType:" + e);
++        }
++        return type;
++    }
++}
+-- 
+2.7.4
+
