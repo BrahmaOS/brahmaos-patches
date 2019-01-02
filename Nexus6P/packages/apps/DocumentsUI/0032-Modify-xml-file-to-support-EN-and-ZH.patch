@@ -1,0 +1,137 @@
+From a5f00b9239fee2cc5e8b0a37c996366cc4481524 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Tue, 25 Dec 2018 14:51:48 +0800
+Subject: [PATCH] Modify xml file to support EN and ZH
+
+- make activity title to support EN and ZH.
+- make menu to support EN and ZH.
+
+Change-Id: Ica01de219d10b0267f5e3b81e4a4245015ccad82
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ res/menu/dsn_files_activity.xml                            |  6 +++---
+ res/values-en-rGB/strings.xml                              |  2 ++
+ res/values-zh-rCN/strings.xml                              |  2 ++
+ res/values/strings.xml                                     |  2 ++
+ src/com/android/documentsui/dirlist/DirectoryFragment.java |  2 +-
+ src/com/android/documentsui/files/DSNFilesActivity.java    | 12 ++++++------
+ 6 files changed, 16 insertions(+), 10 deletions(-)
+
+diff --git a/res/menu/dsn_files_activity.xml b/res/menu/dsn_files_activity.xml
+index 5102240..efb505d 100644
+--- a/res/menu/dsn_files_activity.xml
++++ b/res/menu/dsn_files_activity.xml
+@@ -27,19 +27,19 @@
+     <group android:id="@+id/group_hide_when_searching">
+         <item
+             android:id="@+id/option_menu_preview"
+-            android:title="Preview"
++            android:title="@string/menu_preview_title"
+             android:icon="@drawable/ic_menu_view_grid"
+             android:visible="false"
+             android:showAsAction="never" />
+         <item
+             android:id="@+id/option_menu_download"
+-            android:title="Download"
++            android:title="@string/downloads_label"
+             android:icon="@drawable/ic_menu_view_grid"
+             android:visible="false"
+             android:showAsAction="never" />
+         <item
+             android:id="@+id/option_menu_delete"
+-            android:title="Delete"
++            android:title="@string/menu_delete"
+             android:icon="@drawable/ic_debug_menu"
+             android:visible="false"
+             android:showAsAction="never"/>
+diff --git a/res/values-en-rGB/strings.xml b/res/values-en-rGB/strings.xml
+index d3fab84..b710c5c 100644
+--- a/res/values-en-rGB/strings.xml
++++ b/res/values-en-rGB/strings.xml
+@@ -272,4 +272,6 @@
+     <string name="tv_file_size_title">"File Size:"</string>
+     <string name="tv_file_type_title">"File MIME-Type:"</string>
+     <string name="dialog_qrscan_return_title">"Download File from DSN"</string>
++    <string name="activity_dsn_remote_title">"Remote File"</string>
++    <string name="menu_preview_title">"Preview"</string>
+ </resources>
+diff --git a/res/values-zh-rCN/strings.xml b/res/values-zh-rCN/strings.xml
+index b432b37..d33a822 100644
+--- a/res/values-zh-rCN/strings.xml
++++ b/res/values-zh-rCN/strings.xml
+@@ -274,4 +274,6 @@
+     <string name="tv_file_size_title">"文件大小："</string>
+     <string name="tv_file_type_title">"文件MIME类型："</string>
+     <string name="dialog_qrscan_return_title">"从DSN中下载此文件"</string>
++    <string name="activity_dsn_remote_title">"远程文件"</string>
++    <string name="menu_preview_title">"预览"</string>
+ </resources>
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index b3acc2c..c0fc0c2 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -481,4 +481,6 @@
+     <string name="tv_file_size_title">"File Size:"</string>
+     <string name="tv_file_type_title">"File MIME-Type:"</string>
+     <string name="dialog_qrscan_return_title">"Download File from DSN"</string>
++    <string name="activity_dsn_remote_title">"Remote File"</string>
++    <string name="menu_preview_title">"Preview"</string>
+ </resources>
+diff --git a/src/com/android/documentsui/dirlist/DirectoryFragment.java b/src/com/android/documentsui/dirlist/DirectoryFragment.java
+index 2287e4e..5555aff 100644
+--- a/src/com/android/documentsui/dirlist/DirectoryFragment.java
++++ b/src/com/android/documentsui/dirlist/DirectoryFragment.java
+@@ -657,7 +657,7 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+                 if (status == 0 || status == -1) {
+                     new  AlertDialog.Builder(mActivity)
+                         .setTitle(mActivity.getString(android.R.string.dialog_alert_title))
+-                        .setMessage(mActivity.getString(R.string.dialog_ipfs_content_alert) )
++                        .setMessage(mActivity.getString(R.string.dialog_ipfs_content_alert))
+                         .setPositiveButton(android.R.string.ok,  null)
+                         .show();
+                         return true;
+diff --git a/src/com/android/documentsui/files/DSNFilesActivity.java b/src/com/android/documentsui/files/DSNFilesActivity.java
+index 97739e2..de1ba87 100644
+--- a/src/com/android/documentsui/files/DSNFilesActivity.java
++++ b/src/com/android/documentsui/files/DSNFilesActivity.java
+@@ -310,7 +310,7 @@ public class DSNFilesActivity extends AppCompatActivity  {
+         if (toolbar != null) {
+             setSupportActionBar(toolbar);
+             ActionBar ab = getSupportActionBar();
+-            ab.setTitle("Remote File");
++            ab.setTitle(this.getString(R.string.activity_dsn_remote_title));
+             if (ab != null) {
+                 ab.setDisplayHomeAsUpEnabled(true);
+                 ab.setDisplayShowHomeEnabled(true);
+@@ -363,9 +363,9 @@ public class DSNFilesActivity extends AppCompatActivity  {
+         int status = mManager.getDSNManagerStatus();
+         if (status == 0 || status == -1) {
+             new  AlertDialog.Builder(this)
+-                .setTitle("Alert" )
+-                .setMessage("Please open IPFS Switch in Settings" )
+-                .setPositiveButton("ok",  null )
++                .setTitle(this.getString(android.R.string.dialog_alert_title))
++                .setMessage(this.getString(R.string.dialog_ipfs_content_alert))
++                .setPositiveButton(android.R.string.ok,  null )
+                 .show();
+             return;
+         }
+@@ -401,13 +401,13 @@ public class DSNFilesActivity extends AppCompatActivity  {
+         AlertDialog dialog =
+                 new AlertDialog.Builder(this)
+                        .setTitle("Account password")
+-                        .setNegativeButton("CANCLE",
++                        .setNegativeButton(android.R.string.cancel,
+                             new DialogInterface.OnClickListener() {
+                                 @Override
+                                 public void onClick(DialogInterface dialog, int which) {
+ 
+                                 }
+-                        }).setPositiveButton("OK",
++                        }).setPositiveButton(android.R.string.ok,
+                             new DialogInterface.OnClickListener() {
+                                 @Override
+                                 public void onClick(DialogInterface dialog, int which) {
+-- 
+2.7.4
+
