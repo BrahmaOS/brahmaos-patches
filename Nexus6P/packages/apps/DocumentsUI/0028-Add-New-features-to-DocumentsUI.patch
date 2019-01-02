@@ -1,0 +1,2321 @@
+From cf13e407ad918c2e8ebd42a09614cc432e9a0604 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Wed, 19 Dec 2018 18:13:38 +0800
+Subject: [PATCH] Add New features to DocumentsUI
+
+- add custom encrypt dialog to DocumentsUI
+- add system encrypt dialog to DocumentsUI
+- add encrypt job to DocumentsUI
+- add lock jpg for  DocuentsUI to show encrypt files
+- add privte root
+
+Signed-off-by: koala <koala@brahmaos.io>
+
+Change-Id: Icad8e00e9b4eeaf80e1e19b7ae3e86fcdbbc3a88
+---
+ res/drawable/ic_file_lock.jpg                      | Bin 0 -> 2970 bytes
+ res/drawable/ic_item_fileencrypt.png               | Bin 0 -> 2548 bytes
+ res/layout/dialog_dsn_custom_decrypt.xml           |  55 +++
+ res/layout/dialog_dsn_custom_encrypt.xml           |  55 +++
+ res/layout/dsn_drawer_layout.xml                   |   1 -
+ res/menu/action_mode_menu.xml                      |   5 +
+ res/values/strings.xml                             |   1 +
+ .../android/documentsui/AbstractActionHandler.java |   3 +
+ src/com/android/documentsui/ActionHandler.java     |   1 +
+ .../documentsui/DSN/conmmon/ConfigConst.java       |  22 +-
+ .../documentsui/DSN/dirlist/DSNRemoteFragment.java |   1 -
+ .../DSN/dirlist/DSNSettingFragment.java            |  79 +++-
+ .../android/documentsui/DSN/task/DecryptJob.java   | 303 +++++++++++++++
+ .../documentsui/DSN/task/DownloadFilesJob.java     | 123 +++++-
+ .../android/documentsui/DSN/task/UploadJob.java    |  33 +-
+ src/com/android/documentsui/DSNObjectMeta.java     |   5 -
+ src/com/android/documentsui/DirectoryLoader.java   |   3 +-
+ .../android/documentsui/DocumentsApplication.java  |  14 +-
+ src/com/android/documentsui/MenuManager.java       |   7 +-
+ src/com/android/documentsui/ThumbnailLoader.java   |  10 +-
+ src/com/android/documentsui/base/DocumentInfo.java |   2 +
+ src/com/android/documentsui/base/RootInfo.java     |   8 +
+ .../documentsui/dirlist/DirectoryFragment.java     |   7 +-
+ .../android/documentsui/files/ActionHandler.java   | 422 +++++++++++++++++----
+ .../documentsui/files/DSNFilesActivity.java        |  17 +-
+ .../android/documentsui/files/FilesActivity.java   |   5 +
+ src/com/android/documentsui/files/MenuManager.java |  41 +-
+ .../documentsui/httpnetwork/ObjectMeta.java        |  16 +-
+ .../android/documentsui/picker/MenuManager.java    |   7 +-
+ .../android/documentsui/services/BackupJob.java    | 272 -------------
+ .../documentsui/services/FileOperation.java        |   4 +-
+ 31 files changed, 1088 insertions(+), 434 deletions(-)
+ create mode 100644 res/drawable/ic_file_lock.jpg
+ create mode 100644 res/drawable/ic_item_fileencrypt.png
+ create mode 100644 res/layout/dialog_dsn_custom_decrypt.xml
+ create mode 100644 res/layout/dialog_dsn_custom_encrypt.xml
+ create mode 100644 src/com/android/documentsui/DSN/task/DecryptJob.java
+ delete mode 100644 src/com/android/documentsui/DSNObjectMeta.java
+ delete mode 100644 src/com/android/documentsui/services/BackupJob.java
+
+diff --git a/res/drawable/ic_file_lock.jpg b/res/drawable/ic_file_lock.jpg
+new file mode 100644
+index 0000000000000000000000000000000000000000..67e2fac08b23664901eaa46088d17b8b52c9a34d
+GIT binary patch
+literal 2970
+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
+M_(!f^?jy~=0__>tfB*mh
+
+literal 0
+HcmV?d00001
+
+diff --git a/res/drawable/ic_item_fileencrypt.png b/res/drawable/ic_item_fileencrypt.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..6b8e0a0e45c783807e9d8295fe42ee2b76b643b2
+GIT binary patch
+literal 2548
+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
+Q+wh987WU?~X4jy90WNxmHvj+t
+
+literal 0
+HcmV?d00001
+
+diff --git a/res/layout/dialog_dsn_custom_decrypt.xml b/res/layout/dialog_dsn_custom_decrypt.xml
+new file mode 100644
+index 0000000..59ebbba
+--- /dev/null
++++ b/res/layout/dialog_dsn_custom_decrypt.xml
+@@ -0,0 +1,55 @@
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:gravity="center_horizontal"
++    android:orientation="vertical">
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="1dp"
++        android:background="@color/colorMoreLightGray"
++        android:layout_marginTop="@dimen/space_normal"
++        />
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:orientation="vertical"
++        android:layout_marginTop="@dimen/space_normal"
++        android:paddingLeft="16dp"
++        android:paddingRight="16dp"
++        >
++
++        <EditText
++            android:id="@+id/FactRstDialogPsw"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:password="true"
++            android:textColor="@color/colorBlue"
++            android:singleLine="true"/>
++        <CheckBox
++            android:id="@+id/checkBox"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:textColor="@color/colorGray"
++            android:textSize="16sp"
++            android:text="显示密码"
++            />
++        <TextView
++            android:id="@+id/textView4"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:layout_marginLeft="2dp"
++            android:textSize="16sp"
++            android:textColor="@color/colorGray"
++            android:text="文件解密密码包含字母或数字，不能使用特殊字符，长度在6-12之间。" />
++    </LinearLayout>
++
++    <LinearLayout
++        android:layout_marginTop="16dp"
++        android:layout_width="match_parent"
++        android:layout_height="1dp"
++        android:background="@color/colorMoreLightGray"
++        />
++</LinearLayout>
++
++
++
+diff --git a/res/layout/dialog_dsn_custom_encrypt.xml b/res/layout/dialog_dsn_custom_encrypt.xml
+new file mode 100644
+index 0000000..788168a
+--- /dev/null
++++ b/res/layout/dialog_dsn_custom_encrypt.xml
+@@ -0,0 +1,55 @@
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:gravity="center_horizontal"
++    android:orientation="vertical">
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="1dp"
++        android:background="@color/colorMoreLightGray"
++        android:layout_marginTop="@dimen/space_normal"
++        />
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:orientation="vertical"
++        android:layout_marginTop="@dimen/space_normal"
++        android:paddingLeft="16dp"
++        android:paddingRight="16dp"
++        >
++
++        <EditText
++            android:id="@+id/FactRstDialogPsw"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:password="true"
++            android:textColor="@color/colorBlue"
++            android:singleLine="true"/>
++        <CheckBox
++            android:id="@+id/checkBox"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:textColor="@color/colorGray"
++            android:textSize="16sp"
++            android:text="显示密码"
++            />
++        <TextView
++            android:id="@+id/textView4"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:layout_marginLeft="2dp"
++            android:textSize="16sp"
++            android:textColor="@color/colorGray"
++            android:text="文件加密密码包含字母或数字，不能使用特殊字符，长度在6-12之间。" />
++    </LinearLayout>
++
++    <LinearLayout
++        android:layout_marginTop="16dp"
++        android:layout_width="match_parent"
++        android:layout_height="1dp"
++        android:background="@color/colorMoreLightGray"
++        />
++</LinearLayout>
++
++
++
+diff --git a/res/layout/dsn_drawer_layout.xml b/res/layout/dsn_drawer_layout.xml
+index f03b29a..e90e841 100644
+--- a/res/layout/dsn_drawer_layout.xml
++++ b/res/layout/dsn_drawer_layout.xml
+@@ -350,7 +350,6 @@
+                     android:layout_alignParentEnd="true"
+                     android:layout_alignParentTop="true"
+                     android:textSize="@dimen/font_subcontent"
+-                    android:text="Yes"
+                     android:textColor="@color/colorSubContent"/>
+             </RelativeLayout>
+             <LinearLayout
+diff --git a/res/menu/action_mode_menu.xml b/res/menu/action_mode_menu.xml
+index 7ba5a09..2d479b8 100644
+--- a/res/menu/action_mode_menu.xml
++++ b/res/menu/action_mode_menu.xml
+@@ -77,4 +77,9 @@
+         android:title="@string/menu_upload"
+         android:showAsAction="never"
+         android:visible="false" />
++    <item
++        android:id="@+id/action_menu_decrypt"
++        android:title="@string/menu_decrypt"
++        android:showAsAction="never"
++        android:visible="false" />
+ </menu>
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index 634f2ca..0704132 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -75,6 +75,7 @@
+     <!-- Menu item title that creates a new window in the activity [CHAR LIMIT=28] -->
+     <string name="menu_new_window">New window</string>
+     <string name="menu_upload">Upload files</string>
++    <string name="menu_decrypt">Decrypt files</string>
+     <!-- Menu item title that cuts the selected documents to clipboard [CHAR LIMIT=28] -->
+     <string name="menu_cut_to_clipboard">Cut</string>
+     <!-- Menu item title that copies the selected documents to clipboard [CHAR LIMIT=28] -->
+diff --git a/src/com/android/documentsui/AbstractActionHandler.java b/src/com/android/documentsui/AbstractActionHandler.java
+index 6847f81..86b6831 100644
+--- a/src/com/android/documentsui/AbstractActionHandler.java
++++ b/src/com/android/documentsui/AbstractActionHandler.java
+@@ -448,6 +448,9 @@ public abstract class AbstractActionHandler<T extends Activity & CommonAddons>
+     public void uploadDocuments() {
+         throw new UnsupportedOperationException("Upload not supported!");
+     }
++    public void decryptDocuments() {
++        throw new UnsupportedOperationException("Upload not supported!");
++    }
+     @Override
+     public void shareSelectedDocuments() {
+         throw new UnsupportedOperationException("Share not supported!");
+diff --git a/src/com/android/documentsui/ActionHandler.java b/src/com/android/documentsui/ActionHandler.java
+index 0957ed3..0c274c3 100644
+--- a/src/com/android/documentsui/ActionHandler.java
++++ b/src/com/android/documentsui/ActionHandler.java
+@@ -138,6 +138,7 @@ public interface ActionHandler {
+      * In general, selected = selection or single focused item
+      */
+     void uploadDocuments();
++    void decryptDocuments();
+ 
+     void shareSelectedDocuments();
+ 
+diff --git a/src/com/android/documentsui/DSN/conmmon/ConfigConst.java b/src/com/android/documentsui/DSN/conmmon/ConfigConst.java
+index 99b4f07..ff2d1f9 100644
+--- a/src/com/android/documentsui/DSN/conmmon/ConfigConst.java
++++ b/src/com/android/documentsui/DSN/conmmon/ConfigConst.java
+@@ -1,14 +1,28 @@
+ /**
+- * Copyright 2018 BRAHMACARIYA FOUNDATION LTD
+- */
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
+ 
+-package com.android.documentsui.DSN.conmmon;
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
+ 
++          http://www.apache.org/licenses/LICENSE-2.0
+ 
+-public class ConfigConst {
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package com.android.documentsui.DSN.conmmon;
+ 
++public class ConfigConst {
++    public static final String DSN_DATABASE_NAME = "DSN database";
++    public static final String IS_ENCRYPTENABLE = "isEncryptEnable";
++    public static final String IS_ENCRYPTMODE = "isEncryptMode";
+     public static final int WITHOUT_ENCRYPTION = 0;
+     public static final int SYSTEM_ENCRYPTION = 1;
+     public static final int CUSTOM_ENCRYPTION = 2;
+ 
++
+ }
+diff --git a/src/com/android/documentsui/DSN/dirlist/DSNRemoteFragment.java b/src/com/android/documentsui/DSN/dirlist/DSNRemoteFragment.java
+index 752c1e4..a1c3768 100644
+--- a/src/com/android/documentsui/DSN/dirlist/DSNRemoteFragment.java
++++ b/src/com/android/documentsui/DSN/dirlist/DSNRemoteFragment.java
+@@ -124,7 +124,6 @@ import java.util.ArrayList;
+ 
+ 
+ import javax.annotation.Nullable;
+-import com.android.documentsui.DSNObjectMeta;
+ import com.android.documentsui.httpnetwork.HttpServer;
+ import com.android.documentsui.httpnetwork.*;
+ 
+diff --git a/src/com/android/documentsui/DSN/dirlist/DSNSettingFragment.java b/src/com/android/documentsui/DSN/dirlist/DSNSettingFragment.java
+index d58abbe..56ef2f9 100644
+--- a/src/com/android/documentsui/DSN/dirlist/DSNSettingFragment.java
++++ b/src/com/android/documentsui/DSN/dirlist/DSNSettingFragment.java
+@@ -28,7 +28,6 @@ import android.view.ContextMenu;
+ import android.view.LayoutInflater;
+ import android.view.MenuInflater;
+ import android.view.MenuItem;
+-import android.view.View;
+ import android.view.ViewGroup;
+ import android.widget.ImageView;
+ import android.widget.TextView;
+@@ -39,9 +38,14 @@ import android.view.Menu;
+ import android.widget.Button;
+ import android.widget.Switch;
+ import android.widget.CompoundButton;
++import android.content.SharedPreferences;
++import android.preference.PreferenceManager;
++import android.os.Bundle;
++import android.view.View;
+ 
+ import com.android.documentsui.BaseActivity;
+ import com.android.documentsui.R;
++import com.android.documentsui.DocumentsApplication;
+ 
+ import java.io.IOException;
+ import java.util.List;
+@@ -51,6 +55,7 @@ import java.util.HashMap;
+ import java.util.LinkedHashMap;
+ import java.util.Map;
+ import io.ipfs.api.IPFS;
++import com.android.documentsui.DSN.conmmon.ConfigConst;
+ 
+ public class DSNSettingFragment extends Fragment {
+     private static final String TAG = "DSNSettingFragment";
+@@ -62,16 +67,31 @@ public class DSNSettingFragment extends Fragment {
+     private RadioButton seRadioButton;
+     private RadioButton ceRadioButton;
+     private View view;
+-
++    private SharedPreferences mPref;
+     private MenuItem mMenuItem;
+-
++    private boolean isEncryptEnable;
++    private int isEncryptMode;
++    private Context mContext;
+     protected LinearLayout mLinearLayout;
+ 
+     public DSNSettingFragment() {
+         super();
++        mContext = getActivity();
++
+     }
+ 
+     @Override
++    public void onCreate(Bundle savedInstanceState) {
++        super.onCreate(savedInstanceState);
++        mPref = ((DocumentsApplication) getActivity().getApplication()).getDSNSharedPreferences();
++        if(mPref != null) {
++            isEncryptEnable = mPref.getBoolean(ConfigConst.IS_ENCRYPTENABLE, false);
++            isEncryptMode = mPref.getInt(ConfigConst.IS_ENCRYPTMODE, 0);
++        }
++    }
++
++
++    @Override
+     public View onCreateView(
+             LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+ 
+@@ -79,7 +99,6 @@ public class DSNSettingFragment extends Fragment {
+         view = inflater.inflate(R.layout.fragment_dsn_setting, container, false);
+ 
+         setHasOptionsMenu(true);
+-        getIPFSConfig();
+         initView();
+         return view;
+     }
+@@ -90,11 +109,44 @@ public class DSNSettingFragment extends Fragment {
+ 
+     }
+ 
++    @Override
++    public void onStop() {
++        SharedPreferences.Editor edit = mPref.edit();
++        edit.putBoolean(ConfigConst.IS_ENCRYPTENABLE, isEncryptEnable);
++        edit.putInt(ConfigConst.IS_ENCRYPTMODE, isEncryptMode);
++        edit.commit();
++        Log.d(TAG, "onStop save to SharedPreferences"+ String.valueOf(isEncryptEnable) +"::" + String.valueOf(isEncryptMode) );
++        super.onStop();
++    }
++
+     public void initView() {
+         meSwtich = view.findViewById(R.id.switch_cm);
+         neRadioButton = view.findViewById(R.id.radioButton_ne);
+         seRadioButton = view.findViewById(R.id.radioButton_se);
+         ceRadioButton = view.findViewById(R.id.radioButton_ce);
++        boolean isSwtichOpen;
++        isSwtichOpen = (isEncryptEnable == true)? true : false;
++        meSwtich.setChecked(isSwtichOpen);
++
++        if (isSwtichOpen) {
++            neRadioButton.setEnabled(true);
++            ceRadioButton.setEnabled(true);
++            seRadioButton.setEnabled(true);
++        } else {
++            neRadioButton.setEnabled(false);
++            ceRadioButton.setEnabled(false);
++            seRadioButton.setEnabled(false);
++        }
++
++        if(isEncryptMode == ConfigConst.WITHOUT_ENCRYPTION)
++            neRadioButton.setChecked(true);
++        else if(isEncryptMode == ConfigConst.SYSTEM_ENCRYPTION)
++            seRadioButton.setChecked(true);
++        else if(isEncryptMode == ConfigConst.CUSTOM_ENCRYPTION)
++            ceRadioButton.setChecked(true);
++        else
++            Log.e(TAG, "Worring EncryptMode:" + String.valueOf(isEncryptMode));
++
+         meSwtich.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+             @Override
+             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+@@ -107,8 +159,10 @@ public class DSNSettingFragment extends Fragment {
+                     ceRadioButton.setEnabled(false);
+                     seRadioButton.setEnabled(false);
+                 }
++                isEncryptEnable = isChecked;
+             }
+         });
++
+         neRadioButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+             @Override
+             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+@@ -116,6 +170,7 @@ public class DSNSettingFragment extends Fragment {
+                     return;
+                 seRadioButton.setChecked(false);
+                 ceRadioButton.setChecked(false);
++                isEncryptMode = 0;
+             }
+ 
+         });
+@@ -126,6 +181,7 @@ public class DSNSettingFragment extends Fragment {
+                     return;
+                 neRadioButton.setChecked(false);
+                 ceRadioButton.setChecked(false);
++                isEncryptMode = 1;
+             }
+ 
+         });
+@@ -136,23 +192,12 @@ public class DSNSettingFragment extends Fragment {
+                     return;
+                 neRadioButton.setChecked(false);
+                 seRadioButton.setChecked(false);
++                isEncryptMode = 2;
+             }
+ 
+         });
+     }
+-    public void getIPFSConfig() {
+-        new Thread(new Runnable() {
+-            @Override
+-            public void run() {
+-                    IPFS DSNManagerHandle = new IPFS("/ip4/127.0.0.1/tcp/5001");
+-                    try {
+-                        Log.d(TAG, "---" + DSNManagerHandle.config.show());
+-                    } catch (Exception e) {
+-                        Log.d(TAG, "getIPFSConfig" + e);
+-                    }
+-            }
+-         }).start();
+-    }
++
+     @Override
+     public void onResume(){
+         super.onStart();
+diff --git a/src/com/android/documentsui/DSN/task/DecryptJob.java b/src/com/android/documentsui/DSN/task/DecryptJob.java
+new file mode 100644
+index 0000000..091c38a
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/task/DecryptJob.java
+@@ -0,0 +1,303 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package com.android.documentsui.DSN.task;
++
++import static com.android.documentsui.base.Shared.DEBUG;
++import static com.android.documentsui.services.FileOperationService.OPERATION_DELETE;
++
++import android.app.Notification;
++import android.app.Notification.Builder;
++import android.content.ContentResolver;
++import android.content.Context;
++import android.net.Uri;
++import android.util.Log;
++import android.provider.DocumentsContract.Path;
++import android.icu.text.SimpleDateFormat;
++import android.provider.DocumentsContract;
++
++
++import com.android.documentsui.Metrics;
++import com.android.documentsui.R;
++import com.android.documentsui.base.DocumentInfo;
++import com.android.documentsui.base.DocumentStack;
++import com.android.documentsui.base.Features;
++import com.android.documentsui.clipping.UrisSupplier;
++import com.android.documentsui.DocumentsApplication;
++import com.android.documentsui.httpnetwork.HttpServer;
++
++import okhttp3.Interceptor;
++import okhttp3.OkHttpClient;
++import okhttp3.Request;
++import okhttp3.Response;
++import okhttp3.ResponseBody;
++import okhttp3.logging.HttpLoggingInterceptor;
++import okio.BufferedSource;
++import retrofit2.Retrofit;
++import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
++import retrofit2.converter.jackson.JacksonConverterFactory;
++import android.os.RemoteException;
++import android.os.Bundle;
++import android.database.Cursor;
++import android.provider.MediaStore;
++
++import java.util.List;
++import java.util.ArrayList;
++import java.io.FileNotFoundException;
++import javax.annotation.Nullable;
++import java.util.Date;
++
++import io.ipfs.api.MerkleNode;
++import io.ipfs.api.NamedStreamable;
++import io.ipfs.multihash.Multihash;
++import io.ipfs.api.IPFS;
++import java.io.IOException;
++import java.util.List;
++import io.ipfs.cid.Cid;
++import io.ipfs.api.JSONParser;
++import java.io.File;
++import java.lang.String.*;
++import java.lang.*;
++import android.webkit.MimeTypeMap;
++import java.util.Map;
++import java.util.HashMap;
++import java.util.LinkedHashMap;
++import com.android.documentsui.base.RootInfo;
++import java.io.FileNotFoundException;
++import java.io.IOException;
++import com.android.documentsui.services.ResourceException;
++
++import brahmaos.app.DSNManager;
++import brahmaos.app.AddFileCallbackListener;
++import com.android.documentsui.DSN.dirlist.UploadFilesList;
++import com.android.documentsui.DSN.dirlist.UploadRecycleAdapter;
++import brahmaos.util.DataCryptoUtils;
++
++import static android.content.Context.DSNMANAGER_SERVICE;
++
++
++public class DecryptJob implements Runnable {
++
++    private static final String TAG = "DecryptJob";
++    private static final String ABSOlUTE_PATH_PREFIX = "/sdcard/";
++    private static final String ABSOlUTE_PATH_DOWNLOAD_PREFIX = "/sdcard/Download";
++    private static final String PRIMARY_PREFIX = "primary:";
++    private static final String RAW_PREFIX = "raw:";
++    private static final String RAW_STORAGE_PREFIX = "raw:/storage/emulated/0/";
++    private static final String LOCALHD_STORAGE_PREFIX = "/storage/emulated/0/LocalHD/";
++    private Uri mParentUri;
++    private volatile int mDocsProcessed = 0;
++    private static Context mContext;
++    private UrisSupplier mSrcs;
++    private Uri msrcParent;
++    final List<DocumentInfo> mResolvedDocs;
++    private String mPassword;
++    private int mEncryptMode;
++
++    public DecryptJob(Context appContext, UrisSupplier srcs, @Nullable Uri srcParent, int encryptMode, String password) {
++        mContext = appContext;
++        mSrcs = srcs;
++        mParentUri = srcParent;
++        mResolvedDocs = new ArrayList<>(srcs.getItemCount());
++        mEncryptMode = encryptMode;
++        mPassword = password;
++    }
++
++    public boolean setUp() {
++         int docsResolved = buildDocumentList();
++         if (docsResolved < mSrcs.getItemCount()) {
++             if (docsResolved == 0) {
++                 Log.e(TAG, "Failed to load any documents. Aborting.");
++                 return false;
++             } else {
++                 Log.e(TAG, "Failed to load some documents. Processing loaded documents only.");
++             }
++         }
++
++         return true;
++     }
++
++    public int buildDocumentList() {
++          final ContentResolver resolver = mContext.getContentResolver();
++          Iterable<Uri> uris;
++          try {
++              uris = mSrcs.getUris(mContext);
++          } catch (IOException e) {
++              Log.e(TAG, "Failed to read list of target resource Uris. Cannot continue.", e);
++              return 0;
++          }
++          int docsLoaded = 0;
++          for (Uri uri : uris) {
++
++              DocumentInfo doc;
++              try {
++                  doc = DocumentInfo.fromUri(resolver, uri);
++              } catch (FileNotFoundException e) {
++                  Log.e(TAG, "Failed to resolve content from Uri: " + uri
++                          + ". Skipping to next resource.", e);
++                  //onResolveFailed(uri);
++                  continue;
++              }
++              mResolvedDocs.add(doc);
++              docsLoaded++;
++          }
++
++          return docsLoaded;
++    }
++
++    @Override
++    public void run(){
++        if(setUp()==true) {
++             Log.d(TAG, "SetUp scuess! " );
++
++        };
++        Log.d(TAG, "SetUp run! " );
++        ContentResolver resolver = mContext.getContentResolver();
++        DocumentInfo parentDoc;
++        try {
++            parentDoc = mParentUri != null
++                ? DocumentInfo.fromUri(resolver, mParentUri)
++                : null;
++        } catch (FileNotFoundException e) {
++          Log.e(TAG, "Failed to resolve parent from Uri: " + mParentUri + ". Cannot continue.", e);
++          return;
++        }
++
++        for (DocumentInfo doc : mResolvedDocs) {
++            if (DEBUG) Log.d(TAG, "Backuping document @ " + doc.derivedUri);
++            try {
++                DecryptFiles(doc, parentDoc);
++            } catch (ResourceException e) {
++                Log.e(TAG, "Failed to Backuping document @ " + doc.derivedUri, e);
++            }
++            mDocsProcessed++;
++        }
++    }
++    final void DecryptFiles(DocumentInfo doc, @Nullable DocumentInfo parent)
++             throws ResourceException {
++            NamedStreamable.FileWrapper file;
++            ContentResolver resolver = mContext.getContentResolver();
++
++            String path = getPathFromContentUri(doc.derivedUri, 4);
++
++            if(doc.isDirectory())
++                return;
++
++            String origFullPath = getPathFromContentUri(doc.derivedUri, 4);
++            String dstFullPath = LOCALHD_STORAGE_PREFIX + doc.displayName;
++            File fileSrc = new File(origFullPath);
++            File fileDst = new File(dstFullPath);
++            Log.d(TAG, "DecryptFiles:" + origFullPath + ":" + dstFullPath + mPassword);
++            int decryptResult = DataCryptoUtils.aes128DecryptFiles(fileSrc, fileDst, mPassword, 64);
++
++            Log.d(TAG, "DecryptFiles:" + String.valueOf(decryptResult));
++
++            return;
++    }
++
++      public static String getPathFromContentUri(Uri uri, int uriType) {
++        if (isMediaDocument(uri)) {
++                Uri contentUri = null;
++                final String docId = DocumentsContract.getDocumentId(uri);
++                final String[] split = docId.split(":");
++                if (uriType == 1) {
++                    contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
++                } else if (uriType == 2) {
++                    contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
++                } else if (uriType == 3) {
++                    contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
++                } else if (uriType == 4) {
++                    contentUri = MediaStore.DSNMeta.Media.EXTERNAL_CONTENT_URI;
++                }
++
++            final String selection = "_id=?";
++            final String[] selectionArgs = new String[]{split[1]};
++
++            return getDataColumn(contentUri, selection, selectionArgs);
++        } else
++            return null;
++     }
++
++     /**
++     * @param uri
++     *         The Uri to check.
++     * @return Whether the Uri authority is MediaProvider.
++     */
++     private static boolean isMediaDocument(Uri uri) {
++        return "com.android.providers.media.documents".equals(uri.getAuthority());
++     }
++
++
++    public String getFilePathFromContentUri(Uri selectedVideoUri, ContentResolver contentResolver) {
++        String filePath;
++        String[] filePathColumn = {"_data"};
++
++        Cursor cursor = contentResolver.query(selectedVideoUri, filePathColumn, null, null, null);
++
++        cursor.moveToFirst();
++
++        int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
++        filePath = cursor.getString(columnIndex);
++        cursor.close();
++        return filePath;
++    }
++
++
++    /**
++     * Get the last element
++     */
++    public static <T> T getLastElement(List<T> list) {
++        return list.get(list.size() - 1);
++    }
++    /**
++     * Get the first element
++     */
++    public static <T> T getFirstElement(List<T> list) {
++        return list.get(0);
++    }
++    /**
++     * Get the value of the data column for this Uri. This is useful for
++     * MediaStore Uris, and other file-based ContentProviders.
++     *
++     * @param context The context.
++     * @param uri The Uri to query.
++     * @param selection (Optional) Filter used in the query.
++     * @param selectionArgs (Optional) Selection arguments used in the query.
++     * @return The value of the _data column, which is typically a file path.
++     */
++    public static String getDataColumn(Uri uri, String selection,
++            String[] selectionArgs) {
++
++        Cursor cursor = null;
++        final String column = "_data";
++        final String[] projection = {
++                column
++        };
++        try {
++            cursor = mContext.getContentResolver().query(uri, projection, selection, selectionArgs,
++                    null);
++            if (cursor != null && cursor.moveToFirst()) {
++                final int index = cursor.getColumnIndexOrThrow(column);
++                return cursor.getString(index);
++            }
++        } finally {
++            if (cursor != null)
++                cursor.close();
++        }
++        return null;
++    }
++
++}
+diff --git a/src/com/android/documentsui/DSN/task/DownloadFilesJob.java b/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
+index f66a7e2..d7a35a4 100644
+--- a/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
++++ b/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
+@@ -28,6 +28,9 @@ import android.util.Log;
+ import android.os.StatFs;
+ import android.os.Environment;
+ import android.content.Context;
++import android.content.ContentValues;
++import android.provider.MediaStore;
++import android.content.Intent;
+ 
+ import com.android.documentsui.Metrics;
+ import com.android.documentsui.R;
+@@ -66,16 +69,23 @@ import brahmaos.app.DSNManager;
+ import brahmaos.app.GetFileCallbackListener;
+ import com.android.documentsui.DSN.dirlist.DownloadFilesList;
+ import com.android.documentsui.DSN.dirlist.DownloadRecycleAdapter;
++import com.android.documentsui.DSN.conmmon.ConfigConst;
+ 
+ 
+ public class DownloadFilesJob implements Runnable {
+     private static final String TAG = "DownloadDocumentsFromDSNJob";
+-    private String PATH_PREFIX = "/sdcard/LocalHD";
++    private final String PATH_HD_PREFIX = "/storage/emulated/0/LocalHD";
++    private final String PATH_HD_PREFIX_S = "storage/emulated/0/LocalHD";
+     private ObjectMeta mObjectMeta;
+     private DownloadFilesList.Item mItem;
+ 
+     private Context mappContext;
+     private IPFS mhandleIPFS;
++    private String mObjectName;
++    private String mMimeType;
++    private String mHashKey;
++    private int mLength;
++    private int mLockMode;
+ 
+     public DownloadFilesJob(Context appContext, ObjectMeta objectMeta, DownloadFilesList.Item item) {
+         mObjectMeta = objectMeta;
+@@ -84,17 +94,17 @@ public class DownloadFilesJob implements Runnable {
+     }
+     @Override
+     public void run(){
+-        String mObjectName = mObjectMeta.getObjectName();
+-        String mMimeType = mObjectMeta.getMimeType();
+-        String mHashKey = mObjectMeta.getObjectKey();
+-        int mLength = mObjectMeta.getObjectSize();
++        mObjectName = mObjectMeta.getObjectName();
++        mMimeType = mObjectMeta.getMimeType();
++        mHashKey = mObjectMeta.getObjectKey();
++        mLength = mObjectMeta.getObjectSize();
++        mLockMode = mObjectMeta.getEncryptFlag();
+ 
+         DSNManager mManager = (DSNManager) mappContext.getSystemService(DSNMANAGER_SERVICE);
+         mManager.getFile(mHashKey, null, new GetFileCallbackListener() {
+ 
+             @Override
+             public void onGetFileProcess(long filesize, long uploadsize){
+-                Log.d(TAG, "DDD:" + String.valueOf(mLength)+":" + String.valueOf(uploadsize));
+                 mItem.setPercent((int)(uploadsize*100/mLength+1));
+                 if(mItem.getViewHolder() != null) {
+                     DownloadRecycleAdapter.DownloadViewHodler vh = mItem.getViewHolder();
+@@ -106,26 +116,99 @@ public class DownloadFilesJob implements Runnable {
+             @Override
+             public void onCallbackComplete(boolean status){
+                 if(status == true) {
+-                    if (!mHashKey.equals(mObjectName)) {
+-                        File oldFile = new File(PATH_PREFIX + "/" + mHashKey);
+-                        File newFile = new File(PATH_PREFIX + "/" + mObjectName);
+-                        if(!oldFile.exists()){
+-                            return;
+-                        }
+-                        if (newFile.exists())
+-                            Log.d(TAG, "rename cannot sucess file has exist!");
+-                        else {
+-                            oldFile.renameTo(newFile);
+-                            oldFile.delete();
+-                        }
+-                    } else
+-                        Log.d(TAG, "newName is same to oldName!");
++                    if(mLockMode == ConfigConst.WITHOUT_ENCRYPTION ||
++                        mLockMode == ConfigConst.SYSTEM_ENCRYPTION) {
++                        generateCommonFile(mHashKey, mObjectName);
++
++                    } else if (mLockMode == ConfigConst.CUSTOM_ENCRYPTION) {
++                        generateDSNMetaFile(mHashKey, mObjectName, mMimeType, mLockMode);
++                    }
++
+                 } else
+                     Log.d(TAG, "getFile onCallbackComplete return failure!");
+             }
+         });
+     }
+ 
++    void generateCommonFile(String hashKey, String fileName) {
++        if(hashKey == fileName)
++            return;
++        String noSuffixName = PATH_HD_PREFIX + '/';
++        String suffixName = PATH_HD_PREFIX + '/';
++        String renameFileName = null;
++        File newFile = new File(PATH_HD_PREFIX + "/" + fileName);
++        File oldFile = new File(PATH_HD_PREFIX + "/" + hashKey);
++        int repeatSuf = 0;
++        Log.d(TAG, "generateCommonFile:" + fileName + hashKey);
++        String[] strArray = fileName.split("\\.");
++        int length = strArray.length;
++
++        for(String str : strArray) {
++            Log.d(TAG, "generateCommonFile B:" + str);
++        }
++
++        if(length == 1) {
++            noSuffixName = fileName;
++        } else {
++            for(int i = 0;i <= length-2;i++) {
++                if(i == 0)
++                    suffixName = suffixName + strArray[i];
++                else
++                    suffixName = suffixName + "." + strArray[i];
++            }
++        }
++
++        while(newFile.exists()) {
++            Log.d(TAG, "generateCommonFile A:" + suffixName + ":" + noSuffixName);
++            repeatSuf++;
++            if(length == 1) {
++                renameFileName = noSuffixName + "-" + String.valueOf(repeatSuf);
++            } else {
++                renameFileName = suffixName + "-" + String.valueOf(repeatSuf) + "." + strArray[length - 1];
++            }
++            newFile = new File(renameFileName);
++        }
++        oldFile.renameTo(newFile);
++        scanDirAsync(mappContext, null, newFile);
++    }
++
++    public static final String ACTION_MEDIA_SCANNER_SCAN_DIR = "android.intent.action.MEDIA_SCANNER_SCAN_DIR";
++    public void scanDirAsync(Context ctx, String dir, File file) {
++        ctx.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(new File(file.getPath()))));
++    }
++
++
++    void generateDSNMetaFile(String hashKey, String displayName, String mimeType,
++        int lockMode) {
++        File oldFile = new File(PATH_HD_PREFIX + "/" + hashKey);
++        insertMediaStore(oldFile, displayName, mimeType, lockMode);
++
++    }
++
++
++    private void insertMediaStore(File file, String displayName, String mimeType,
++        int lockMode){
++        Log.d(TAG, "insertMediaStore");
++        ContentResolver resolver = mappContext.getContentResolver();
++        ContentValues values = new ContentValues();
++        values.put("_data", replaceString(file));
++        values.put(MediaStore.Images.Media.MIME_TYPE, mimeType);
++        values.put(MediaStore.Images.Media.DISPLAY_NAME, displayName);
++        values.put(MediaStore.Images.Media.TITLE, displayName);
++        values.put("lock_mode", lockMode);
++        values.put("media_type", 5);
++        //Uri uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
++        Uri uri = resolver.insert(MediaStore.DSNMeta.Media.EXTERNAL_CONTENT_URI, values);
++        Log.d(TAG, "insertMediaStore:" + uri.toString());
++        //resolver.insert(uri, values);
++
++    }
++
++    private String replaceString(File file) {
++        String abPath = file.getAbsolutePath();
++        return abPath.replace("/sdcard", "/storage/emulated/0");
++    }
++
+     private long getSDAvailableSize() {
+         File path = Environment.getExternalStorageDirectory();
+         StatFs stat = new StatFs(path.getPath());
+diff --git a/src/com/android/documentsui/DSN/task/UploadJob.java b/src/com/android/documentsui/DSN/task/UploadJob.java
+index 6e2e18f..09ed293 100644
+--- a/src/com/android/documentsui/DSN/task/UploadJob.java
++++ b/src/com/android/documentsui/DSN/task/UploadJob.java
+@@ -100,35 +100,19 @@ public class UploadJob implements Runnable {
+     private UrisSupplier mSrcs;
+     private Uri msrcParent;
+     final List<DocumentInfo> mResolvedDocs;
++    private String mPassword;
++    private int mEncryptMode;
+ 
+-
+-    public UploadJob(Context appContext, UrisSupplier srcs, @Nullable Uri srcParent) {
++    public UploadJob(Context appContext, UrisSupplier srcs, @Nullable Uri srcParent, int encryptMode, String password) {
+         mContext = appContext;
+         mSrcs = srcs;
+         mParentUri = srcParent;
+         mResolvedDocs = new ArrayList<>(srcs.getItemCount());
++        mEncryptMode = encryptMode;
++        mPassword = password;
+     }
+ 
+     public boolean setUp() {
+-        /*
+-         try {
+-             Iterable<Uri> uris = msrcs.getUris(appContext);
+-             for (Uri uri : uris) {
+-                 try {
+-                     if (ArchivesProvider.AUTHORITY.equals(uri.getAuthority())) {
+-                         ArchivesProvider.acquireArchive(getClient(uri), uri);
+-                         mAcquiredArchivedUris.add(uri);
+-                     }
+-                 } catch (RemoteException e) {
+-                     Log.e(TAG, "Failed to acquire an archive.");
+-                     return false;
+-                 }
+-             }
+-         } catch (IOException e) {
+-             Log.e(TAG, "Failed to read list of target resource Uris. Cannot continue.", e);
+-             return false;
+-         }
+-         */
+          int docsResolved = buildDocumentList();
+          if (docsResolved < mSrcs.getItemCount()) {
+              if (docsResolved == 0) {
+@@ -141,9 +125,7 @@ public class UploadJob implements Runnable {
+ 
+          return true;
+      }
+-    boolean isEligibleDoc(DocumentInfo doc, RootInfo root) {
+-        return true;
+-    }
++
+     public int buildDocumentList() {
+           final ContentResolver resolver = mContext.getContentResolver();
+           Iterable<Uri> uris;
+@@ -197,7 +179,6 @@ public class UploadJob implements Runnable {
+             } catch (ResourceException e) {
+                 Log.e(TAG, "Failed to Backuping document @ " + doc.derivedUri, e);
+             }
+-
+             mDocsProcessed++;
+         }
+     }
+@@ -233,7 +214,7 @@ public class UploadJob implements Runnable {
+                     UploadFilesList.Item item = new UploadFilesList.Item(doc.displayName, doc.mimeType, doc.size, 0);
+                     list.addItem(item);
+ 
+-                    mManager.addFile(filename, null, new AddFileCallbackListener(){
++                    mManager.addFile(filename,mEncryptMode, mPassword, new AddFileCallbackListener(){
+                         @Override
+                         public void onUploadProcess(long filesize, long uploadsize){
+                             item.setPercent((int)(uploadsize*100/filesize));
+diff --git a/src/com/android/documentsui/DSNObjectMeta.java b/src/com/android/documentsui/DSNObjectMeta.java
+deleted file mode 100644
+index 5e6375c..0000000
+--- a/src/com/android/documentsui/DSNObjectMeta.java
++++ /dev/null
+@@ -1,5 +0,0 @@
+-package com.android.documentsui;
+-
+-public class DSNObjectMeta {
+-    public String hashKey;
+-}
+diff --git a/src/com/android/documentsui/DirectoryLoader.java b/src/com/android/documentsui/DirectoryLoader.java
+index 4555c42..3329cad 100644
+--- a/src/com/android/documentsui/DirectoryLoader.java
++++ b/src/com/android/documentsui/DirectoryLoader.java
+@@ -124,11 +124,12 @@ public class DirectoryLoader extends AsyncTaskLoader<DirectoryResult> {
+                 DebugFlags.addForcedPagingArgs(queryArgs);
+ 
+                 cursor = client.query(mUri, null, queryArgs, mSignal);
++
+             } else {
+                 cursor = client.query(
+                         mUri, null, null, null, mModel.getDocumentSortQuery(), mSignal);
+             }
+-
++            Log.d(TAG, "DirectoryLoader" + mUri.toString());
+             if (cursor == null) {
+                 throw new RemoteException("Provider returned null");
+             }
+diff --git a/src/com/android/documentsui/DocumentsApplication.java b/src/com/android/documentsui/DocumentsApplication.java
+index 34e2da3..36e42cc 100644
+--- a/src/com/android/documentsui/DocumentsApplication.java
++++ b/src/com/android/documentsui/DocumentsApplication.java
+@@ -29,14 +29,14 @@ import android.text.format.DateUtils;
+ import android.content.Context;
+ import android.os.UserHandle;
+ import android.os.UserManager;
+-
++import android.util.Log;
++import android.content.SharedPreferences;
+ 
+ import com.android.documentsui.base.Lookup;
+ import com.android.documentsui.clipping.ClipStorage;
+ import com.android.documentsui.clipping.ClipStore;
+ import com.android.documentsui.clipping.DocumentClipper;
+ import com.android.documentsui.roots.ProvidersCache;
+-import android.util.Log;
+ 
+ import io.ipfs.api.IPFS;
+ 
+@@ -49,8 +49,8 @@ public class DocumentsApplication extends Application {
+     private DocumentClipper mClipper;
+     private DragAndDropManager mDragAndDropManager;
+     private Lookup<String, String> mFileTypeLookup;
+-
+     public Injector<?> mInjector;
++    private SharedPreferences pref;
+ 
+     public static ProvidersCache getProvidersCache(Context context) {
+         return ((DocumentsApplication) context.getApplicationContext()).mProviders;
+@@ -88,6 +88,14 @@ public class DocumentsApplication extends Application {
+         return ((DocumentsApplication) context.getApplicationContext()).mFileTypeLookup;
+     }
+ 
++    public  void setDSNSharedPreferences(SharedPreferences sPref) {
++        pref = sPref;
++    }
++
++    public  SharedPreferences getDSNSharedPreferences() {
++       return pref;
++    }
++
+     @Override
+     public void onCreate() {
+         super.onCreate();
+diff --git a/src/com/android/documentsui/MenuManager.java b/src/com/android/documentsui/MenuManager.java
+index f1670f6..78ce4be 100644
+--- a/src/com/android/documentsui/MenuManager.java
++++ b/src/com/android/documentsui/MenuManager.java
+@@ -64,7 +64,8 @@ public abstract class MenuManager {
+         updateExtractTo(menu.findItem(R.id.action_menu_extract_to), selection);
+         updateViewInOwner(menu.findItem(R.id.action_menu_view_in_owner), selection);
+         updateInspector(menu.findItem(R.id.action_menu_inspector), selection);
+-        updateBackup(menu.findItem(R.id.action_menu_upload));
++        updateUpload(menu.findItem(R.id.action_menu_upload));
++        updateDecrypt(menu.findItem(R.id.action_menu_decrypt));
+ 
+         Menus.disableHiddenItems(menu);
+     }
+@@ -312,7 +313,9 @@ public abstract class MenuManager {
+     protected abstract void updateSelectAll(MenuItem selectAll);
+     protected abstract void updateCreateDir(MenuItem createDir);
+ 
+-    protected abstract void updateBackup(MenuItem backupDSN);
++    protected abstract void updateUpload(MenuItem uploadDSN);
++    protected abstract void updateDecrypt(MenuItem decryptDSN);
++
+ 
+     /**
+      * Access to meta data about the selection.
+diff --git a/src/com/android/documentsui/ThumbnailLoader.java b/src/com/android/documentsui/ThumbnailLoader.java
+index bb1c6fc..d80ad21 100644
+--- a/src/com/android/documentsui/ThumbnailLoader.java
++++ b/src/com/android/documentsui/ThumbnailLoader.java
+@@ -35,6 +35,7 @@ import android.widget.ImageView;
+ import com.android.documentsui.ProviderExecutor.Preemptable;
+ import java.util.function.BiConsumer;
+ import java.util.function.Consumer;
++import android.graphics.drawable.BitmapDrawable;
+ 
+ /**
+  *  Loads a Thumbnails asynchronously then animates from the mime icon to the thumbnail
+@@ -106,7 +107,12 @@ public final class ThumbnailLoader extends AsyncTask<Uri, Void, Bitmap> implemen
+         try {
+             client = DocumentsApplication.acquireUnstableProviderOrThrow(
+                 resolver, mUri.getAuthority());
+-            result = DocumentsContract.getDocumentThumbnail(client, mUri, mThumbSize, mSignal);
++            if(mUri.toString().contains("dsn")) {
++                Drawable drawable = context.getDrawable(R.drawable.ic_file_lock);
++                BitmapDrawable bd = (BitmapDrawable) drawable;
++                result = bd.getBitmap();
++            } else
++                result = DocumentsContract.getDocumentThumbnail(client, mUri, mThumbSize, mSignal);
+             if (result != null && mAddToCache) {
+                 final ThumbnailCache cache = DocumentsApplication.getThumbnailCache(context);
+                 cache.putThumbnail(mUri, mThumbSize, result, mLastModified);
+@@ -130,4 +136,4 @@ public final class ThumbnailLoader extends AsyncTask<Uri, Void, Bitmap> implemen
+             mCallback.accept(result);
+         }
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/src/com/android/documentsui/base/DocumentInfo.java b/src/com/android/documentsui/base/DocumentInfo.java
+index 5d9a93c..8967a66 100644
+--- a/src/com/android/documentsui/base/DocumentInfo.java
++++ b/src/com/android/documentsui/base/DocumentInfo.java
+@@ -22,6 +22,7 @@ import android.database.Cursor;
+ import android.net.Uri;
+ import android.os.Parcel;
+ import android.os.Parcelable;
++import android.util.Log;
+ import android.provider.DocumentsContract;
+ import android.provider.DocumentsContract.Document;
+ import android.provider.DocumentsProvider;
+@@ -60,6 +61,7 @@ public class DocumentInfo implements Durable, Parcelable {
+     public String summary;
+     public long size;
+     public int icon;
++    public String data;
+ 
+     /** Derived fields that aren't persisted */
+     public Uri derivedUri;
+diff --git a/src/com/android/documentsui/base/RootInfo.java b/src/com/android/documentsui/base/RootInfo.java
+index f80070f..3220f2a 100644
+--- a/src/com/android/documentsui/base/RootInfo.java
++++ b/src/com/android/documentsui/base/RootInfo.java
+@@ -227,6 +227,9 @@ public class RootInfo implements Durable, Parcelable, Comparable<RootInfo> {
+         } else if (isAudio()) {
+             derivedType = TYPE_AUDIO;
+             derivedIcon = R.drawable.audio_root_icon;
++        } else if (isDSNEncrypt()) {
++            derivedType = TYPE_AUDIO;
++            derivedIcon = R.drawable.ic_item_fileencrypt;
+         } else if (isRecents()) {
+             derivedType = TYPE_RECENTS;
+         } else if (isDSNLocal()) {
+@@ -277,6 +280,11 @@ public class RootInfo implements Durable, Parcelable, Comparable<RootInfo> {
+         return Providers.AUTHORITY_MEDIA.equals(authority)
+                 && Providers.ROOT_ID_AUDIO.equals(rootId);
+     }
++    public boolean isDSNEncrypt() {
++        String ROOT_ID_DSNENCRYPT = "dsn_root";
++        return Providers.AUTHORITY_MEDIA.equals(authority)
++                && ROOT_ID_DSNENCRYPT.equals(rootId);
++    }
+     public boolean isDSNLocal() {
+         return Providers.AUTHORITY_DSNLOCAL.equals(authority);
+     }
+diff --git a/src/com/android/documentsui/dirlist/DirectoryFragment.java b/src/com/android/documentsui/dirlist/DirectoryFragment.java
+index 7f2e873..205c68c 100644
+--- a/src/com/android/documentsui/dirlist/DirectoryFragment.java
++++ b/src/com/android/documentsui/dirlist/DirectoryFragment.java
+@@ -652,8 +652,6 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+                 mActions.deleteSelectedDocuments();
+                 return true;
+             case R.id.action_menu_upload:
+-                // deleteDocuments will end action mode if the documents are deleted.
+-                // It won't end action mode if user cancels the delete.
+                 DSNManager mManager = (DSNManager) getContext().getSystemService(DSNMANAGER_SERVICE);
+                 int status = mManager.getDSNManagerStatus();
+                 if (status == 0 || status == -1) {
+@@ -667,6 +665,11 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+ 
+                 mActions.uploadDocuments();
+                 return true;
++            case R.id.action_menu_decrypt:
++                // decryptDocuments
++
++                mActions.decryptDocuments();
++                return true;
+ 
+             case R.id.action_menu_copy_to:
+                 transferDocuments(selection, null, FileOperationService.OPERATION_COPY);
+diff --git a/src/com/android/documentsui/files/ActionHandler.java b/src/com/android/documentsui/files/ActionHandler.java
+index 3258a9b..d37e0c1 100644
+--- a/src/com/android/documentsui/files/ActionHandler.java
++++ b/src/com/android/documentsui/files/ActionHandler.java
+@@ -32,10 +32,20 @@ import android.app.AlertDialog;
+ import android.content.DialogInterface;
+ import android.view.LayoutInflater;
+ import android.view.View;
++import android.widget.EditText;
+ import android.widget.Button;
+ import android.widget.RadioButton;
+ import android.widget.RadioGroup;
+ import android.widget.RadioGroup.OnCheckedChangeListener;
++import android.content.SharedPreferences;
++import android.view.KeyEvent;
++import android.widget.TextView;
++import android.text.Editable;
++import android.text.TextWatcher;
++import android.widget.CompoundButton;
++import android.text.method.HideReturnsTransformationMethod;
++import android.text.method.PasswordTransformationMethod;
++import android.widget.CheckBox;
+ 
+ import com.android.documentsui.AbstractActionHandler;
+ import com.android.documentsui.ActionModeAddons;
+@@ -78,15 +88,18 @@ import com.android.documentsui.ui.MessageBuilder;
+ import com.android.documentsui.base.Providers;
+ import com.android.documentsui.DSN.conmmon.ConfigConst;
+ import com.android.documentsui.DSN.task.UploadJob;
+-
+-
++import com.android.documentsui.DSN.task.DecryptJob;
+ import com.android.internal.annotations.VisibleForTesting;
+ 
++
+ import java.util.ArrayList;
+ import java.util.List;
+ import java.util.concurrent.Executor;
+ 
+ import javax.annotation.Nullable;
++import com.android.documentsui.DSN.conmmon.ConfigConst;
++import java.util.regex.Pattern;
++
+ 
+ /**
+  * Provides {@link FilesActivity} action specializations to fragments.
+@@ -95,6 +108,9 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+ 
+     private static final String TAG = "ManagerActionHandler";
+ 
++    private static final int NEW_ENCRYPTMODE_NOSET = 0;
++    private static final int NEW_ENCRYPTMODE_SET = 1;
++    private int newEncryptMode;
+     private final ActionModeAddons mActionModeAddons;
+     private final Features mFeatures;
+     private final ActivityConfig mConfig;
+@@ -110,6 +126,21 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+     private OnCheckedChangeListener listen;
+     private int itemChoice;
+ 
++    private SharedPreferences mPref;
++    private boolean  isEncryptEnable;
++    private int isEncryptMode;
++    private AlertDialog encryptModeDialog;
++    private EditText customEncryptEditText;
++    private CheckBox customEncryptCheckBox;
++    private AlertDialog customAlertDialog;
++    private View customView;
++
++
++    private AlertDialog decryptModeDialog;
++    private EditText customDecryptEditText;
++    private CheckBox customDecryptCheckBox;
++    private View customDecryptView;
++
+     ActionHandler(
+             T activity,
+             State state,
+@@ -357,16 +388,50 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+ 
+         mDialogs.confirmDelete(docs, result);
+     }
++    private class TextChangeWatcher implements TextWatcher{
++            @Override
++            public void onTextChanged(CharSequence s, int start, int before, int count) {
++                Button btnOk = ((AlertDialog) customAlertDialog).getButton(DialogInterface.BUTTON_POSITIVE);
++                boolean isMatch = onPairPassword(customEncryptEditText.getText().toString());
++                Log.d(TAG, "dailogFactoryCustomEncrypt:" + isMatch);
++                if(isMatch) {
++                    btnOk.setEnabled(true);
++                } else {
++                    btnOk.setEnabled(false);
++                }
++            }
++            @Override
++            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
++
++            }
++            @Override
++            public void afterTextChanged(Editable s) {
++
++            }
++    }
++
++    private class CheckedChanageListener implements    CompoundButton.OnCheckedChangeListener {
++        @Override
++        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
++            Log.d(TAG, "onCheckedChanged: "+isChecked);
++
++            if(isChecked) {
++                customEncryptEditText.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
++            } else {
++                customEncryptEditText.setTransformationMethod(PasswordTransformationMethod.getInstance());
++            }
++            customEncryptEditText.setSelection(customEncryptEditText.getText().toString().length());
++        }
++    }
++
+     @Override
+     public void uploadDocuments() {
+-        Metrics.logUserAction(mActivity, Metrics.USER_ACTION_DELETE);
++        //Metrics.logUserAction(mActivity, Metrics.USER_ACTION_DELETE);
+         Selection selection = getSelectedOrFocused();
+         if (selection.isEmpty()) {
+             return;
+         }
+-
+         final @Nullable DocumentInfo srcParent = mState.stack.peek();
+-
+         // Model must be accessed in UI thread, since underlying cursor is not threadsafe.
+         List<DocumentInfo> docs = mModel.getDocuments(selection);
+         UrisSupplier srcs;
+@@ -383,75 +448,300 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+                     selection.size());
+             return;
+         }
+-        itemChoice = -1;
+-        MessageBuilder mMessages = new MessageBuilder(mActivity);
+-        AlertDialog singleChoiceDialog =
+-                new AlertDialog.Builder(mActivity)
+-                        .setTitle(mMessages.generateUploadMessage(docs))
+-                .setNeutralButton("SET",
+-                new DialogInterface.OnClickListener() {
+-                    @Override
+-                    public void onClick(DialogInterface dialog, int which) {
+-                        RootInfo mDSNSettingRoot = new RootInfo() {{
+-                            derivedIcon = R.drawable.ic_item_dsnremote;
+-                            authority = Providers.AUTHORITY_DSNSETTING;
+-                            availableBytes = -1;
+-                        }};
+-                        openRoot(mDSNSettingRoot);
+-                    }
+-                }).setNegativeButton("CANCLE",
+-                new DialogInterface.OnClickListener() {
+-                    @Override
+-                    public void onClick(DialogInterface dialog, int which) {
+-
+-                    }
+-                }).setPositiveButton("OK",
+-                    new DialogInterface.OnClickListener() {
+-                        @Override
+-                        public void onClick(DialogInterface dialog, int which) {
+-                            Uri uriParent = (srcParent == null ? null : srcParent.derivedUri);
+-                            UploadJob uploadJob= new UploadJob(mActivity.getApplicationContext(), srcs, uriParent);
+-                            Thread mThreadJob = new Thread(uploadJob);
+-                            mThreadJob.start();
+-                    }
+-                }).create();
+-        View view = LayoutInflater.from(mActivity).inflate(R.layout.dialog_dsn_select_encrypt,null);
+-        singleChoiceDialog.setView(view);
+-        singleChoiceDialog.show();
+-        btnOk = ((AlertDialog) singleChoiceDialog).getButton(DialogInterface.BUTTON_POSITIVE);
+-        btnSet = ((AlertDialog) singleChoiceDialog).getButton(DialogInterface.BUTTON_NEUTRAL);
+-        btnCancle = ((AlertDialog) singleChoiceDialog).getButton(DialogInterface.BUTTON_NEGATIVE);
+-        btnOk.setEnabled(false);
+-
+-        radioGroup=(RadioGroup)view.findViewById(R.id.radioGroup_id);
+-        radioGroup.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+-            @Override
+-            public void onCheckedChanged(RadioGroup group, int checkedId) {
+-                int id= group.getCheckedRadioButtonId();
+-                switch (group.getCheckedRadioButtonId()) {
+-                        case R.id.radioButtonA:
+-                            itemChoice = ConfigConst.WITHOUT_ENCRYPTION;
+-                            break;
+-                        case R.id.radioButtonB:
+-                            itemChoice = ConfigConst.SYSTEM_ENCRYPTION;
+-                            break;
+-                        case R.id.radioButtonC:
+-                            itemChoice = ConfigConst.CUSTOM_ENCRYPTION;
+-                            break;
+-                        default:
+-                            Log.d(TAG ,"no RadioButtonId Select!");
+-                            break;
+ 
++        mPref = ((DocumentsApplication) mActivity.getApplication()).getDSNSharedPreferences();
++        if(mPref != null) {
++            isEncryptEnable = mPref.getBoolean(ConfigConst.IS_ENCRYPTENABLE, false);
++            isEncryptMode = mPref.getInt(ConfigConst.IS_ENCRYPTMODE, 0);
++        }
++        Log.d(TAG, "uploadDocuments: "+ String.valueOf(isEncryptEnable) +"::" +String.valueOf(isEncryptMode) );
++        AlertDialog noEncryptdialog = dailogFactoryNoEncrypt(srcParent, srcs);
++        AlertDialog systemEncryptdialog = dailogFactorySystemEncrypt(srcParent, srcs);
++        AlertDialog customEncryptdialog = dailogFactoryCustomEncrypt(srcParent, srcs);
++
++        if(isEncryptEnable == false) {
++            encryptModeDialog = dailogEncryptModeSelection(docs, 0, noEncryptdialog, systemEncryptdialog, customEncryptdialog);
++            newEncryptMode =NEW_ENCRYPTMODE_SET;
++         } else {
++                if (isEncryptMode ==ConfigConst.WITHOUT_ENCRYPTION) {
++                    noEncryptdialog.show();
++                } else if (isEncryptMode ==ConfigConst.SYSTEM_ENCRYPTION) {
++                    systemEncryptdialog.show();
++                } else if (isEncryptMode ==ConfigConst.CUSTOM_ENCRYPTION) {
++                    customEncryptdialog.show();
++                    customAlertDialog = customEncryptdialog;
++                    Button btnOk = ((AlertDialog) customAlertDialog).getButton(DialogInterface.BUTTON_POSITIVE);
++                    btnOk.setEnabled(false);
++                    customEncryptEditText = (EditText)customView.findViewById(R.id.FactRstDialogPsw);
++                    customEncryptCheckBox = (CheckBox)customView.findViewById(R.id.checkBox);
++                    customEncryptEditText.addTextChangedListener(new TextChangeWatcher());
++                    customEncryptCheckBox.setOnCheckedChangeListener(new CheckedChanageListener());
+                 }
+-                btnOk.setEnabled(true);
+             }
+-        });
++    }
++
++    public AlertDialog dailogFactoryNoEncrypt(@Nullable DocumentInfo srcParent,  UrisSupplier srcs) {
++        AlertDialog dialog =
++                new AlertDialog.Builder(mActivity)
++                       //.setTitle(mMessages.generateUploadMessage(docs))
++                       .setTitle("No Encrypt")
++                        .setNegativeButton("CANCLE",
++                            new DialogInterface.OnClickListener() {
++                                @Override
++                                public void onClick(DialogInterface dialog, int which) {
++                                    if(encryptModeDialog != null)
++                                        encryptModeDialog.show();
++                                }
++                        }).setPositiveButton("OK",
++                            new DialogInterface.OnClickListener() {
++                                @Override
++                                public void onClick(DialogInterface dialog, int which) {
++                                    encryptModeDialog = null;
++                                    if(newEncryptMode == 1) {
++                                        SharedPreferences.Editor edit = mPref.edit();
++                                        edit.putBoolean(ConfigConst.IS_ENCRYPTENABLE, true);
++                                        edit.putInt(ConfigConst.IS_ENCRYPTMODE, ConfigConst.WITHOUT_ENCRYPTION);
++                                        edit.commit();
++                                        Log.d(TAG, "dailogFactoryCustomEncrypt save to SharedPreferences"+ String.valueOf(isEncryptEnable) +"::" +String.valueOf(isEncryptMode) );
++                                    }
++                                    Uri uriParent = (srcParent == null ? null : srcParent.derivedUri);
++                                    UploadJob uploadJob= new UploadJob(mActivity.getApplicationContext(), srcs, uriParent, 0, null);
++                                    Thread mThreadJob = new Thread(uploadJob);
++                                    mThreadJob.start();
++                            }
++                }).create();
++        return dialog;
+ 
+     }
+ 
+-    public void dailogCustomEncrypt() {
++    public AlertDialog dailogFactorySystemEncrypt(@Nullable DocumentInfo srcParent,  UrisSupplier srcs) {
++        AlertDialog dialog =
++                new AlertDialog.Builder(mActivity)
++                       // .setTitle(mMessages.generateUploadMessage(docs))
++                        .setTitle("System Encrypt")
++                        .setNegativeButton("CANCLE",
++                            new DialogInterface.OnClickListener() {
++                                @Override
++                                public void onClick(DialogInterface dialog, int which) {
++                                    if(encryptModeDialog != null)
++                                        encryptModeDialog.show();
++                                }
++                        }).setPositiveButton("OK",
++                            new DialogInterface.OnClickListener() {
++                                @Override
++                                public void onClick(DialogInterface dialog, int which) {
++                                    encryptModeDialog = null;
++                                    if(newEncryptMode == 1) {
++                                        SharedPreferences.Editor edit = mPref.edit();
++                                        edit.putBoolean(ConfigConst.IS_ENCRYPTENABLE, true);
++                                        edit.putInt(ConfigConst.IS_ENCRYPTMODE, ConfigConst.SYSTEM_ENCRYPTION);
++                                        edit.commit();
++                                        Log.d(TAG, "dailogFactoryCustomEncrypt save to SharedPreferences"+ String.valueOf(isEncryptEnable) +"::" +String.valueOf(isEncryptMode) );
++                                    }
++                                    Uri uriParent = (srcParent == null ? null : srcParent.derivedUri);
++                                    UploadJob uploadJob= new UploadJob(mActivity.getApplicationContext(), srcs, uriParent, 1, null);
++                                    Thread mThreadJob = new Thread(uploadJob);
++                                    mThreadJob.start();
++                            }
++                }).create();
++        return dialog;
++
++    }
+ 
++    public AlertDialog dailogFactoryCustomEncrypt(@Nullable DocumentInfo srcParent,  UrisSupplier srcs) {
+ 
++        AlertDialog dialog =
++                new AlertDialog.Builder(mActivity)
++                       // .setTitle(mMessages.generateUploadMessage(docs))
++                       .setTitle("Custom Encrypt")
++                        .setNegativeButton("CANCLE",
++                            new DialogInterface.OnClickListener() {
++                                @Override
++                                public void onClick(DialogInterface dialog, int which) {
++                                    if(encryptModeDialog != null)
++                                        encryptModeDialog.show();
++                                }
++                        }).setPositiveButton("OK",
++                            new DialogInterface.OnClickListener() {
++                                @Override
++                                public void onClick(DialogInterface dialog, int which) {
++                                    encryptModeDialog = null;
++                                    if(newEncryptMode == 1) {
++                                        SharedPreferences.Editor edit = mPref.edit();
++                                        edit.putBoolean(ConfigConst.IS_ENCRYPTENABLE, true);
++                                        edit.putInt(ConfigConst.IS_ENCRYPTMODE, ConfigConst.CUSTOM_ENCRYPTION);
++                                        edit.commit();
++                                        Log.d(TAG, "dailogFactoryCustomEncrypt save to SharedPreferences"+ String.valueOf(isEncryptEnable) + "::" +String.valueOf(isEncryptMode) );
++                                    }
++                                    String mPassword = (customEncryptEditText != null)? customEncryptEditText.getText().toString() : null;
++                                    Uri uriParent = (srcParent == null ? null : srcParent.derivedUri);
++                                    UploadJob uploadJob= new UploadJob(mActivity.getApplicationContext(), srcs, uriParent, ConfigConst.CUSTOM_ENCRYPTION, mPassword);
++                                    Thread mThreadJob = new Thread(uploadJob);
++                                    mThreadJob.start();
++                            }
++                }).create();
++        customView = LayoutInflater.from(mActivity).inflate(R.layout.dialog_dsn_custom_encrypt,null);
++        dialog.setView(customView);
++        return dialog;
++
++    }
++
++
++public boolean onPairPassword(String passWord) {
++    Log.d(TAG,"onPairPassword:" + passWord);
++
++    String pattern = "^[a-zA-Z0-9]\\w{5,15}";
++    //String pattern = "^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{6,12}$";
++    return Pattern.matches(pattern, passWord);
++}
++
++public AlertDialog dailogEncryptModeSelection(List<DocumentInfo> docs, int encryptMode, AlertDialog noDialog, AlertDialog systemDialog, AlertDialog customDialog) {
++
++        itemChoice = -1;
++         MessageBuilder mMessages = new MessageBuilder(mActivity);
++         AlertDialog dialog =
++                 new AlertDialog.Builder(mActivity)
++                 .setTitle(mMessages.generateUploadMessage(docs))
++                 .setNeutralButton("SET",
++                 new DialogInterface.OnClickListener() {
++                     @Override
++                     public void onClick(DialogInterface dialog, int which) {
++                         RootInfo mDSNSettingRoot = new RootInfo() {{
++                             derivedIcon = R.drawable.ic_item_dsnremote;
++                             authority = Providers.AUTHORITY_DSNSETTING;
++                             availableBytes = -1;
++                         }};
++                         openRoot(mDSNSettingRoot);
++                     }
++                 }).setNegativeButton("CANCLE",
++                 new DialogInterface.OnClickListener() {
++                     @Override
++                     public void onClick(DialogInterface dialog, int which) {
++
++                     }
++                 }).setPositiveButton("OK",
++                    new DialogInterface.OnClickListener() {
++                         @Override
++                         public void onClick(DialogInterface dialog, int which) {
++                             if(itemChoice == 0) {
++                                noDialog.show();
++                            }  else if(itemChoice == 1) {
++                                systemDialog.show();
++                            } else if(itemChoice == 2) {
++                                customDialog.show();
++                                customAlertDialog = customDialog;
++                                Button btnOk = ((AlertDialog) customAlertDialog).getButton(DialogInterface.BUTTON_POSITIVE);
++                                btnOk.setEnabled(false);
++                                customEncryptEditText = (EditText)customView.findViewById(R.id.FactRstDialogPsw);
++                                customEncryptCheckBox = (CheckBox)customView.findViewById(R.id.checkBox);
++                                customEncryptEditText.addTextChangedListener(new TextChangeWatcher());
++                                customEncryptCheckBox.setOnCheckedChangeListener(new CheckedChanageListener());
++                            }
++                     }
++                 }).create();
++         View view = LayoutInflater.from(mActivity).inflate(R.layout.dialog_dsn_select_encrypt,null);
++         dialog.setView(view);
++         dialog.show();
++         btnOk = ((AlertDialog) dialog).getButton(DialogInterface.BUTTON_POSITIVE);
++         btnOk.setEnabled(false);
++         radioGroup=(RadioGroup)view.findViewById(R.id.radioGroup_id);
++         radioGroup.setOnCheckedChangeListener(new OnCheckedChangeListener() {
++             @Override
++             public void onCheckedChanged(RadioGroup group, int checkedId) {
++                 int id= group.getCheckedRadioButtonId();
++                 switch (group.getCheckedRadioButtonId()) {
++                         case R.id.radioButtonA:
++                             itemChoice = ConfigConst.WITHOUT_ENCRYPTION;
++                             break;
++                         case R.id.radioButtonB:
++                             itemChoice = ConfigConst.SYSTEM_ENCRYPTION;
++                             break;
++                         case R.id.radioButtonC:
++                             itemChoice = ConfigConst.CUSTOM_ENCRYPTION;
++                             break;
++                         default:
++                             Log.d(TAG ,"no RadioButtonId Select!");
++                             break;
++
++                 }
++                 btnOk.setEnabled(true);
++             }
++         });
++
++        return dialog;
++    }
++
++    @Override
++    public void decryptDocuments() {
++        Selection selection = getSelectedOrFocused();
++        if (selection.isEmpty()) {
++            return;
++        }
++        final @Nullable DocumentInfo srcParent = mState.stack.peek();
++        // Model must be accessed in UI thread, since underlying cursor is not threadsafe.
++        List<DocumentInfo> docs = mModel.getDocuments(selection);
++        UrisSupplier srcs;
++        try {
++            srcs = UrisSupplier.create(
++                    selection,
++                    mModel::getItemUri,
++                    mClipStore);
++        } catch (Exception e) {
++            Log.e(TAG,"Failed to delete a file because we were unable to get item URIs.", e);
++            mDialogs.showFileOperationStatus(
++                    FileOperations.Callback.STATUS_FAILED,
++                    FileOperationService.OPERATION_BACKUP,
++                    selection.size());
++            return;
++        }
++        AlertDialog customDecryptdialog = dailogFactoryCustomDecrypt(srcParent, srcs);
++        customDecryptdialog.show();
++        customDecryptEditText = (EditText)customDecryptView.findViewById(R.id.FactRstDialogPsw);
++
++        /*
++        Uri uriParent = (srcParent == null ? null : srcParent.derivedUri);
++        UploadJob uploadJob= new UploadJob(mActivity.getApplicationContext(), srcs, uriParent, ConfigConst.CUSTOM_ENCRYPTION, mPassword);
++        Thread mThreadJob = new Thread(uploadJob);
++        mThreadJob.start();
++        */
++    }
++    public AlertDialog dailogFactoryCustomDecrypt(@Nullable DocumentInfo srcParent,  UrisSupplier srcs) {
++
++        AlertDialog dialog =
++                new AlertDialog.Builder(mActivity)
++                       // .setTitle(mMessages.generateUploadMessage(docs))
++                       .setTitle("File decrypt")
++                        .setNegativeButton("CANCLE",
++                            new DialogInterface.OnClickListener() {
++                                @Override
++                                public void onClick(DialogInterface dialog, int which) {
++                                    if(encryptModeDialog != null)
++                                        encryptModeDialog.show();
++                                }
++                        }).setPositiveButton("OK",
++                            new DialogInterface.OnClickListener() {
++                                @Override
++                                public void onClick(DialogInterface dialog, int which) {
++                                    encryptModeDialog = null;
++                                    if(newEncryptMode == 1) {
++                                        SharedPreferences.Editor edit = mPref.edit();
++                                        edit.putBoolean(ConfigConst.IS_ENCRYPTENABLE, true);
++                                        edit.putInt(ConfigConst.IS_ENCRYPTMODE, ConfigConst.CUSTOM_ENCRYPTION);
++                                        edit.commit();
++                                        Log.d(TAG, "dailogFactoryCustomDecrypt save to SharedPreferences"+ String.valueOf(isEncryptEnable) + "::" +String.valueOf(isEncryptMode) );
++                                    }
++                                    String mPassword = (customDecryptEditText != null)? customDecryptEditText.getText().toString() : null;
++                                    Log.d(TAG, "dailogFactoryCustomDecrypt" + mPassword);
++
++                                    Uri uriParent = (srcParent == null ? null : srcParent.derivedUri);
++                                    DecryptJob decryptJob= new DecryptJob(mActivity.getApplicationContext(), srcs, uriParent, ConfigConst.CUSTOM_ENCRYPTION, mPassword);
++                                    Thread mThreadJob = new Thread(decryptJob);
++                                    mThreadJob.start();
++                            }
++                }).create();
++        customDecryptView = LayoutInflater.from(mActivity).inflate(R.layout.dialog_dsn_custom_decrypt,null);
++        dialog.setView(customDecryptView);
++        return dialog;
+ 
+     }
+ 
+diff --git a/src/com/android/documentsui/files/DSNFilesActivity.java b/src/com/android/documentsui/files/DSNFilesActivity.java
+index efcfc33..11cf256 100644
+--- a/src/com/android/documentsui/files/DSNFilesActivity.java
++++ b/src/com/android/documentsui/files/DSNFilesActivity.java
+@@ -1,4 +1,4 @@
+-/*
++    /*
+  * Copyright (C) 2015 The Android Open Source Project
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+@@ -103,6 +103,7 @@ import com.android.documentsui.DSN.DSNAddressQrcodeActivity;
+ import brahmaos.app.DSNManager;
+ import android.app.AlertDialog;
+ 
++import com.android.documentsui.DSN.conmmon.ConfigConst;
+ 
+ public class DSNFilesActivity extends AppCompatActivity  {
+ 
+@@ -138,6 +139,7 @@ public class DSNFilesActivity extends AppCompatActivity  {
+     private TextView textViewCreateTimeContent;
+     private TextView textViewSyncTimeContent;
+     private TextView textViewBlockCOuntContent;
++    private TextView textViewEncryptFlag;
+ 
+ 
+     private PreferencesMonitor mPreferencesMonitor;
+@@ -188,7 +190,18 @@ public class DSNFilesActivity extends AppCompatActivity  {
+         textViewSyncTimeContent = (TextView)findViewById(R.id.tv_synctime_content);
+         textViewSyncTimeContent.setText(mObjectMeta.getObjectSyncTime());
+         textViewBlockCOuntContent = (TextView)findViewById(R.id.tv_blockcount_content);
+-        textViewBlockCOuntContent.setText(mObjectMeta.getObjectBlockCnt());
++        textViewBlockCOuntContent.setText(String.valueOf(mObjectMeta.getObjectBlockCnt()));
++        textViewEncryptFlag = (TextView)findViewById(R.id.tv_encrypt_content);
++
++        if (mObjectMeta.getEncryptFlag() == ConfigConst.WITHOUT_ENCRYPTION)
++            textViewEncryptFlag.setText("No Private");
++        else if (mObjectMeta.getEncryptFlag() == ConfigConst.SYSTEM_ENCRYPTION)
++            textViewEncryptFlag.setText("System Private");
++        else if (mObjectMeta.getEncryptFlag() == ConfigConst.CUSTOM_ENCRYPTION)
++            textViewEncryptFlag.setText("Custom Private");
++        else
++            textViewEncryptFlag.setText("Unknown");
++
+ 
+         //Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+         //setActionBar(toolbar);
+diff --git a/src/com/android/documentsui/files/FilesActivity.java b/src/com/android/documentsui/files/FilesActivity.java
+index 77519f6..44f803d 100644
+--- a/src/com/android/documentsui/files/FilesActivity.java
++++ b/src/com/android/documentsui/files/FilesActivity.java
+@@ -37,6 +37,8 @@ import android.view.KeyboardShortcutGroup;
+ import android.view.Menu;
+ import android.view.MenuItem;
+ import android.widget.Toast;
++import android.content.SharedPreferences;
++import android.preference.PreferenceManager;
+ 
+ import com.android.documentsui.ActionModeController;
+ import com.android.documentsui.BaseActivity;
+@@ -64,6 +66,7 @@ import com.android.documentsui.sidebar.RootsFragment;
+ import com.android.documentsui.ui.DialogController;
+ import com.android.documentsui.ui.MessageBuilder;
+ 
++
+ import java.util.ArrayList;
+ import java.util.List;
+ 
+@@ -181,6 +184,8 @@ public class FilesActivity extends BaseActivity implements ActionHandler.Addons
+ 
+         mApp = (DocumentsApplication)getApplication();
+         mApp.mInjector = getInjector();
++        mApp.setDSNSharedPreferences(PreferenceManager.getDefaultSharedPreferences(this));
++
+     }
+ 
+     // This is called in the intent contains label and icon resources.
+diff --git a/src/com/android/documentsui/files/MenuManager.java b/src/com/android/documentsui/files/MenuManager.java
+index 81ac16a..71db76d 100644
+--- a/src/com/android/documentsui/files/MenuManager.java
++++ b/src/com/android/documentsui/files/MenuManager.java
+@@ -36,10 +36,13 @@ import com.android.documentsui.base.RootInfo;
+ import com.android.documentsui.base.State;
+ import com.android.documentsui.queries.SearchViewManager;
+ import com.android.documentsui.selection.SelectionManager;
++import com.android.documentsui.base.Providers;
+ 
+ import java.util.List;
+ import java.util.function.Function;
+ import java.util.function.IntFunction;
++import android.util.Log;
++
+ 
+ public final class MenuManager extends com.android.documentsui.MenuManager {
+ 
+@@ -242,11 +245,41 @@ public final class MenuManager extends com.android.documentsui.MenuManager {
+         storedecent.setEnabled(mDirDetails.canCreateDirectory());
+     }
+     @Override
+-    protected void updateBackup(MenuItem backupDSN) {
+-        backupDSN.setVisible(true);
+-        backupDSN.setEnabled(true);
+-    }
++    protected void updateUpload(MenuItem uploadDSN) {
++        String selectedModelId = mSelectionManager.getSelection().iterator().next();
++        Uri selectedUri = mUriLookup.lookup(selectedModelId);
++        if(selectedUri.toString().contains(Providers.AUTHORITY_STORAGE)) {
++            if(selectedUri.toString().contains(Providers.ROOT_ID_DEVICE)) {
++                uploadDSN.setVisible(true);
++                uploadDSN.setEnabled(true);
++            } else {
++                uploadDSN.setVisible(false);
++                uploadDSN.setEnabled(false);
++            }
++        } else {
++            uploadDSN.setVisible(false);
++            uploadDSN.setEnabled(false);
++        }
+ 
++    }
++    @Override
++    protected void updateDecrypt(MenuItem decryptDSN) {
++        String selectedModelId = mSelectionManager.getSelection().iterator().next();
++        Uri selectedUri = mUriLookup.lookup(selectedModelId);
++        if(selectedUri.toString().contains("dsn")) {
++            if(selectedUri.toString().contains("dsn_bucket")) {
++                decryptDSN.setVisible(false);
++                decryptDSN.setEnabled(false);
++            } else {
++                decryptDSN.setVisible(true);
++                decryptDSN.setEnabled(true);
++
++            }
++        } else {
++            decryptDSN.setVisible(false);
++            decryptDSN.setEnabled(false);
++        }
++    }
+     @Override
+     protected void updateShare(MenuItem share, SelectionDetails selectionDetails) {
+         boolean enabled = !selectionDetails.containsDirectories()
+diff --git a/src/com/android/documentsui/httpnetwork/ObjectMeta.java b/src/com/android/documentsui/httpnetwork/ObjectMeta.java
+index 39bf74d..e16e945 100644
+--- a/src/com/android/documentsui/httpnetwork/ObjectMeta.java
++++ b/src/com/android/documentsui/httpnetwork/ObjectMeta.java
+@@ -26,7 +26,9 @@ public class ObjectMeta implements Serializable {
+     @JsonProperty("object_sync_time")
+     private String objectSyncTime;
+     @JsonProperty("object_block_cnt")
+-    private String objectBlockCnt;
++    private int objectBlockCnt;
++    @JsonProperty("encrypt_flag")
++    private int encryptFlag;
+ 
+     // account_id
+     public String getAccountId() {
+@@ -84,13 +86,21 @@ public class ObjectMeta implements Serializable {
+         this.objectSyncTime = objectSyncTime;
+     }
+     // object_block_cnt
+-    public String getObjectBlockCnt() {
++    public int getObjectBlockCnt() {
+         return objectBlockCnt;
+     }
+ 
+-    public void setObjectBlockCnt(String objectBlockCnt) {
++    public void setObjectBlockCnt(int objectBlockCnt) {
+         this.objectBlockCnt = objectBlockCnt;
+     }
++    // object_block_cnt
++    public int getEncryptFlag() {
++        return encryptFlag;
++    }
++
++    public void setEncryptFlag(int encryptFlag) {
++        this.encryptFlag = encryptFlag;
++    }
+     public String toString() {
+         return "ObjectMetaPost{" +
+                 "account_id='" + accountId + '\'' +
+diff --git a/src/com/android/documentsui/picker/MenuManager.java b/src/com/android/documentsui/picker/MenuManager.java
+index 4bf5e2a..902f951 100644
+--- a/src/com/android/documentsui/picker/MenuManager.java
++++ b/src/com/android/documentsui/picker/MenuManager.java
+@@ -84,11 +84,16 @@ public final class MenuManager extends com.android.documentsui.MenuManager {
+         createDir.setEnabled(picking() && mDirDetails.canCreateDirectory());
+     }
+     @Override
+-    protected void updateBackup(MenuItem backupDSN) {
++    protected void updateUpload(MenuItem backupDSN) {
+         backupDSN.setVisible(picking());
+         backupDSN.setEnabled(picking() && mDirDetails.canCreateDirectory());
+     }
+     @Override
++    protected void updateDecrypt(MenuItem decryptDSN) {
++        decryptDSN.setVisible(picking());
++        decryptDSN.setEnabled(picking() && mDirDetails.canCreateDirectory());
++    }
++    @Override
+     protected void updateOpenInActionMode(MenuItem open, SelectionDetails selectionDetails) {
+         updateOpen(open, selectionDetails);
+     }
+diff --git a/src/com/android/documentsui/services/BackupJob.java b/src/com/android/documentsui/services/BackupJob.java
+deleted file mode 100644
+index 4b0b350..0000000
+--- a/src/com/android/documentsui/services/BackupJob.java
++++ /dev/null
+@@ -1,272 +0,0 @@
+-/*
+- * Copyright (C) 2016 The Android Open Source Project
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
+-
+-package com.android.documentsui.services;
+-
+-import static com.android.documentsui.base.Shared.DEBUG;
+-import static com.android.documentsui.services.FileOperationService.OPERATION_DELETE;
+-
+-import android.app.Notification;
+-import android.app.Notification.Builder;
+-import android.content.ContentResolver;
+-import android.content.Context;
+-import android.net.Uri;
+-import android.util.Log;
+-import android.provider.DocumentsContract.Path;
+-import android.icu.text.SimpleDateFormat;
+-import android.provider.DocumentsContract;
+-
+-
+-import com.android.documentsui.Metrics;
+-import com.android.documentsui.R;
+-import com.android.documentsui.base.DocumentInfo;
+-import com.android.documentsui.base.DocumentStack;
+-import com.android.documentsui.base.Features;
+-import com.android.documentsui.clipping.UrisSupplier;
+-import com.android.documentsui.DocumentsApplication;
+-import com.android.documentsui.httpnetwork.HttpServer;
+-
+-import okhttp3.Interceptor;
+-import okhttp3.OkHttpClient;
+-import okhttp3.Request;
+-import okhttp3.Response;
+-import okhttp3.ResponseBody;
+-import okhttp3.logging.HttpLoggingInterceptor;
+-import okio.BufferedSource;
+-import retrofit2.Retrofit;
+-import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
+-import retrofit2.converter.jackson.JacksonConverterFactory;
+-import android.os.RemoteException;
+-import android.os.Bundle;
+-
+-import java.util.List;
+-import java.util.ArrayList;
+-import java.io.FileNotFoundException;
+-import javax.annotation.Nullable;
+-import java.util.Date;
+-
+-import io.ipfs.api.MerkleNode;
+-import io.ipfs.api.NamedStreamable;
+-import io.ipfs.multihash.Multihash;
+-import io.ipfs.api.IPFS;
+-import java.io.IOException;
+-import java.util.List;
+-import io.ipfs.cid.Cid;
+-import io.ipfs.api.JSONParser;
+-import java.io.File;
+-import java.lang.String.*;
+-import java.lang.*;
+-import android.webkit.MimeTypeMap;
+-import java.util.Map;
+-import java.util.HashMap;
+-import java.util.LinkedHashMap;
+-
+-import brahmaos.app.DSNManager;
+-import brahmaos.app.AddFileCallbackListener;
+-import static android.content.Context.DSNMANAGER_SERVICE;
+-
+-
+-final class BackupJob extends ResolvedResourcesJob {
+-
+-    private static final String TAG = "BackupJob";
+-    private static final String ABSOlUTE_PATH_PREFIX = "/sdcard/";
+-    private static final String ABSOlUTE_PATH_DOWNLOAD_PREFIX = "/sdcard/Download";
+-    private static final String PRIMARY_PREFIX = "primary:";
+-    private static final String RAW_PREFIX = "raw:";
+-    private static final String RAW_STORAGE_PREFIX = "raw:/storage/emulated/0/";
+-    private final Uri mParentUri;
+-    private volatile int mDocsProcessed = 0;
+-
+-    /**
+-     * Moves files to a destination identified by {@code destination}.
+-     * Performs most work by delegating to CopyJob, then deleting
+-     * a file after it has been copied.
+-     *
+-     * @see @link {@link Job} constructor for most param descriptions.
+-     */
+-    BackupJob(Context service, Listener listener, String id, DocumentStack stack,
+-            UrisSupplier srcs, @Nullable Uri srcParent, Features features) {
+-        super(service, listener, id, OPERATION_DELETE, stack, srcs, features);
+-        mParentUri = srcParent;
+-    }
+-
+-    @Override
+-    Builder createProgressBuilder() {
+-        return super.createProgressBuilder(
+-                service.getString(R.string.delete_notification_title),
+-                R.drawable.ic_menu_delete,
+-                service.getString(android.R.string.cancel),
+-                R.drawable.ic_cab_cancel);
+-    }
+-
+-    @Override
+-    public Notification getSetupNotification() {
+-        return getSetupNotification(service.getString(R.string.delete_preparing));
+-    }
+-
+-    @Override
+-    public Notification getProgressNotification() {
+-        mProgressBuilder.setProgress(mResourceUris.getItemCount(), mDocsProcessed, false);
+-        String format = service.getString(R.string.delete_progress);
+-        mProgressBuilder.setSubText(
+-                String.format(format, mDocsProcessed, mResourceUris.getItemCount()));
+-
+-        mProgressBuilder.setContentText(null);
+-
+-        return mProgressBuilder.build();
+-    }
+-
+-    @Override
+-    Notification getFailureNotification() {
+-        return getFailureNotification(
+-                R.plurals.delete_error_notification_title, R.drawable.ic_menu_delete);
+-    }
+-
+-    @Override
+-    Notification getWarningNotification() {
+-        throw new UnsupportedOperationException();
+-    }
+-
+-    @Override
+-    void start() {
+-        ContentResolver resolver = appContext.getContentResolver();
+-        DocumentInfo parentDoc;
+-        try {
+-            parentDoc = mParentUri != null
+-                ? DocumentInfo.fromUri(resolver, mParentUri)
+-                : null;
+-        } catch (FileNotFoundException e) {
+-          Log.e(TAG, "Failed to resolve parent from Uri: " + mParentUri + ". Cannot continue.", e);
+-          failureCount += this.mResourceUris.getItemCount();
+-          return;
+-        }
+-
+-        for (DocumentInfo doc : mResolvedDocs) {
+-            if (DEBUG) Log.d(TAG, "Backuping document @ " + doc.derivedUri);
+-            try {
+-                backupDocument(doc, parentDoc);
+-            } catch (ResourceException e) {
+-                Log.e(TAG, "Failed to Backuping document @ " + doc.derivedUri, e);
+-                onFileFailed(doc);
+-            }
+-
+-            mDocsProcessed++;
+-            if (isCanceled()) {
+-                return;
+-            }
+-        }
+-
+-        Metrics.logFileOperation(service, operationType, mResolvedDocs, null);
+-    }
+-    final void backupDocument(DocumentInfo doc, @Nullable DocumentInfo parent)
+-             throws ResourceException {
+-        // try {
+-            NamedStreamable.FileWrapper file;
+-
+-            Log.d(TAG,"backupDocument:" + doc.toString());
+-
+-            String mPath;
+-            if(doc.documentId.startsWith(PRIMARY_PREFIX)){
+-                mPath = doc.documentId.replace(PRIMARY_PREFIX,ABSOlUTE_PATH_PREFIX);
+-            } else if(doc.documentId.startsWith(RAW_PREFIX)){
+-                mPath = doc.documentId.replace(RAW_STORAGE_PREFIX,ABSOlUTE_PATH_PREFIX);
+-            } else {
+-                Log.d(TAG,"backupDocument:" +"is DB data ");
+-                return;
+-            }
+-            String createFileTime;
+-            String lastModifiedFileTime;
+-            String fileType;
+-            int blockCnt;
+-
+-            DSNManager mManager = (DSNManager) appContext.getSystemService(DSNMANAGER_SERVICE);
+-
+-            List<String> filenames = getFileListame(mPath);
+-            if(filenames!= null){
+-                for(String filename : filenames){
+-                    mManager.addFile(filename, null, new AddFileCallbackListener(){
+-                        @Override
+-                        public void onUploadProcess(long filesize, long uploadsize){
+-                            //Log.d(TAG, "DSNManager addFile:" + filesize + '/' + uploadsize);
+-                        }
+-                        @Override
+-                        public void onCompleted(String status){
+-                            Log.d(TAG, "DSNManager onCompleted:" + status);
+-                        }
+-                        @Override
+-                        public void onError(String status){
+-                            Log.d(TAG, "DSNManager OnError:" + status);
+-                        }
+-                        @Override
+-                        public void onNext(String status){
+-                            Log.d(TAG, "DSNManager onNext:" + status);
+-                        }
+-                        @Override
+-                        public void onCallbackComplete(boolean result, Map resultMap){
+-                            Log.d(TAG, "DSNManager onCallbackComplete:" + resultMap.get("account_id"));
+-                            Log.d(TAG, "DSNManager onCallbackComplete:" + resultMap.get("object_key"));
+-                            Log.d(TAG, "DSNManager onCallbackComplete:" + String.valueOf(resultMap.get("object_block_cnt")));
+-                        }
+-                    });
+-                }
+-            } else
+-                return;
+-    }
+-
+-    public List<String> getFileListame(String strPath) {
+-        List<String> returnList = new ArrayList();
+-        File dir = new File(strPath);
+-        if(!dir.isDirectory()){
+-            returnList.add(strPath);
+-            return returnList;
+-        }
+-        File[] fs = dir.listFiles();
+-        for(File f:fs){
+-            if(f.isDirectory())
+-                returnList.addAll(getFileListame(f.getAbsolutePath()));
+-            if(f.isFile()) {
+-                returnList.add(f.getAbsolutePath());
+-            }
+-
+-        }
+-        return returnList;
+-    }
+-    /**
+-     * Get the last element
+-     */
+-    public static <T> T getLastElement(List<T> list) {
+-        return list.get(list.size() - 1);
+-    }
+-    /**
+-     * Get the first element
+-     */
+-    public static <T> T getFirstElement(List<T> list) {
+-        return list.get(0);
+-    }
+-    @Override
+-    public String toString() {
+-        return new StringBuilder()
+-                .append("DeleteJob")
+-                .append("{")
+-                .append("id=" + id)
+-                .append(", uris=" + mResourceUris)
+-                .append(", docs=" + mResolvedDocs)
+-                .append(", srcParent=" + mParentUri)
+-                .append(", location=" + stack)
+-                .append("}")
+-                .toString();
+-    }
+-}
+diff --git a/src/com/android/documentsui/services/FileOperation.java b/src/com/android/documentsui/services/FileOperation.java
+index a8f5bc4..97a7e96 100644
+--- a/src/com/android/documentsui/services/FileOperation.java
++++ b/src/com/android/documentsui/services/FileOperation.java
+@@ -319,8 +319,8 @@ public abstract class FileOperation implements Parcelable {
+         Job createJob(Context service, Job.Listener listener, String id, Features features) {
+             switch(getOpType()) {
+                 case OPERATION_BACKUP:
+-                    return new BackupJob(service, listener, id, getDestination(), getSrc(), mSrcParent,
+-                             features);
++                    //return new BackupJob(service, listener, id, getDestination(), getSrc(), mSrcParent,
++                    //         features);
+                 default:
+                     throw new UnsupportedOperationException("Unsupported op type: " + getOpType());
+             }
+-- 
+2.7.4
+
