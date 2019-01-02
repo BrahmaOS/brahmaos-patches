@@ -1,0 +1,524 @@
+From ae6246c30306adc0de121b01f3bb3dfb3889e7ea Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Wed, 19 Dec 2018 18:22:10 +0800
+Subject: [PATCH] [DSNManagerService] Add DSNMeta to MediaStore
+
+- add DSNMeta to MediaStore
+- modify DSNManagerService to add encrypt
+- modify IDSNManager.aidl interface
+
+Change-Id: Id29b7568e305ed9287f71d8b44e407c5db145dad
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ core/java/android/provider/MediaStore.java         | 114 ++++++++++++++++
+ core/java/brahmaos/app/DSNManager.java             |   4 +-
+ core/java/brahmaos/app/IDSNManager.aidl            |   2 +-
+ .../brahmaos/app/server/DSNManagerService.java     | 151 +++++++++++++--------
+ .../brahmaos/app/server/config/ConfigConstant.java |  26 ++++
+ .../brahmaos/app/server/retrofit/ObjectMeta.java   |   8 +-
+ .../java/brahmaos/app/server/util/CommonUtil.java  |   2 +-
+ 7 files changed, 245 insertions(+), 62 deletions(-)
+ create mode 100644 services/core/java/brahmaos/app/server/config/ConfigConstant.java
+
+diff --git a/core/java/android/provider/MediaStore.java b/core/java/android/provider/MediaStore.java
+index 13e1e26..c887277 100644
+--- a/core/java/android/provider/MediaStore.java
++++ b/core/java/android/provider/MediaStore.java
+@@ -610,6 +610,11 @@ public final class MediaStore {
+              * Constant for the {@link #MEDIA_TYPE} column indicating that file is a playlist file.
+              */
+             public static final int MEDIA_TYPE_PLAYLIST = 4;
++
++             /**
++             * Constant for the {@link #MEDIA_TYPE} column indicating that file is a DSNMeta file.
++             */
++            public static final int MEDIA_TYPE_DSNMETA = 5;
+         }
+     }
+ 
+@@ -1217,6 +1222,115 @@ public final class MediaStore {
+             public static final String HEIGHT = "height";
+         }
+     }
++    public static final class DSNMeta {
++        public interface DSNMetaColumns extends MediaColumns {
++            /**
++             * The description of the image
++             * <P>Type: TEXT</P>
++             */
++            public static final String DESCRIPTION = "description";
++
++            /**
++             * The picasa id of the image
++             * <P>Type: TEXT</P>
++             */
++            public static final String PICASA_ID = "picasa_id";
++
++            /**
++             * Whether the video should be published as public or private
++             * <P>Type: INTEGER</P>
++             */
++            public static final String IS_PRIVATE = "isprivate";
++
++            /**
++             * The longitude where the image was captured.
++             * <P>Type: DOUBLE</P>
++             */
++            public static final String LOCKMODE = "lock_mode";
++
++            /**
++             * The date & time that the image was taken in units
++             * of milliseconds since jan 1, 1970.
++             * <P>Type: INTEGER</P>
++             */
++            public static final String DATE_TAKEN = "datetaken";
++
++            /**
++             * The orientation for the image expressed as degrees.
++             * Only degrees 0, 90, 180, 270 will work.
++             * <P>Type: INTEGER</P>
++             */
++            public static final String ORIENTATION = "orientation";
++
++            /**
++             * The mini thumb id.
++             * <P>Type: INTEGER</P>
++             */
++            public static final String MINI_THUMB_MAGIC = "mini_thumb_magic";
++
++            /**
++             * The bucket id of the image. This is a read-only property that
++             * is automatically computed from the DATA column.
++             * <P>Type: TEXT</P>
++             */
++            public static final String BUCKET_ID = "bucket_id";
++
++            /**
++             * The bucket display name of the image. This is a read-only property that
++             * is automatically computed from the DATA column.
++             * <P>Type: TEXT</P>
++             */
++            public static final String BUCKET_DISPLAY_NAME = "bucket_display_name";
++        }
++
++        public static final class Media implements DSNMetaColumns {
++            public static final Cursor query(ContentResolver cr, Uri uri, String[] projection) {
++                return cr.query(uri, projection, null, null, DEFAULT_SORT_ORDER);
++            }
++
++            public static final Cursor query(ContentResolver cr, Uri uri, String[] projection,
++                    String where, String orderBy) {
++                return cr.query(uri, projection, where,
++                                             null, orderBy == null ? DEFAULT_SORT_ORDER : orderBy);
++            }
++
++            public static final Cursor query(ContentResolver cr, Uri uri, String[] projection,
++                    String selection, String [] selectionArgs, String orderBy) {
++                return cr.query(uri, projection, selection,
++                        selectionArgs, orderBy == null ? DEFAULT_SORT_ORDER : orderBy);
++            }
++
++            /**
++             * Get the content:// style URI for the image media table on the
++             * given volume.
++             *
++             * @param volumeName the name of the volume to get the URI for
++             * @return the URI to the image media table on the given volume
++             */
++            public static Uri getContentUri(String volumeName) {
++                return Uri.parse(CONTENT_AUTHORITY_SLASH + volumeName +
++                        "/dsn_meta/media");
++            }
++                        /**
++             * The content:// style URI for the internal storage.
++             */
++            public static final Uri INTERNAL_CONTENT_URI =
++                    getContentUri("internal");
++
++            /**
++             * The content:// style URI for the "primary" external storage
++             * volume.
++             */
++            public static final Uri EXTERNAL_CONTENT_URI =
++                    getContentUri("external");
++            /**
++             * The default sort order for this table
++             */
++            public static final String DEFAULT_SORT_ORDER = DSNMetaColumns.BUCKET_DISPLAY_NAME;;
++
++        }
++
++    }
+ 
+     /**
+      * Container for all audio content.
+diff --git a/core/java/brahmaos/app/DSNManager.java b/core/java/brahmaos/app/DSNManager.java
+index 89678f2..043cd6c 100644
+--- a/core/java/brahmaos/app/DSNManager.java
++++ b/core/java/brahmaos/app/DSNManager.java
+@@ -69,11 +69,11 @@ public class DSNManager {
+      * @return void.
+      **/
+ 
+-    public void addFile(String path, String password, AddFileCallbackListener cb) {
++    public void addFile(String path, int mode, String password, AddFileCallbackListener cb) {
+         if (mService != null) {
+             try {
+                 AddFileCallback callback = new AddFileCallback(cb);
+-                mService.addFile(path, password,callback);
++                mService.addFile(path, mode, password, callback);
+             } catch (RemoteException e) {
+                     Log.e("SystemStatus", "RemoteException " + e);
+                 }
+diff --git a/core/java/brahmaos/app/IDSNManager.aidl b/core/java/brahmaos/app/IDSNManager.aidl
+index 4519423..6b15f0c 100644
+--- a/core/java/brahmaos/app/IDSNManager.aidl
++++ b/core/java/brahmaos/app/IDSNManager.aidl
+@@ -12,7 +12,7 @@ interface IDSNManager {
+ 
+     oneway void stopIPFSController();
+ 
+-    oneway void addFile(String path, String password, IAddFileCallback cb);
++    oneway void addFile(String path, int encryptMode, String password, IAddFileCallback cb);
+ 
+     oneway void getFile(String cid, String password, IGetFileCallback cb);
+ 
+diff --git a/services/core/java/brahmaos/app/server/DSNManagerService.java b/services/core/java/brahmaos/app/server/DSNManagerService.java
+index e729243..1f56a7b 100644
+--- a/services/core/java/brahmaos/app/server/DSNManagerService.java
++++ b/services/core/java/brahmaos/app/server/DSNManagerService.java
+@@ -1,3 +1,18 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
+ package brahmaos.app.server;
+ 
+ import brahmaos.app.IDSNManager;
+@@ -52,14 +67,15 @@ import brahmaos.app.server.retrofit.ApiRespResult;
+ 
+ import retrofit2.Call;
+ import retrofit2.Response;
+-
++import brahmaos.app.server.config.ConfigConstant;
+ 
+ 
+ import static android.provider.Settings.System.IPFSCONTLLER_STATUS;
+ 
+ public class DSNManagerService extends IDSNManager.Stub {
+     private static final String TAG = "DSNManagerService";
+-    private final String PATH_PREFIX = "/sdcard/LocalHD";
++    private final String PATH_HD_PREFIX = "/storage/emulated/0";
++    private final String PATH_ENCRYPT_PREFIX = "/storage/emulated/0";
+ 
+     private static final String IPFSCONTROLLER_NAME = "ipfsd";
+     private static final String CTL_STARTNAME = "ctl.start";
+@@ -109,7 +125,6 @@ public class DSNManagerService extends IDSNManager.Stub {
+     }
+ 
+     public void startIPFSController() {
+-        Log.d("KOALA_LOG","startIPFSController2");
+         SystemProperties.set(CTL_STARTNAME, IPFSCONTROLLER_NAME);
+         //executor.submit(new ThreadRunner((PthreadNum)));
+         DSNMANAGER_STATUS = 1;
+@@ -117,7 +132,6 @@ public class DSNManagerService extends IDSNManager.Stub {
+     }
+ 
+     public void stopIPFSController() {
+-        Log.d("KOALA_LOG","stopIPFSController2");
+         SystemProperties.set(CTL_STOPNAME, IPFSCONTROLLER_NAME);
+         DSNMANAGER_STATUS = 0;
+         return;
+@@ -137,36 +151,55 @@ public class DSNManagerService extends IDSNManager.Stub {
+     }
+ 
+     /**
+-     * addFile to DSN.
+-     * addFile().
+-     */
++     * add File to DSN.
++     *
++     * @param path file absolute path;
++     * @param mode encrypt mode system custom;
++     * @param password the password ;
++     * @param cb callback to client;
++     *
++     * @return void
++     **/
+     @Override
+-    public void addFile(String path, String password, IAddFileCallback cb) {
+-        Log.d(TAG, "start DSNManagerService addFile");
+-        if (path == null | CommonUtil.judgeFileExist(path) == false ) {
++    public void addFile(String path, int mode, String password, IAddFileCallback cb) {
++        Log.d(TAG, "start addFile:" + path + ":" + String.valueOf(mode) + ":" + password);
++        if (path == null || CommonUtil.judgeFileExist(path) == false ) {
+             Log.e(TAG, "exit DSNManagerService addFile path is null or not exits");
+             return;
+         }
+-        /*
+-        if(mDSNManagerHandle == null){
+-            Log.e(TAG,"exit DSNManagerService is not running or start ");
+-            return;
+-        }
+-        */
++        DataCryptoUtils dc = new DataCryptoUtils();
+         File srcFile = new File(path);
+-        File fileEncrypt = null;
++        StringBuffer fileNameBuffer = new StringBuffer();
++        fileNameBuffer.append(PATH_ENCRYPT_PREFIX);
++        fileNameBuffer.append("/");
++        fileNameBuffer.append(srcFile.getName());
++        String fileNameBufferString = fileNameBuffer.toString();
++
++        File fileEncrypt = new File(fileNameBufferString);
+         File destFile = null;
+-        if (password != null) {
+-            DataCryptoUtils dc = new DataCryptoUtils();
+-            int cipherResult = dc.encryptWithDefaultPublicKey(mContext, srcFile , fileEncrypt, 64);
+-            if (cipherResult == 0)
+-                destFile = fileEncrypt;
+-            else
+-                destFile = srcFile;
+-        } else
+-            destFile = srcFile;
+-
+-        String fileModifiedTime = CommonUtil.getFileModifiedTime(destFile,null);
++        int cipherResult = 0;
++        String fileModifiedTime = CommonUtil.getFileModifiedTime(srcFile, null);
++
++        if(mode == ConfigConstant.SYSTEM_ENCRYPTION) {
++            cipherResult = dc.encryptWithDefaultPublicKey(mContext, srcFile , fileEncrypt, 64);
++        } else if (mode == ConfigConstant.CUSTOM_ENCRYPTION) {
++            cipherResult = dc.aes128EncryptFiles(srcFile, fileEncrypt, password, 64);
++        } else {
++            cipherResult = 0;
++            fileEncrypt = srcFile;
++        }
++        if(cipherResult != 0) {
++            try {
++                Log.e(TAG, "encrypt error!" + ":" +cipherResult);
++                cb.onCallbackComplete(false, null);
++            } catch(RemoteException e1) {
++                Log.d(TAG,"onError:"+ e1);
++            }
++            return;
++        }
++
++        destFile = fileEncrypt;
++
+         String fileCreateTime = CommonUtil.getNowTime(null);
+         String fileType = CommonUtil.getMimeType(path);
+         String accountStr = getSystemAccountId();
+@@ -175,56 +208,65 @@ public class DSNManagerService extends IDSNManager.Stub {
+         List<MerkleNode> addResult = null;
+         int blockCount = 0;
+ 
+-        try{
+-            addResult = mDSNManagerHandle.add(fileWrapper, new AddFileMultipartCallback(){
++        try {
++            addResult = mDSNManagerHandle.add(fileWrapper, new AddFileMultipartCallback() {
+                 @Override
+-                public void onUploadProcess(long fileSize, long hasUpload){
+-                    try{
++                public void onUploadProcess(long fileSize, long hasUpload) {
++                    try {
+                         cb.onUploadProcess(fileSize,hasUpload);
+-                        }catch(RemoteException e){
++                        } catch(RemoteException e) {
+                             Log.e(TAG,"IPFS getFileUploadPercent:" + e);
+                         }
+-
+                 }
+             } );
+             blockCount = getBlockCount(addResult.get(0), mDSNManagerHandle);
+-        }catch(IOException e){
++        } catch(IOException e) {
+             Log.e(TAG,"IPFS add file:" + e);
+         }
++
+         Map<String,Object> body = getObjectMetaMap(addResult.get(0), accountStr,
+-            fileModifiedTime, fileCreateTime, fileType, blockCount);
++            fileModifiedTime, fileCreateTime, fileType, blockCount, mode);
+ 
+         PostRequestInterface request = RetrofitNetwork.getInstance().postRequest();
+         Call<LinkedHashMap<String, Object>> call = request.postSmartcontract(body);
+ 
+-        try{
++        try {
+             Response<LinkedHashMap<String, Object>> response = call.execute();
+-            try{
++            try {
+                 cb.onNext("onNext:"+response.body().toString());
+-            }catch(RemoteException e){
+-                Log.d(TAG,"onNext:"+ e);
++            } catch(RemoteException e) {
++                Log.d(TAG,"onNext:" + e);
+             }
+-        }catch (IOException e){
++        } catch (IOException e) {
+             try{
+                 cb.onCompleted("onError");
+-            }catch(RemoteException e1){
+-                Log.d(TAG,"onError:"+ e1);
++            } catch(RemoteException e1) {
++                Log.d(TAG,"onError:" + e1);
+             }
+         }
+-        try{
++        try {
+             cb.onCompleted("onCompleted");
+-            cb.onCallbackComplete(true,body);
+-        }catch(RemoteException e){
+-            Log.d(TAG,"onCallbackComplete:"+ e);
++            cb.onCallbackComplete(true, body);
++        } catch(RemoteException e) {
++            Log.d(TAG,"onCallbackComplete:" + e);
++        }
++        if( mode != ConfigConstant.WITHOUT_ENCRYPTION && cipherResult == 0) {
++            Log.d(TAG,"Encrypt file detel ");
++            fileEncrypt.delete();
+         }
+         return;
+     }
+ 
+     /**
+-     * listFile from DSN.
+-     * listFile().
+-     */
+-
++     * List File objectMeta from DSN.
++     *
++     * @param cid file absolute path;
++     * @param page encrypt mode system custom;
++     * @param count the password ;
++     * @param cb callback to client;
++     *
++     * @return void
++     **/
+     @Override
+     public void listFile(String cid, int page, int count, IListFileCallback cb) {
+         Log.d(TAG, "DSNManagerService/listFile:");
+@@ -245,7 +287,6 @@ public class DSNManagerService extends IDSNManager.Stub {
+                 Log.d(TAG,"onError:"+ e);
+             }
+         } catch(IOException e) {
+-            //Log.d(TAG,"DSNManagerService/onError:" + throwable);
+             try {
+                 cb.onError("onError");
+             } catch (RemoteException e1){
+@@ -263,7 +304,7 @@ public class DSNManagerService extends IDSNManager.Stub {
+     @Override
+     public void getFile(String cid, String password, IGetFileCallback cb) {
+         StringBuffer fileNameBuffer = new StringBuffer();
+-        fileNameBuffer.append(PATH_PREFIX);
++        fileNameBuffer.append(PATH_HD_PREFIX);
+         fileNameBuffer.append("/");
+         fileNameBuffer.append(cid);
+         String fileNameBufferString = fileNameBuffer.toString();
+@@ -318,7 +359,8 @@ public class DSNManagerService extends IDSNManager.Stub {
+         return lsResult.get(0).links.size();
+     }
+ 
+-    private Map<String,Object> getObjectMetaMap(MerkleNode node, String accountStr, String modifyTime, String createTime,  String fileType, int blockCnt){
++    private Map<String,Object> getObjectMetaMap(MerkleNode node, String accountStr, String modifyTime,
++            String createTime, String fileType, int blockCnt, int encryptMode) {
+         Map<String,Object> body = new HashMap<String, Object>();
+         body.put("account_id", accountStr);
+         body.put("object_key", node.hash.toString());
+@@ -331,6 +373,7 @@ public class DSNManagerService extends IDSNManager.Stub {
+         body.put("object_create_time", modifyTime);
+         body.put("object_sync_time", createTime);
+         body.put("object_block_cnt", blockCnt);
++        body.put("encrypt_flag", encryptMode);
+         return body;
+     }
+ 
+diff --git a/services/core/java/brahmaos/app/server/config/ConfigConstant.java b/services/core/java/brahmaos/app/server/config/ConfigConstant.java
+new file mode 100644
+index 0000000..259859d
+--- /dev/null
++++ b/services/core/java/brahmaos/app/server/config/ConfigConstant.java
+@@ -0,0 +1,26 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package brahmaos.app.server.config;
++
++public class ConfigConstant {
++    public static final int WITHOUT_ENCRYPTION = 0;
++    public static final int SYSTEM_ENCRYPTION = 1;
++    public static final int CUSTOM_ENCRYPTION = 2;
++    public static final String IS_ENCRYPTENABLE = "isEncryptEnable";
++    public static final String IS_ENCRYPTMODE = "isEncryptMode";
++
++}
+diff --git a/services/core/java/brahmaos/app/server/retrofit/ObjectMeta.java b/services/core/java/brahmaos/app/server/retrofit/ObjectMeta.java
+index 3424e80..5442b09 100644
+--- a/services/core/java/brahmaos/app/server/retrofit/ObjectMeta.java
++++ b/services/core/java/brahmaos/app/server/retrofit/ObjectMeta.java
+@@ -26,9 +26,9 @@ public class ObjectMeta implements Serializable {
+     @JsonProperty("object_sync_time")
+     private String objectSyncTime;
+     @JsonProperty("object_block_cnt")
+-    private String objectBlockCnt;
++    private int objectBlockCnt;
+ 
+-    //	account_id
++    // account_id
+     public String getAccountid() {
+         return accountId;
+     }
+@@ -84,11 +84,11 @@ public class ObjectMeta implements Serializable {
+         this.objectSyncTime = objectSyncTime;
+     }
+     // object_block_cnt
+-    public String getObjectBlockCnt() {
++    public int getObjectBlockCnt() {
+         return objectBlockCnt;
+     }
+ 
+-    public void setObjectBlockCnt(String objectBlockCnt) {
++    public void setObjectBlockCnt(int objectBlockCnt) {
+         this.objectBlockCnt = objectBlockCnt;
+     }
+     public String toString() {
+diff --git a/services/core/java/brahmaos/app/server/util/CommonUtil.java b/services/core/java/brahmaos/app/server/util/CommonUtil.java
+index 73f03c6..2fae988 100644
+--- a/services/core/java/brahmaos/app/server/util/CommonUtil.java
++++ b/services/core/java/brahmaos/app/server/util/CommonUtil.java
+@@ -81,7 +81,7 @@ public class CommonUtil {
+             return false;
+     }
+ 
+-    public static String getFileModifiedTime(File file,String format){
++    public static String getFileModifiedTime(File file, String format){
+         String formatDefault = null;
+         if (format == null || format.isEmpty()){
+             formatDefault = "yyyy/MM/dd HH:mm:ss";
+-- 
+2.7.4
+
