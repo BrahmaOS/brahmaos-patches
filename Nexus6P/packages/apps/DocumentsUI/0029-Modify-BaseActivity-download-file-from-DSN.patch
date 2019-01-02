@@ -1,0 +1,230 @@
+From 90f4d41449160d0687d0e4236f82901580e2be0b Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Fri, 21 Dec 2018 10:52:09 +0800
+Subject: [PATCH] Modify BaseActivity download file from DSN
+
+Change-Id: I4c96b20fc2a016783257653bb1368ee3a420bbdb
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ src/com/android/documentsui/BaseActivity.java      |  20 +++-
+ .../documentsui/DSN/task/DownloadFilesJob.java     |   3 +-
+ .../services/DownloadDocumentsFromDSNJob.java      | 127 ---------------------
+ 3 files changed, 16 insertions(+), 134 deletions(-)
+ delete mode 100644 src/com/android/documentsui/services/DownloadDocumentsFromDSNJob.java
+
+diff --git a/src/com/android/documentsui/BaseActivity.java b/src/com/android/documentsui/BaseActivity.java
+index e2de1a5..35ff21e 100644
+--- a/src/com/android/documentsui/BaseActivity.java
++++ b/src/com/android/documentsui/BaseActivity.java
+@@ -70,6 +70,9 @@ import com.android.documentsui.selection.Selection;
+ import com.android.documentsui.sidebar.RootsFragment;
+ import com.android.documentsui.sorting.SortController;
+ import com.android.documentsui.sorting.SortModel;
++import com.android.documentsui.DSN.dirlist.DownloadFilesList;
++import com.android.documentsui.DSN.task.DownloadFilesJob;
++
+ import android.widget.LinearLayout;
+ import android.app.AlertDialog;
+ import android.content.DialogInterface;
+@@ -87,7 +90,6 @@ import com.android.documentsui.DSN.conmmon.ReqCode;
+ import com.android.documentsui.DSN.ui.common.barcode.Intents;
+ import com.android.documentsui.httpnetwork.ObjectMeta;
+ import com.android.documentsui.DSN.util.CommonUtil;
+-import com.android.documentsui.services.DownloadDocumentsFromDSNJob;
+ 
+ import com.google.gson.JsonObject;
+ 
+@@ -651,13 +653,14 @@ public abstract class BaseActivity
+                         String name = null;
+                         String size = null;
+                         String hashKey = null;
++                        int sizeInt = 0;
+                         if(CommonUtil.isGoodJson(qrCode)){
+                             JsonObject jsonObj = CommonUtil.stringToJson(qrCode);
+-                            int no = jsonObj.get("object_size").getAsInt();
++                            sizeInt = jsonObj.get("object_size").getAsInt();
+                             type = jsonObj.get("mime_type").getAsString();
+                             name = jsonObj.get("object_name").getAsString();
+                             hashKey = jsonObj.get("object_key").getAsString();
+-                            size = Formatter.formatFileSize(getApplicationContext(), no);
++                            size = Formatter.formatFileSize(getApplicationContext(), sizeInt);
+                           }else{
+                             type = "Unknown";
+                             name = "Unknown";
+@@ -666,6 +669,8 @@ public abstract class BaseActivity
+                         ObjectMeta mObjectMeta = new ObjectMeta();
+                         mObjectMeta.setObjectName(name);
+                         mObjectMeta.setObjectKey(hashKey);
++                        mObjectMeta.setObjectSize(sizeInt);
++                        mObjectMeta.setMimeType(type);
+                         View view = LayoutInflater.from(BaseActivity.this).inflate(R.layout.dsn_dialog_scan, null);
+                         TextView tv_name_content = (TextView)view.findViewById(R.id.tv_name_content);
+                         TextView tv_size_content = (TextView)view.findViewById(R.id.tv_size_content);
+@@ -686,9 +691,14 @@ public abstract class BaseActivity
+                            .setPositiveButton("ok", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+-                                DownloadDocumentsFromDSNJob mDownloadDocumentsFromDSNJob= new DownloadDocumentsFromDSNJob(getApplicationContext(),mObjectMeta);
+-                                Thread mThreadJob = new Thread(mDownloadDocumentsFromDSNJob);
++                                DownloadFilesList list = DownloadFilesList.getInstance();
++                                DownloadFilesList.Item item = new DownloadFilesList.Item(mObjectMeta.getObjectName(), mObjectMeta.getMimeType(),
++                                    mObjectMeta.getObjectSize(),0);
++                                list.addItem(item);
++                                DownloadFilesJob mDownloadFilesJob= new DownloadFilesJob(getApplicationContext(), mObjectMeta, item);
++                                Thread mThreadJob = new Thread(mDownloadFilesJob);
+                                 mThreadJob.start();
++
+                                 dialog.dismiss(); } }).create();
+                         dialog.show();
+ 
+diff --git a/src/com/android/documentsui/DSN/task/DownloadFilesJob.java b/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
+index d7a35a4..cee1d9b 100644
+--- a/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
++++ b/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
+@@ -73,9 +73,8 @@ import com.android.documentsui.DSN.conmmon.ConfigConst;
+ 
+ 
+ public class DownloadFilesJob implements Runnable {
+-    private static final String TAG = "DownloadDocumentsFromDSNJob";
++    private static final String TAG = "DownloadFilesJob";
+     private final String PATH_HD_PREFIX = "/storage/emulated/0/LocalHD";
+-    private final String PATH_HD_PREFIX_S = "storage/emulated/0/LocalHD";
+     private ObjectMeta mObjectMeta;
+     private DownloadFilesList.Item mItem;
+ 
+diff --git a/src/com/android/documentsui/services/DownloadDocumentsFromDSNJob.java b/src/com/android/documentsui/services/DownloadDocumentsFromDSNJob.java
+deleted file mode 100644
+index bf56403..0000000
+--- a/src/com/android/documentsui/services/DownloadDocumentsFromDSNJob.java
++++ /dev/null
+@@ -1,127 +0,0 @@
+-/*
+- * Copyright (C) 2016 The Android Open Source Project
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
+-
+-package com.android.documentsui.services;
+-
+-import static com.android.documentsui.base.Shared.DEBUG;
+-import static com.android.documentsui.services.FileOperationService.OPERATION_DELETE;
+-
+-import android.app.Notification;
+-import android.app.Notification.Builder;
+-import android.content.ContentResolver;
+-import android.content.Context;
+-import android.net.Uri;
+-import android.util.Log;
+-import android.os.StatFs;
+-import android.os.Environment;
+-import android.content.Context;
+-
+-import com.android.documentsui.Metrics;
+-import com.android.documentsui.R;
+-import com.android.documentsui.base.DocumentInfo;
+-import com.android.documentsui.base.DocumentStack;
+-import com.android.documentsui.base.Features;
+-import com.android.documentsui.clipping.UrisSupplier;
+-import com.android.documentsui.DocumentsApplication;
+-import com.android.documentsui.httpnetwork.ObjectMeta;
+-
+-import javax.annotation.Nullable;
+-
+-import java.io.FileNotFoundException;
+-import java.io.IOException;
+-import java.util.List;
+-import java.io.File;
+-import java.lang.String.*;
+-import java.lang.*;
+-import java.util.Map;
+-import java.util.HashMap;
+-import java.util.LinkedHashMap;
+-import java.io.FileInputStream;
+-import java.io.FileOutputStream;
+-import java.io.File;
+-import java.io.InputStream;
+-
+-import io.ipfs.api.MerkleNode;
+-import io.ipfs.api.NamedStreamable;
+-import io.ipfs.multihash.Multihash;
+-import io.ipfs.api.IPFS;
+-import io.ipfs.cid.Cid;
+-import io.ipfs.api.JSONParser;
+-
+-import static android.content.Context.DSNMANAGER_SERVICE;
+-import brahmaos.app.DSNManager;
+-import brahmaos.app.GetFileCallbackListener;
+-
+-public class DownloadDocumentsFromDSNJob implements Runnable {
+-    private static final String TAG = "DownloadDocumentsFromDSNJob";
+-    private String PATH_PREFIX = "/sdcard/LocalHD";
+-    private ObjectMeta mObjectMeta;
+-
+-    private Context mappContext;
+-    private IPFS mhandleIPFS;
+-
+-    public DownloadDocumentsFromDSNJob(Context appContext, ObjectMeta objectMeta) {
+-        mObjectMeta = objectMeta;
+-        mappContext = appContext;
+-
+-    }
+-    @Override
+-    public void run(){
+-        String mObjectName = mObjectMeta.getObjectName();
+-        String mMimeType = mObjectMeta.getMimeType();
+-        String mHashKey = mObjectMeta.getObjectKey();
+-        DSNManager mManager = (DSNManager) mappContext.getSystemService(DSNMANAGER_SERVICE);
+-        mManager.getFile(mHashKey, null, new GetFileCallbackListener(){
+-
+-            @Override
+-            public void onGetFileProcess(long filesize, long uploadsize){
+-                //Log.d(TAG, "DocumentsUI onGetFileProcess:" + filesize + '/' + uploadsize);
+-            }
+-
+-            @Override
+-            public void onCallbackComplete(boolean status){
+-                if(status == true) {
+-                    if (!mHashKey.equals(mObjectName)) {
+-                        File oldFile = new File(PATH_PREFIX + "/" + mHashKey);
+-                        File newFile = new File(PATH_PREFIX + "/" + mObjectName);
+-                        if(!oldFile.exists()){
+-                            return;
+-                        }
+-                        if (newFile.exists())
+-                            Log.d(TAG, "rename cannot sucess file has exist!");
+-                        else {
+-                            oldFile.renameTo(newFile);
+-                            oldFile.delete();
+-                        }
+-                    } else
+-                        Log.d(TAG, "newName is same to oldName!");
+-                } else
+-                    Log.d(TAG, "getFile onCallbackComplete return failure!");
+-            }
+-        });
+-    }
+-
+-    private long getSDAvailableSize() {
+-        File path = Environment.getExternalStorageDirectory();
+-        StatFs stat = new StatFs(path.getPath());
+-        long blockSize = stat.getBlockSize();
+-        long availableBlocks = stat.getAvailableBlocks();
+-        return availableBlocks;
+-    }
+-
+-
+-}
+-
+-- 
+2.7.4
+
