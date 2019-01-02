@@ -1,0 +1,28 @@
+From e9414085865cd64542a3e907cbe8c5b5eb01d2e1 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Thu, 20 Dec 2018 14:21:55 +0800
+Subject: [PATCH] [DSNManagerService] Modify DSNManagerService to use loacalHD
+ path
+
+Change-Id: I5d4df312c6e375477d6d3e0a52d7d28910bbd1b9
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ services/core/java/brahmaos/app/server/DSNManagerService.java | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/services/core/java/brahmaos/app/server/DSNManagerService.java b/services/core/java/brahmaos/app/server/DSNManagerService.java
+index 1f56a7b..c4dbfd6 100644
+--- a/services/core/java/brahmaos/app/server/DSNManagerService.java
++++ b/services/core/java/brahmaos/app/server/DSNManagerService.java
+@@ -74,7 +74,7 @@ import static android.provider.Settings.System.IPFSCONTLLER_STATUS;
+ 
+ public class DSNManagerService extends IDSNManager.Stub {
+     private static final String TAG = "DSNManagerService";
+-    private final String PATH_HD_PREFIX = "/storage/emulated/0";
++    private final String PATH_HD_PREFIX = "/storage/emulated/0/LocalHD";
+     private final String PATH_ENCRYPT_PREFIX = "/storage/emulated/0";
+ 
+     private static final String IPFSCONTROLLER_NAME = "ipfsd";
+-- 
+2.7.4
+
