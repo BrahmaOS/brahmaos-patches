@@ -1,0 +1,36 @@
+From 5082c76b2ec9842575977934f798bb2fe520374e Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Thu, 20 Dec 2018 15:00:35 +0800
+Subject: [PATCH] Fix FileColumns.MEDIA_TYPE_DSNMETA name
+
+Change-Id: I57c6b9beef226582f29ecaae32a43963149c9b5e
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ src/com/android/providers/media/MediaProvider.java | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/com/android/providers/media/MediaProvider.java b/src/com/android/providers/media/MediaProvider.java
+index 9ceccd7..6920fbe 100644
+--- a/src/com/android/providers/media/MediaProvider.java
++++ b/src/com/android/providers/media/MediaProvider.java
+@@ -2502,7 +2502,7 @@ public class MediaProvider extends ContentProvider {
+             }
+             case DSN_MEDIA: {
+                 rowId = insertFile(helper, uri, initialValues,
+-                        FileColumns.MEDIA_TYPE_DSNMEATA, true, notifyRowIds);
++                        FileColumns.MEDIA_TYPE_DSNMETA, true, notifyRowIds);
+                 if (rowId > 0) {
+                     MediaDocumentsProvider.onMediaStoreInsert(
+                             getContext(), volumeName, FileColumns.MEDIA_TYPE_IMAGE, rowId);
+@@ -3022,7 +3022,7 @@ public class MediaProvider extends ContentProvider {
+ 
+             case DSN_MEDIA:
+                 out.table = "files";
+-                where = FileColumns.MEDIA_TYPE + "=" + FileColumns.MEDIA_TYPE_DSNMeta;
++                where = FileColumns.MEDIA_TYPE + "=" + FileColumns.MEDIA_TYPE_DSNMETA;
+                 break;
+ 
+             case DSN_MEDIA_ID:
+-- 
+2.7.4
+

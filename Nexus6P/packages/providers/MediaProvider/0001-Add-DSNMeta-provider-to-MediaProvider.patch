@@ -1,0 +1,443 @@
+From dc392b6aaaddd9c71b8179e1112f63b796bf2725 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Wed, 19 Dec 2018 14:09:59 +0800
+Subject: [PATCH] Add  DSNMeta provider to MediaProvider
+
+- add DSNMeta  view table in external db
+- add query insert detel operate
+
+Change-Id: I87c088993fa0995600a0ae8f00a214632502342f
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ res/values-en-rGB/strings.xml                      |   1 +
+ res/values-zh-rCN/strings.xml                      |   1 +
+ res/values/strings.xml                             |   2 +
+ .../providers/media/MediaDocumentsProvider.java    | 138 +++++++++++++++++++++
+ src/com/android/providers/media/MediaProvider.java |  74 ++++++++++-
+ 5 files changed, 212 insertions(+), 4 deletions(-)
+
+diff --git a/res/values-en-rGB/strings.xml b/res/values-en-rGB/strings.xml
+index f6104c8..9e28493 100644
+--- a/res/values-en-rGB/strings.xml
++++ b/res/values-en-rGB/strings.xml
+@@ -39,4 +39,5 @@
+     <string name="delete_ringtone_text" msgid="2963662097583300181">"Delete"</string>
+     <string name="unable_to_add_ringtone" msgid="6256097521165711269">"Unable to add customised ringtone"</string>
+     <string name="unable_to_delete_ringtone" msgid="2258180073859253495">"Unable to delete customised ringtone"</string>
++    <string name="root_dsn">"Private"</string>
+ </resources>
+diff --git a/res/values-zh-rCN/strings.xml b/res/values-zh-rCN/strings.xml
+index 645d836..cd6350f 100644
+--- a/res/values-zh-rCN/strings.xml
++++ b/res/values-zh-rCN/strings.xml
+@@ -39,4 +39,5 @@
+     <string name="delete_ringtone_text" msgid="2963662097583300181">"删除"</string>
+     <string name="unable_to_add_ringtone" msgid="6256097521165711269">"无法添加自定义铃声"</string>
+     <string name="unable_to_delete_ringtone" msgid="2258180073859253495">"无法删除自定义铃声"</string>
++    <string name="root_dsn">"私人"</string>
+ </resources>
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index 3672f52..a42ef4d 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -80,6 +80,8 @@
+     <!-- Text for the Toast displayed when deleting a custom ringtone fails. -->
+     <string name="unable_to_delete_ringtone">Unable to delete custom ringtone</string>
+ 
++    <string name="root_dsn">Private</string>
++
+     <!--  When adding sounds as overlays, you can use the resources defined below.
+           For the translation of the names to be picked up by the RingtonePicker:
+           - in the sound files, set the "TITLE" tag as "alarm_XX" or "notification_XX"
+diff --git a/src/com/android/providers/media/MediaDocumentsProvider.java b/src/com/android/providers/media/MediaDocumentsProvider.java
+index 65a6769..3d928ef 100644
+--- a/src/com/android/providers/media/MediaDocumentsProvider.java
++++ b/src/com/android/providers/media/MediaDocumentsProvider.java
+@@ -45,6 +45,8 @@ import android.provider.MediaStore.Audio.AudioColumns;
+ import android.provider.MediaStore.Files.FileColumns;
+ import android.provider.MediaStore.Images;
+ import android.provider.MediaStore.Images.ImageColumns;
++import android.provider.MediaStore.DSNMeta;
++import android.provider.MediaStore.DSNMeta.DSNMetaColumns;
+ import android.provider.MediaStore.Video;
+ import android.provider.MediaStore.Video.VideoColumns;
+ import android.text.TextUtils;
+@@ -90,6 +92,11 @@ public class MediaDocumentsProvider extends DocumentsProvider {
+     private static final String TYPE_VIDEOS_BUCKET = "videos_bucket";
+     private static final String TYPE_VIDEO = "video";
+ 
++    private static final String TYPE_DSN_ROOT = "dsn_root";
++    private static final String TYPE_DSN_BUCKET = "dsn_bucket";
++    private static final String TYPE_DSN = "dsn";
++
++
+     private static final String TYPE_AUDIO_ROOT = "audio_root";
+     private static final String TYPE_AUDIO = "audio";
+     private static final String TYPE_ARTIST = "artist";
+@@ -192,6 +199,9 @@ public class MediaDocumentsProvider extends DocumentsProvider {
+         if (TYPE_IMAGE.equals(ident.type) && ident.id != -1) {
+             return ContentUris.withAppendedId(
+                     Images.Media.EXTERNAL_CONTENT_URI, ident.id);
++        } else if (TYPE_DSN.equals(ident.type) && ident.id != -1) {
++            return ContentUris.withAppendedId(
++                    DSNMeta.Media.EXTERNAL_CONTENT_URI, ident.id);
+         } else if (TYPE_VIDEO.equals(ident.type) && ident.id != -1) {
+             return ContentUris.withAppendedId(
+                     Video.Media.EXTERNAL_CONTENT_URI, ident.id);
+@@ -222,6 +232,7 @@ public class MediaDocumentsProvider extends DocumentsProvider {
+         includeImagesRoot(result);
+         includeVideosRoot(result);
+         includeAudioRoot(result);
++        includeDSNRoot(result);
+         return result;
+     }
+ 
+@@ -256,6 +267,28 @@ public class MediaDocumentsProvider extends DocumentsProvider {
+                 if (cursor.moveToFirst()) {
+                     includeImage(result, cursor);
+                 }
++            } else if (TYPE_DSN_ROOT.equals(ident.type)) {
++                // single root
++                includeDSNRootDocument(result);
++            } else if (TYPE_DSN_BUCKET.equals(ident.type)) {
++                // single bucket
++                cursor = resolver.query(DSNMeta.Media.EXTERNAL_CONTENT_URI,
++                        DSNMetaBucketQuery.PROJECTION, DSNMetaColumns.BUCKET_ID + "=?",
++                        queryArgs, DSNMetaBucketQuery.SORT_ORDER);
++                copyNotificationUri(result, cursor);
++                if (cursor.moveToFirst()) {
++                    includeDSNMetaBucket(result, cursor);
++                }
++            } else if (TYPE_DSN.equals(ident.type)) {
++                // single image
++                cursor = resolver.query(DSNMeta.Media.EXTERNAL_CONTENT_URI,
++                        DSNMetaQuery.PROJECTION, BaseColumns._ID + "=?", queryArgs,
++                        null);
++                copyNotificationUri(result, cursor);
++                if (cursor.moveToFirst()) {
++                    includeDSNMeta(result, cursor);
++                }
++
+             } else if (TYPE_VIDEOS_ROOT.equals(ident.type)) {
+                 // single root
+                 includeVideosRootDocument(result);
+@@ -327,6 +360,7 @@ public class MediaDocumentsProvider extends DocumentsProvider {
+ 
+         final long token = Binder.clearCallingIdentity();
+         Cursor cursor = null;
++
+         try {
+             if (TYPE_IMAGES_ROOT.equals(ident.type)) {
+                 // include all unique buckets
+@@ -342,6 +376,29 @@ public class MediaDocumentsProvider extends DocumentsProvider {
+                         lastId = id;
+                     }
+                 }
++            } else if (TYPE_DSN_ROOT.equals(ident.type)) {
++                // include all unique buckets
++                cursor = resolver.query(DSNMeta.Media.EXTERNAL_CONTENT_URI,
++                        ImagesBucketQuery.PROJECTION, null, null, ImagesBucketQuery.SORT_ORDER);
++                // multiple orders
++                copyNotificationUri(result, cursor);
++                long lastId = Long.MIN_VALUE;
++                while (cursor.moveToNext()) {
++                    final long id = cursor.getLong(ImagesBucketQuery.BUCKET_ID);
++                    if (lastId != id) {
++                        includeDSNMetaBucket(result, cursor);
++                        lastId = id;
++                    }
++                }
++            } else if (TYPE_DSN_BUCKET.equals(ident.type)) {
++                // include images under bucket
++                cursor = resolver.query(DSNMeta.Media.EXTERNAL_CONTENT_URI,
++                        DSNMetaQuery.PROJECTION, DSNMetaColumns.BUCKET_ID + "=?",
++                        queryArgs, null);
++                copyNotificationUri(result, cursor);
++                while (cursor.moveToNext()) {
++                    includeDSNMeta(result, cursor);
++                }
+             } else if (TYPE_IMAGES_BUCKET.equals(ident.type)) {
+                 // include images under bucket
+                 cursor = resolver.query(Images.Media.EXTERNAL_CONTENT_URI,
+@@ -589,6 +646,22 @@ public class MediaDocumentsProvider extends DocumentsProvider {
+         row.add(Root.COLUMN_MIME_TYPES, AUDIO_MIME_TYPES);
+     }
+ 
++    private void includeDSNRoot(MatrixCursor result) {
++        int flags = Root.FLAG_LOCAL_ONLY | Root.FLAG_SUPPORTS_SEARCH;
++        if (isEmpty(Audio.Media.EXTERNAL_CONTENT_URI)) {
++            flags |= Root.FLAG_EMPTY;
++            sReturnedAudioEmpty = true;
++        }
++
++        final RowBuilder row = result.newRow();
++        row.add(Root.COLUMN_ROOT_ID, TYPE_DSN_ROOT);
++        row.add(Root.COLUMN_FLAGS, flags);
++        row.add(Root.COLUMN_TITLE, getContext().getString(R.string.root_dsn));
++        row.add(Root.COLUMN_DOCUMENT_ID, TYPE_DSN_ROOT);
++        row.add(Root.COLUMN_MIME_TYPES, IMAGE_MIME_TYPES);
++    }
++
++
+     private void includeImagesRootDocument(MatrixCursor result) {
+         final RowBuilder row = result.newRow();
+         row.add(Document.COLUMN_DOCUMENT_ID, TYPE_IMAGES_ROOT);
+@@ -598,6 +671,15 @@ public class MediaDocumentsProvider extends DocumentsProvider {
+         row.add(Document.COLUMN_MIME_TYPE, Document.MIME_TYPE_DIR);
+     }
+ 
++    private void includeDSNRootDocument(MatrixCursor result) {
++        final RowBuilder row = result.newRow();
++        row.add(Document.COLUMN_DOCUMENT_ID, TYPE_DSN_ROOT);
++        row.add(Document.COLUMN_DISPLAY_NAME, getContext().getString(R.string.root_images));
++        row.add(Document.COLUMN_FLAGS,
++                Document.FLAG_DIR_PREFERS_GRID | Document.FLAG_DIR_PREFERS_LAST_MODIFIED);
++        row.add(Document.COLUMN_MIME_TYPE, Document.MIME_TYPE_DIR);
++    }
++
+     private void includeVideosRootDocument(MatrixCursor result) {
+         final RowBuilder row = result.newRow();
+         row.add(Document.COLUMN_DOCUMENT_ID, TYPE_VIDEOS_ROOT);
+@@ -641,6 +723,33 @@ public class MediaDocumentsProvider extends DocumentsProvider {
+         row.add(Document.COLUMN_FLAGS, Document.FLAG_DIR_PREFERS_GRID
+                 | Document.FLAG_SUPPORTS_THUMBNAIL | Document.FLAG_DIR_PREFERS_LAST_MODIFIED);
+     }
++    private interface DSNMetaBucketQuery {
++        final String[] PROJECTION = new String[] {
++                DSNMetaColumns.BUCKET_ID,
++                DSNMetaColumns.BUCKET_DISPLAY_NAME,
++                DSNMetaColumns.DATE_MODIFIED };
++        final String SORT_ORDER = DSNMetaColumns.BUCKET_ID + ", " + DSNMetaColumns.DATE_MODIFIED
++                + " DESC";
++
++        final int BUCKET_ID = 0;
++        final int BUCKET_DISPLAY_NAME = 1;
++        final int DATE_MODIFIED = 2;
++    }
++
++    private void includeDSNMetaBucket(MatrixCursor result, Cursor cursor) {
++        final long id = cursor.getLong(DSNMetaBucketQuery.BUCKET_ID);
++        final String docId = getDocIdForIdent(TYPE_DSN_BUCKET, id);
++
++        final RowBuilder row = result.newRow();
++        row.add(Document.COLUMN_DOCUMENT_ID, docId);
++        row.add(Document.COLUMN_DISPLAY_NAME,
++                cursor.getString(DSNMetaBucketQuery.BUCKET_DISPLAY_NAME));
++        row.add(Document.COLUMN_MIME_TYPE, Document.MIME_TYPE_DIR);
++        row.add(Document.COLUMN_LAST_MODIFIED,
++                cursor.getLong(DSNMetaBucketQuery.DATE_MODIFIED) * DateUtils.SECOND_IN_MILLIS);
++        row.add(Document.COLUMN_FLAGS, Document.FLAG_DIR_PREFERS_GRID
++                | Document.FLAG_SUPPORTS_THUMBNAIL | Document.FLAG_DIR_PREFERS_LAST_MODIFIED);
++    }
+ 
+     private interface ImageQuery {
+         final String[] PROJECTION = new String[] {
+@@ -671,6 +780,35 @@ public class MediaDocumentsProvider extends DocumentsProvider {
+         row.add(Document.COLUMN_FLAGS,
+                 Document.FLAG_SUPPORTS_THUMBNAIL | Document.FLAG_SUPPORTS_DELETE);
+     }
++    private interface DSNMetaQuery {
++        final String[] PROJECTION = new String[] {
++                DSNMetaColumns._ID,
++                DSNMetaColumns.DISPLAY_NAME,
++                DSNMetaColumns.MIME_TYPE,
++                DSNMetaColumns.SIZE,
++                DSNMetaColumns.DATE_MODIFIED };
++
++        final int _ID = 0;
++        final int DISPLAY_NAME = 1;
++        final int MIME_TYPE = 2;
++        final int SIZE = 3;
++        final int DATE_MODIFIED = 4;
++    }
++
++    private void includeDSNMeta(MatrixCursor result, Cursor cursor) {
++        final long id = cursor.getLong(DSNMetaQuery._ID);
++        final String docId = getDocIdForIdent(TYPE_DSN, id);
++
++        final RowBuilder row = result.newRow();
++        row.add(Document.COLUMN_DOCUMENT_ID, docId);
++        row.add(Document.COLUMN_DISPLAY_NAME, cursor.getString(DSNMetaQuery.DISPLAY_NAME));
++        row.add(Document.COLUMN_SIZE, cursor.getLong(DSNMetaQuery.SIZE));
++        row.add(Document.COLUMN_MIME_TYPE, cursor.getString(DSNMetaQuery.MIME_TYPE));
++        row.add(Document.COLUMN_LAST_MODIFIED,
++                cursor.getLong(DSNMetaQuery.DATE_MODIFIED) * DateUtils.SECOND_IN_MILLIS);
++        row.add(Document.COLUMN_FLAGS,
++                Document.FLAG_SUPPORTS_THUMBNAIL | Document.FLAG_SUPPORTS_DELETE);
++    }
+ 
+     private interface VideosBucketQuery {
+         final String[] PROJECTION = new String[] {
+diff --git a/src/com/android/providers/media/MediaProvider.java b/src/com/android/providers/media/MediaProvider.java
+index ec70608..9ceccd7 100644
+--- a/src/com/android/providers/media/MediaProvider.java
++++ b/src/com/android/providers/media/MediaProvider.java
+@@ -822,7 +822,7 @@ public class MediaProvider extends ContentProvider {
+                 + "is_alarm INTEGER,is_notification INTEGER,is_podcast INTEGER,album_artist TEXT,"
+                 + "duration INTEGER,bookmark INTEGER,artist TEXT,album TEXT,resolution TEXT,"
+                 + "tags TEXT,category TEXT,language TEXT,mini_thumb_data TEXT,name TEXT,"
+-                + "media_type INTEGER,old_id INTEGER,storage_id INTEGER,is_drm INTEGER,"
++                + "media_type INTEGER,old_id INTEGER,storage_id INTEGER,is_drm INTEGER,lock_mode INTEGER,"
+                 + "width INTEGER, height INTEGER)");
+         db.execSQL("CREATE TABLE log (time DATETIME, message TEXT)");
+         if (!internal) {
+@@ -905,6 +905,11 @@ public class MediaProvider extends ContentProvider {
+                 + "date_added,date_modified,description,picasa_id,isprivate,latitude,longitude,"
+                 + "datetaken,orientation,mini_thumb_magic,bucket_id,bucket_display_name,width,"
+                 + "height FROM files WHERE media_type=1");
++        db.execSQL("CREATE VIEW dsn_meta AS SELECT _id,_data,_size,_display_name,mime_type,title,"
++                + "date_added,date_modified,description,picasa_id,isprivate,latitude,longitude,"
++                + "datetaken,orientation,mini_thumb_magic,bucket_id,bucket_display_name,lock_mode,width,"
++                + "height FROM files WHERE media_type=5");
++
+         db.execSQL("CREATE VIEW video AS SELECT _id,_data,_display_name,_size,mime_type,"
+                 + "date_added,date_modified,title,duration,artist,album,resolution,description,"
+                 + "isprivate,tags,category,language,mini_thumb_data,latitude,longitude,datetaken,"
+@@ -1267,9 +1272,7 @@ public class MediaProvider extends ContentProvider {
+     @Override
+     public Cursor query(Uri uri, String[] projectionIn, String selection,
+             String[] selectionArgs, String sort) {
+-
+         uri = safeUncanonicalize(uri);
+-
+         int table = URI_MATCHER.match(uri);
+         List<String> prependArgs = new ArrayList<String>();
+ 
+@@ -1353,6 +1356,24 @@ public class MediaProvider extends ContentProvider {
+                 qb.appendWhere("_id=?");
+                 prependArgs.add(uri.getPathSegments().get(3));
+                 break;
++            case DSN_MEDIA:
++                qb.setTables("dsn_meta");
++                if (uri.getQueryParameter("distinct") != null)
++                    qb.setDistinct(true);
++
++                // set the project map so that data dir is prepended to _data.
++                //qb.setProjectionMap(mImagesProjectionMap, true);
++                break;
++            case DSN_MEDIA_ID:
++                qb.setTables("dsn_meta");
++                if (uri.getQueryParameter("distinct") != null)
++                    qb.setDistinct(true);
++
++                // set the project map so that data dir is prepended to _data.
++                //qb.setProjectionMap(mImagesProjectionMap, true);
++                qb.appendWhere("_id=?");
++                prependArgs.add(uri.getPathSegments().get(3));
++                break;
+ 
+             case IMAGES_THUMBNAILS_ID:
+                 hasThumbnailId = true;
+@@ -2055,6 +2076,18 @@ public class MediaProvider extends ContentProvider {
+                 computeTakenTime(values);
+                 break;
+             }
++            case FileColumns.MEDIA_TYPE_DSNMETA: {
++                values = ensureFile(helper.mInternal, initialValues, "",
++                        Environment.DIRECTORY_PICTURES);
++
++                values.put(MediaStore.MediaColumns.DATE_ADDED, System.currentTimeMillis() / 1000);
++                String data = values.getAsString(MediaColumns.DATA);
++                if (! values.containsKey(MediaColumns.DISPLAY_NAME)) {
++                    computeDisplayName(data, values);
++                }
++                computeTakenTime(values);
++                break;
++            }
+ 
+             case FileColumns.MEDIA_TYPE_AUDIO: {
+                 // SQLite Views are read-only, so we need to deconstruct this
+@@ -2212,6 +2245,7 @@ public class MediaProvider extends ContentProvider {
+                 }
+             }
+         }
++
+         values.put(FileColumns.MEDIA_TYPE, mediaType);
+ 
+         if (rowId == 0) {
+@@ -2466,6 +2500,17 @@ public class MediaProvider extends ContentProvider {
+                 }
+                 break;
+             }
++            case DSN_MEDIA: {
++                rowId = insertFile(helper, uri, initialValues,
++                        FileColumns.MEDIA_TYPE_DSNMEATA, true, notifyRowIds);
++                if (rowId > 0) {
++                    MediaDocumentsProvider.onMediaStoreInsert(
++                            getContext(), volumeName, FileColumns.MEDIA_TYPE_IMAGE, rowId);
++                    newUri = ContentUris.withAppendedId(
++                            Images.Media.getContentUri(volumeName), rowId);
++                }
++                break;
++            }
+ 
+             // This will be triggered by requestMediaThumbnail (see getThumbnailUri)
+             case IMAGES_THUMBNAILS: {
+@@ -2975,6 +3020,16 @@ public class MediaProvider extends ContentProvider {
+                 where = "_id = " + uri.getPathSegments().get(3);
+                 break;
+ 
++            case DSN_MEDIA:
++                out.table = "files";
++                where = FileColumns.MEDIA_TYPE + "=" + FileColumns.MEDIA_TYPE_DSNMeta;
++                break;
++
++            case DSN_MEDIA_ID:
++                out.table = "files";
++                where = "_id = " + uri.getPathSegments().get(3);
++                break;
++
+             case IMAGES_THUMBNAILS_ID:
+                 where = "_id=" + uri.getPathSegments().get(3);
+             case IMAGES_THUMBNAILS:
+@@ -3101,7 +3156,6 @@ public class MediaProvider extends ContentProvider {
+         uri = safeUncanonicalize(uri);
+         int count;
+         int match = URI_MATCHER.match(uri);
+-
+         // handle MEDIA_SCANNER before calling getDatabaseForUri()
+         if (match == MEDIA_SCANNER) {
+             if (mMediaScannerVolume == null) {
+@@ -3172,6 +3226,7 @@ public class MediaProvider extends ContentProvider {
+                             final String data = c.getString(1);
+                             final long id = c.getLong(2);
+ 
++
+                             if (mediaType == FileColumns.MEDIA_TYPE_IMAGE) {
+                                 deleteIfAllowed(uri, data);
+                                 MediaDocumentsProvider.onMediaStoreDelete(getContext(),
+@@ -3195,6 +3250,11 @@ public class MediaProvider extends ContentProvider {
+                                 MediaDocumentsProvider.onMediaStoreDelete(getContext(),
+                                         volumeName, FileColumns.MEDIA_TYPE_VIDEO, id);
+ 
++                            } else if (mediaType == FileColumns.MEDIA_TYPE_DSNMETA) {
++                                deleteIfAllowed(uri, data);
++                                MediaDocumentsProvider.onMediaStoreDelete(getContext(),
++                                        volumeName, FileColumns.MEDIA_TYPE_VIDEO, id);
++
+                             } else if (mediaType == FileColumns.MEDIA_TYPE_AUDIO) {
+                                 if (!database.mInternal) {
+                                     MediaDocumentsProvider.onMediaStoreDelete(getContext(),
+@@ -4704,6 +4764,9 @@ public class MediaProvider extends ContentProvider {
+     private static final int IMAGES_THUMBNAILS = 3;
+     private static final int IMAGES_THUMBNAILS_ID = 4;
+ 
++    private static final int DSN_MEDIA = 10;
++    private static final int DSN_MEDIA_ID = 12;
++
+     private static final int AUDIO_MEDIA = 100;
+     private static final int AUDIO_MEDIA_ID = 101;
+     private static final int AUDIO_MEDIA_ID_GENRES = 102;
+@@ -4793,6 +4856,9 @@ public class MediaProvider extends ContentProvider {
+         URI_MATCHER.addURI("media", "*/images/thumbnails", IMAGES_THUMBNAILS);
+         URI_MATCHER.addURI("media", "*/images/thumbnails/#", IMAGES_THUMBNAILS_ID);
+ 
++        URI_MATCHER.addURI("media", "*/dsn_meta/media", DSN_MEDIA);
++        URI_MATCHER.addURI("media", "*/dsn_meta/media/#", DSN_MEDIA_ID);
++
+         URI_MATCHER.addURI("media", "*/audio/media", AUDIO_MEDIA);
+         URI_MATCHER.addURI("media", "*/audio/media/#", AUDIO_MEDIA_ID);
+         URI_MATCHER.addURI("media", "*/audio/media/#/genres", AUDIO_MEDIA_ID_GENRES);
+-- 
+2.7.4
+
