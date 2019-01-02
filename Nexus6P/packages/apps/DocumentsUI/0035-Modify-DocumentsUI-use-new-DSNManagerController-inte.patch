@@ -1,0 +1,284 @@
+From 2a46859bb9dcf35105f3f42f51a7f2d8722eabeb Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Mon, 31 Dec 2018 09:21:35 +0800
+Subject: [PATCH] Modify DocumentsUI use new DSNManagerController interface
+
+- use new DSNManagerController interface addfile, listfile and getfile
+
+Change-Id: I62b7f5077ca9afa4bc3fd60286cf3cc7a13104bd
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ Android.mk                                         |  2 +
+ .../documentsui/DSN/dirlist/DSNRemoteFragment.java | 57 ++++++++++++++++++----
+ .../documentsui/DSN/task/DownloadFilesJob.java     |  9 ++--
+ .../android/documentsui/DSN/task/UploadJob.java    | 52 ++++++++++++++------
+ 4 files changed, 91 insertions(+), 29 deletions(-)
+
+diff --git a/Android.mk b/Android.mk
+index 9294477..be1fa57 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -21,6 +21,8 @@ LOCAL_STATIC_ANDROID_LIBRARIES := \
+         android-support-transition \
+         android-support-v7-recyclerview
+ 
++
++LOCAL_JAVA_LIBRARIES := okhttp
+ LOCAL_STATIC_JAVA_LIBRARIES += android-support-annotations \
+                         okhttp-3 \
+                         retrofit2-adapter \
+diff --git a/src/com/android/documentsui/DSN/dirlist/DSNRemoteFragment.java b/src/com/android/documentsui/DSN/dirlist/DSNRemoteFragment.java
+index afc62a2..6ca9e47 100644
+--- a/src/com/android/documentsui/DSN/dirlist/DSNRemoteFragment.java
++++ b/src/com/android/documentsui/DSN/dirlist/DSNRemoteFragment.java
+@@ -150,13 +150,22 @@ import rx.schedulers.Schedulers;
+ 
+ import static android.content.Context.DSNMANAGER_SERVICE;
+ import brahmaos.app.DSNManager;
+-import brahmaos.app.AddFileCallbackListener;
+ import brahmaos.app.ListFileCallbackListener;
+-import brahmaos.app.DSNMateObjectData;
+-import brahmaos.app.GetFileCallbackListener;
++import android.os.RemoteException;
+ 
++import brahmaos.app.DSNManagerController;
++import brahmaos.app.http.GetJson;
++import brahmaos.app.http.ResponseObjectMeta;
++
++import com.fasterxml.jackson.core.JsonProcessingException;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import com.google.gson.Gson;
++import com.google.gson.reflect.TypeToken;
++import com.google.gson.JsonObject;
++import com.google.gson.JsonParser;
++import com.google.gson.JsonArray;
++import com.google.gson.JsonElement;
+ 
+-import android.os.RemoteException;
+ 
+ public class DSNRemoteFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
+     private static final String TAG = "DSNRemoteFragment";
+@@ -177,7 +186,7 @@ public class DSNRemoteFragment extends Fragment implements SwipeRefreshLayout.On
+     private MenuItem mMenuItem;
+     private AnimationView mAnimationView;
+     private Handler mHandler;
+-    private List<ObjectMeta> objecMetaList;
++    private List<ObjectMeta> objecMetaList = new ArrayList();;
+     private final int HAS_MESSAGE_DSN = 1;
+ 
+     protected DSNUserInputHandler mInputHandler;
+@@ -254,6 +263,7 @@ public class DSNRemoteFragment extends Fragment implements SwipeRefreshLayout.On
+         //Make the recycler and the empty views responsive to drop events when allowed.
+         //mRecView.setOnDragListener(mDragHoverListener);
+         setHasOptionsMenu(true);
++        onStartNetworkRequest();
+         return view;
+     }
+ 
+@@ -278,7 +288,7 @@ public class DSNRemoteFragment extends Fragment implements SwipeRefreshLayout.On
+                 mDSNDirectoryAddonsAdapter.notifyDataSetChanged();
+             }
+        };
+-       onStartNetworkRequest();
++
+     }
+ 
+     @Override
+@@ -315,8 +325,8 @@ public class DSNRemoteFragment extends Fragment implements SwipeRefreshLayout.On
+     }
+ 
+     private void onStartNetworkRequest() {
+-        DSNManager mManager = (DSNManager) mActivity.getSystemService(DSNMANAGER_SERVICE);
+-        mManager.listFile(null,0,20, new ListFileCallbackListener(){
++        DSNManagerController mManager = new DSNManagerController(getContext());
++        mManager.listFile(null, 0, 20, new ListFileCallbackListener(){
+                 @Override
+                 public void onCompleted(String status){
+                     Log.d(TAG, "listFile" + ":" + "onCompleted");
+@@ -326,7 +336,35 @@ public class DSNRemoteFragment extends Fragment implements SwipeRefreshLayout.On
+                     Log.d(TAG, "listFile" + ":" + "onError");
+                 }
+                 @Override
+-                public void onNext(DSNMateObjectData mateObjectData){
++                public void onNext(String json){
++                    Log.d(TAG, "onNext:" + json);
++                    if(json.contains(ApiConst.PARAM_QUOTES)) {
++                        Gson gson = new Gson();
++                        GetJson getGson = gson.fromJson(json, new TypeToken<GetJson>(){}.getType());
++                        String stringJson = gson.toJson(getGson.data.get(ApiConst.PARAM_QUOTES));
++                        List<ResponseObjectMeta> userBean = new Gson().fromJson(stringJson, new TypeToken<List<ResponseObjectMeta>>() {}.getType());
++                        // add data to list
++                        for (ResponseObjectMeta user : userBean) {
++                            ObjectMeta objectMeta = new ObjectMeta();
++                            objectMeta.setAccountId(user.getAccountId());
++                            objectMeta.setObjectKey(user.getObjectKey());
++                            objectMeta.setMimeType(user.getMimeType());
++                            objectMeta.setObjectName(user.getObjectName());
++                            objectMeta.setObjectCreateTime(user.getObjectCreateTime());
++                            objectMeta.setObjectSize(user.getObjectSize());
++                            objectMeta.setObjectSyncTime(user.getObjectSyncTime());
++                            objectMeta.setObjectBlockCnt(user.getObjectBlockCnt());
++                            objectMeta.setEncryptFlag(user.getEncryptFlag());
++                            objecMetaList.add(objectMeta);
++                        }
++                     } else {
++                        Log.d(TAG, "onNext:" + "no data found!");
++                     }
++                     Message msg = new Message();
++                     msg.what = HAS_MESSAGE_DSN;
++                     mHandler.sendMessage(msg);
++
++                    /*
+                     if (mateObjectData.getResult() == 0 && mateObjectData.getData().containsKey(ApiConst.PARAM_QUOTES)) {
+                          ObjectMapper objectMapper = new ObjectMapper();
+                          Log.d(TAG,"listFile" + ":" + "onNext");
+@@ -341,6 +379,7 @@ public class DSNRemoteFragment extends Fragment implements SwipeRefreshLayout.On
+                      } else {
+ 
+                      }
++                     */
+                 }
+                 @Override
+                 public void onCallbackComplete(boolean result){
+diff --git a/src/com/android/documentsui/DSN/task/DownloadFilesJob.java b/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
+index 87ed691..aaeeed0 100644
+--- a/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
++++ b/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
+@@ -66,7 +66,9 @@ import io.ipfs.api.JSONParser;
+ 
+ import static android.content.Context.DSNMANAGER_SERVICE;
+ import brahmaos.app.DSNManager;
++import brahmaos.app.DSNManagerController;
+ import brahmaos.app.GetFileCallbackListener;
++
+ import com.android.documentsui.DSN.dirlist.DownloadFilesList;
+ import com.android.documentsui.DSN.dirlist.DownloadRecycleAdapter;
+ import com.android.documentsui.DSN.conmmon.ConfigConst;
+@@ -101,19 +103,16 @@ public class DownloadFilesJob implements Runnable {
+         mLength = mObjectMeta.getObjectSize();
+         mLockMode = mObjectMeta.getEncryptFlag();
+ 
+-        DSNManager mManager = (DSNManager) mappContext.getSystemService(DSNMANAGER_SERVICE);
++        DSNManagerController mManager = new DSNManagerController(mappContext);
+         mManager.getFile(mHashKey, mPassword, new GetFileCallbackListener() {
+-
+             @Override
+             public void onGetFileProcess(long filesize, long uploadsize){
+-                mItem.setPercent((int)(uploadsize*100/mLength+1));
++                mItem.setPercent((int)(uploadsize*100/mLength + 1));
+                 if(mItem.getViewHolder() != null) {
+                     DownloadRecycleAdapter.DownloadViewHodler vh = mItem.getViewHolder();
+                     vh.setTargetPercent((int)(uploadsize*100/mLength+1));
+                 }
+-
+             }
+-
+             @Override
+             public void onCallbackComplete(boolean status){
+                 if(status == true) {
+diff --git a/src/com/android/documentsui/DSN/task/UploadJob.java b/src/com/android/documentsui/DSN/task/UploadJob.java
+index 09ed293..041961c 100644
+--- a/src/com/android/documentsui/DSN/task/UploadJob.java
++++ b/src/com/android/documentsui/DSN/task/UploadJob.java
+@@ -39,12 +39,7 @@ import com.android.documentsui.clipping.UrisSupplier;
+ import com.android.documentsui.DocumentsApplication;
+ import com.android.documentsui.httpnetwork.HttpServer;
+ 
+-import okhttp3.Interceptor;
+-import okhttp3.OkHttpClient;
+-import okhttp3.Request;
+-import okhttp3.Response;
+-import okhttp3.ResponseBody;
+-import okhttp3.logging.HttpLoggingInterceptor;
++
+ import okio.BufferedSource;
+ import retrofit2.Retrofit;
+ import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
+@@ -82,9 +77,35 @@ import brahmaos.app.DSNManager;
+ import brahmaos.app.AddFileCallbackListener;
+ import com.android.documentsui.DSN.dirlist.UploadFilesList;
+ import com.android.documentsui.DSN.dirlist.UploadRecycleAdapter;
++import brahmaos.app.DSNManagerController;
++import org.json.JSONArray;
++import org.json.JSONException;
+ 
+ import static android.content.Context.DSNMANAGER_SERVICE;
+ 
++import com.android.okhttp.OkHttpClient;
++
++
++import com.android.okhttp.Request;
++import com.android.okhttp.Response;
++import com.android.okhttp.Callback;
++import com.android.okhttp.RequestBody;
++import com.android.okhttp.MediaType;
++
++import brahmaos.app.http.GetJson;
++import com.fasterxml.jackson.core.JsonProcessingException;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import com.google.gson.Gson;
++import com.google.gson.reflect.TypeToken;
++import com.google.gson.JsonObject;
++import com.google.gson.JsonParser;
++import com.google.gson.JsonArray;
++import com.google.gson.JsonElement;
++
++import java.util.concurrent.TimeUnit;
++
++
++
+ 
+ public class UploadJob implements Runnable {
+ 
+@@ -204,17 +225,14 @@ public class UploadJob implements Runnable {
+             String lastModifiedFileTime;
+             String fileType;
+             int blockCnt;
+-
+-            DSNManager mManager = (DSNManager) mContext.getSystemService(DSNMANAGER_SERVICE);
+-
++            DSNManagerController mManager = new DSNManagerController(mContext);
+             List<String> filenames = getFileListame(mPath);
+             if(filenames!= null){
+                 for(String filename : filenames){
+                     UploadFilesList list = UploadFilesList.getInstance();
+                     UploadFilesList.Item item = new UploadFilesList.Item(doc.displayName, doc.mimeType, doc.size, 0);
+                     list.addItem(item);
+-
+-                    mManager.addFile(filename,mEncryptMode, mPassword, new AddFileCallbackListener(){
++                    mManager.addFile(filename, mEncryptMode, mPassword, new AddFileCallbackListener() {
+                         @Override
+                         public void onUploadProcess(long filesize, long uploadsize){
+                             item.setPercent((int)(uploadsize*100/filesize));
+@@ -237,14 +255,19 @@ public class UploadJob implements Runnable {
+                         }
+                         @Override
+                         public void onCallbackComplete(boolean result, Map resultMap){
+-                            Log.d(TAG, "DSNManager onCallbackComplete:" + resultMap.get("account_id"));
+-                            Log.d(TAG, "DSNManager onCallbackComplete:" + resultMap.get("object_key"));
+-                            Log.d(TAG, "DSNManager onCallbackComplete:" + String.valueOf(resultMap.get("object_block_cnt")));
++                            if(resultMap != null) {
++                                Log.d(TAG, "DSNManager onCallbackComplete:" + resultMap.get("account_id"));
++                                Log.d(TAG, "DSNManager onCallbackComplete:" + resultMap.get("object_key"));
++                                Log.d(TAG, "DSNManager onCallbackComplete:" + String.valueOf(resultMap.get("object_block_cnt")));
++                            } else {
++                                Log.d(TAG, "resultMap is Null!");
++                            }
+                         }
+                     });
+                 }
+             } else
+                 return;
++
+     }
+ 
+     public List<String> getFileListame(String strPath) {
+@@ -277,5 +300,4 @@ public class UploadJob implements Runnable {
+     public static <T> T getFirstElement(List<T> list) {
+         return list.get(0);
+     }
+-
+ }
+-- 
+2.7.4
+
