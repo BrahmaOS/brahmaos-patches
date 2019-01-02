@@ -1,0 +1,358 @@
+From 7c75353b39ac354966a076e0da8b0d2a95d19d5b Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Fri, 21 Dec 2018 16:29:38 +0800
+Subject: [PATCH] Modify show default background when no item
+
+Change-Id: I32f4849adc24a301bb124c02cb6d3d288b78030f
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ res/layout/fragment_dsn_directory.xml              | 79 ++++++++++------------
+ .../DSN/dirlist/DSNDirectoryAddonsAdapter.java     | 73 +++++++++++++-------
+ .../documentsui/DSN/dirlist/DSNRemoteFragment.java | 51 +++++++-------
+ 3 files changed, 105 insertions(+), 98 deletions(-)
+
+diff --git a/res/layout/fragment_dsn_directory.xml b/res/layout/fragment_dsn_directory.xml
+index 24f1cd7..f089aa4 100644
+--- a/res/layout/fragment_dsn_directory.xml
++++ b/res/layout/fragment_dsn_directory.xml
+@@ -13,56 +13,47 @@
+      See the License for the specific language governing permissions and
+      limitations under the License.
+ -->
+-<FrameLayout
++
++<com.android.documentsui.dirlist.AnimationView
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
++    android:id="@+id/animationview"
+     android:layout_width="match_parent"
+     android:layout_height="match_parent"
+-    >
+-    <com.android.documentsui.dirlist.AnimationView
+-        xmlns:android="http://schemas.android.com/apk/res/android"
+-        xmlns:app="http://schemas.android.com/apk/res-auto"
+-        android:id="@+id/animationview"
++    android:background="@color/directory_background"
++    android:outlineProvider="bounds"
++    android:visibility = "invisible"
++    android:elevation="4dp"
++    android:orientation="vertical">
++    <ProgressBar
++        android:id="@+id/progressbar"
++        android:layout_width="match_parent"
++        android:layout_height="@dimen/progress_bar_height"
++        android:indeterminate="true"
++        style="@style/TrimmedHorizontalProgressBar"
++        android:visibility="gone"/>
++    <com.android.documentsui.dirlist.DocumentsSwipeRefreshLayout
++        android:id="@+id/refresh_layout"
+         android:layout_width="match_parent"
+-        android:layout_height="match_parent"
+-        android:background="@color/directory_background"
+-        android:outlineProvider="bounds"
+-        android:visibility = "invisible"
+-        android:elevation="4dp"
+-        android:orientation="vertical">
++        android:layout_height="match_parent">
+ 
+-        <com.android.documentsui.dirlist.DocumentsSwipeRefreshLayout
+-            android:id="@+id/refresh_layout"
++        <android.support.v7.widget.RecyclerView
++            android:id="@+id/dir_list"
+             android:layout_width="match_parent"
+-            android:layout_height="match_parent">
+-
+-            <android.support.v7.widget.RecyclerView
+-                android:id="@+id/dir_list"
+-                android:layout_width="match_parent"
+-                android:layout_height="match_parent"
+-                android:paddingStart="0dp"
+-                android:paddingEnd="0dp"
+-                android:paddingTop="0dp"
+-                android:paddingBottom="0dp"
+-                android:clipToPadding="false"
+-                android:scrollbars="none"
+-                android:drawSelectorOnTop="true"
+-                app:fastScrollEnabled="true"
+-                app:fastScrollVerticalThumbDrawable="@drawable/fast_scroll_thumb_drawable"
+-                app:fastScrollVerticalTrackDrawable="@drawable/fast_scroll_track_drawable"
+-                app:fastScrollHorizontalThumbDrawable="@drawable/fast_scroll_thumb_drawable"
+-                app:fastScrollHorizontalTrackDrawable="@drawable/fast_scroll_track_drawable"/>
++            android:layout_height="match_parent"
++            android:paddingStart="0dp"
++            android:paddingEnd="0dp"
++            android:paddingTop="0dp"
++            android:paddingBottom="0dp"
++            android:clipToPadding="false"
++            android:scrollbars="none"
++            android:drawSelectorOnTop="true"
++            app:fastScrollEnabled="true"
++            app:fastScrollVerticalThumbDrawable="@drawable/fast_scroll_thumb_drawable"
++            app:fastScrollVerticalTrackDrawable="@drawable/fast_scroll_track_drawable"
++            app:fastScrollHorizontalThumbDrawable="@drawable/fast_scroll_thumb_drawable"
++            app:fastScrollHorizontalTrackDrawable="@drawable/fast_scroll_track_drawable"/>
+ 
+-        </com.android.documentsui.dirlist.DocumentsSwipeRefreshLayout>
++    </com.android.documentsui.dirlist.DocumentsSwipeRefreshLayout>
+ 
+-    </com.android.documentsui.dirlist.AnimationView>
+-    <com.android.documentsui.widget.AVLoadingIndicatorView
+-    android:id="@+id/avi"
+-    android:layout_width="wrap_content"
+-    android:layout_height="wrap_content"
+-    android:gravity="center"
+-    android:layout_gravity="center"
+-    app:indicatorColor="#3C78C2"
+-    android:visibility = "visible"
+-    style="@style/AVLoadingIndicatorView"/>
+-</FrameLayout>
++</com.android.documentsui.dirlist.AnimationView>
+diff --git a/src/com/android/documentsui/DSN/dirlist/DSNDirectoryAddonsAdapter.java b/src/com/android/documentsui/DSN/dirlist/DSNDirectoryAddonsAdapter.java
+index 817f0d8..f9c5016 100644
+--- a/src/com/android/documentsui/DSN/dirlist/DSNDirectoryAddonsAdapter.java
++++ b/src/com/android/documentsui/DSN/dirlist/DSNDirectoryAddonsAdapter.java
+@@ -55,23 +55,29 @@ import android.content.Context;
+ import android.app.Fragment;
+ import com.android.documentsui.files.DSNFilesActivity;
+ 
+-
+-
+-/**
+- * Adapts from dirlist.Model to something RecyclerView understands.
+- */
+ public class DSNDirectoryAddonsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+         private List<ObjectMeta> mDSNModel = new ArrayList();
+         private Fragment mfragment;
+         private Context  mContext;
++        private final static int EMPTY_ITEM_ZERO = 0;
+         static final String SELECTION_CHANGED_MARKER = "Selection-Changed";
+         private static final String TAG = "DSNDirectoryAddonsAdapter";
+ 
++        private final int VIEW_TYPE_HAS_ITEM = 0;
++        private final int VIEW_TYPE_NO_ITEM = 1;
++        private int currentView = 0;
++
+         @Override
+         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+-            View rootView = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_item_dsn, parent, false);
++            if(viewType == VIEW_TYPE_NO_ITEM) {
++                View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_doc_noitem,parent,false);
++                return new NoItemViewHodler(itemView);
+ 
+-            return new DSNDirectoryAddonsAdapter.ItemViewHolder(rootView);
++            } else if(viewType == VIEW_TYPE_HAS_ITEM) {
++                View rootView = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_item_dsn, parent, false);
++                return new ItemViewHolder(rootView);
++            }
++            return null;
+         }
+         public DSNDirectoryAddonsAdapter(Fragment fragment, Context context) {
+             mfragment = fragment;
+@@ -80,24 +86,17 @@ public class DSNDirectoryAddonsAdapter extends RecyclerView.Adapter<RecyclerView
+ 
+         @Override
+         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+-            DSNDirectoryAddonsAdapter.ItemViewHolder itemViewHolder = (DSNDirectoryAddonsAdapter.ItemViewHolder) holder;
+-            ObjectMeta mObjectMeta = mDSNModel.get(position);
+-            setData(itemViewHolder, mObjectMeta);
+-            holder.itemView.setActivated(false);
+-            holder.itemView.setSelected(false);
++            if(currentView == VIEW_TYPE_HAS_ITEM) {
++                DSNDirectoryAddonsAdapter.ItemViewHolder itemViewHolder = (DSNDirectoryAddonsAdapter.ItemViewHolder) holder;
++                ObjectMeta mObjectMeta = mDSNModel.get(position);
++                setData(itemViewHolder, mObjectMeta);
++                holder.itemView.setActivated(false);
++                holder.itemView.setSelected(false);
+ 
+-       }
+-
+-        @Override
+-        public void onBindViewHolder(RecyclerView.ViewHolder  holder, int position, List<Object> payload) {
+-            if (payload.contains(SELECTION_CHANGED_MARKER)) {
+-                //final boolean selected = mEnv.isSelected(mModelIds.get(position));
+-                holder.itemView.setActivated(true);
+-                holder.itemView.setSelected(true);
+-            } else {
+-                onBindViewHolder(holder, position);
+             }
+-        }
++            return;
++
++       }
+ 
+         public void addDNSModelsObjectMeta(ObjectMeta objectMeta) {
+                mDSNModel.add(objectMeta);
+@@ -145,8 +144,22 @@ public class DSNDirectoryAddonsAdapter extends RecyclerView.Adapter<RecyclerView
+         }
+ 
+         @Override
++        public int getItemViewType(int position) {
++            if(mDSNModel.size() == EMPTY_ITEM_ZERO) {
++                currentView = VIEW_TYPE_NO_ITEM;
++                return  VIEW_TYPE_NO_ITEM;
++            } else {
++                currentView = VIEW_TYPE_HAS_ITEM;
++                return  VIEW_TYPE_HAS_ITEM;
++            }
++        }
++
++        @Override
+         public int getItemCount() {
+-            return mDSNModel.size();
++            if(mDSNModel.size() == EMPTY_ITEM_ZERO) {
++                return 1;
++            } else
++                return mDSNModel.size();
+         }
+ 
+         public void onItemSelectionChanged(int position) {
+@@ -169,8 +182,16 @@ public class DSNDirectoryAddonsAdapter extends RecyclerView.Adapter<RecyclerView
+                 tvDSNShoreName = itemView.findViewById(R.id.tv_dsn_short_name);
+                 tvDSNDate = itemView.findViewById(R.id.tv_dsn_date);
+                 tvDSNSize = itemView.findViewById(R.id.tv_dsn_size);
+-
++            }
++        }
++        public class NoItemViewHodler extends RecyclerView.ViewHolder {
++            private ImageView mImageView;
++            private TextView mMsgView;
++            public NoItemViewHodler(View itemView) {
++                super(itemView);
++                mMsgView = (TextView) itemView.findViewById(R.id.message);
++                mImageView = (ImageView) itemView.findViewById(R.id.artwork);
++            }
+         }
+-   }
+ }
+ 
+diff --git a/src/com/android/documentsui/DSN/dirlist/DSNRemoteFragment.java b/src/com/android/documentsui/DSN/dirlist/DSNRemoteFragment.java
+index a1c3768..afc62a2 100644
+--- a/src/com/android/documentsui/DSN/dirlist/DSNRemoteFragment.java
++++ b/src/com/android/documentsui/DSN/dirlist/DSNRemoteFragment.java
+@@ -110,9 +110,11 @@ import com.android.documentsui.sorting.SortDimension;
+ import com.android.documentsui.sorting.SortModel;
+ import android.support.v7.widget.LinearLayoutManager;
+ import android.widget.LinearLayout;
++
+ import com.android.documentsui.DSN.dirlist.DSNDirectoryAddonsAdapter;
+ import com.android.documentsui.dirlist.IconHelper;
+ import com.android.documentsui.dirlist.AnimationView;
++import com.android.documentsui.DSN.dirlist.NoItemRecycleAdapter;
+ 
+ import com.android.documentsui.DSN.selection.DSNGestureSelector;
+ 
+@@ -121,7 +123,7 @@ import java.lang.annotation.Retention;
+ import java.lang.annotation.RetentionPolicy;
+ import java.util.List;
+ import java.util.ArrayList;
+-
++import java.util.concurrent.TimeUnit;
+ 
+ import javax.annotation.Nullable;
+ import com.android.documentsui.httpnetwork.HttpServer;
+@@ -130,8 +132,6 @@ import com.android.documentsui.httpnetwork.*;
+ import com.fasterxml.jackson.core.type.TypeReference;
+ import com.fasterxml.jackson.databind.ObjectMapper;
+ import com.android.documentsui.httpnetwork.Networks;
+-import com.android.documentsui.widget.AVLoadingIndicatorView;
+-
+ 
+ import java.util.Collections;
+ import java.util.HashMap;
+@@ -158,7 +158,6 @@ import brahmaos.app.GetFileCallbackListener;
+ 
+ import android.os.RemoteException;
+ 
+-
+ public class DSNRemoteFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
+     private static final String TAG = "DSNRemoteFragment";
+     protected BaseActivity mActivity;
+@@ -176,18 +175,16 @@ public class DSNRemoteFragment extends Fragment implements SwipeRefreshLayout.On
+     protected IconHelper mIconHelper;
+     private DSNDirectoryAddonsAdapter mDSNDirectoryAddonsAdapter;
+     private MenuItem mMenuItem;
+-    private AVLoadingIndicatorView avi;
+     private AnimationView mAnimationView;
+     private Handler mHandler;
+     private List<ObjectMeta> objecMetaList;
+-
++    private final int HAS_MESSAGE_DSN = 1;
+ 
+     protected DSNUserInputHandler mInputHandler;
+ 
+     protected LinearLayout mLinearLayout;
+     protected ActionModeController mActionModeController;
+ 
+-
+     public DSNRemoteFragment() {
+         super();
+     }
+@@ -199,16 +196,12 @@ public class DSNRemoteFragment extends Fragment implements SwipeRefreshLayout.On
+         mActivity = (BaseActivity) getActivity();
+         final View view = inflater.inflate(R.layout.fragment_dsn_directory, container, false);
+ 
+-        //mProgressBar = view.findViewById(R.id.progressbar);
+-        //assert(mProgressBar != null);
+-        //mProgressBar.setVisibility(View.VISIBLE);
+-
+-        avi= (AVLoadingIndicatorView) view.findViewById(R.id.avi);
+-        avi.setIndicator("BallSpinFadeLoaderIndicator");
+-        avi.show();
++        mProgressBar = view.findViewById(R.id.progressbar);
++        assert(mProgressBar != null);
++        mProgressBar.setVisibility(View.VISIBLE);
+ 
+         mAnimationView = (AnimationView)view.findViewById(R.id.animationview);
+-
++        mAnimationView.setVisibility(View.VISIBLE);
+ 
+         mRecView = (RecyclerView) view.findViewById(R.id.dir_list);
+ 
+@@ -269,21 +262,23 @@ public class DSNRemoteFragment extends Fragment implements SwipeRefreshLayout.On
+         super.onStart();
+         mDSNDirectoryAddonsAdapter.clearDNSModels();
+         mHandler = new Handler(){
++            @Override
+             public void handleMessage(Message msg) {
+                 switch (msg.what) {
+-                    case 1:
+-                        if(objecMetaList.size() == 0)
+-                            avi.hide();
+-                        else{
+-                            for(ObjectMeta objectMeta: objecMetaList)
+-                                mDSNDirectoryAddonsAdapter.addDNSModelsObjectMeta(objectMeta);
+-                            mAnimationView.setVisibility(View.VISIBLE);
+-                            mDSNDirectoryAddonsAdapter.notifyDataSetChanged();
++                    case HAS_MESSAGE_DSN:
++                        if(objecMetaList.size() != 0) {
++                            for(ObjectMeta objectMeta: objecMetaList) {
++                            mDSNDirectoryAddonsAdapter.addDNSModelsObjectMeta(objectMeta);
+                         }
+-                        break;
+-                    default: break; } }; };
+-
+-        onStartNetworkRequest();
++                    }
++                    break;
++                    default: break;
++                }
++                mProgressBar.setVisibility(View.INVISIBLE);
++                mDSNDirectoryAddonsAdapter.notifyDataSetChanged();
++            }
++       };
++       onStartNetworkRequest();
+     }
+ 
+     @Override
+@@ -338,7 +333,7 @@ public class DSNRemoteFragment extends Fragment implements SwipeRefreshLayout.On
+                          try {
+                             objecMetaList = objectMapper.readValue(objectMapper.writeValueAsString(mateObjectData.getData().get(ApiConst.PARAM_QUOTES)), new TypeReference<List<ObjectMeta>>() {});
+                             Message msg = new Message();
+-                            msg.what = 1;
++                            msg.what = HAS_MESSAGE_DSN;
+                             mHandler.sendMessage(msg);
+                          } catch (IOException e) {
+                              e.printStackTrace();
+-- 
+2.7.4
+
