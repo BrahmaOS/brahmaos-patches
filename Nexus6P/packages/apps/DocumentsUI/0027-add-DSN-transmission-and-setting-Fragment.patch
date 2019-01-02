@@ -1,0 +1,4537 @@
+From ee55733dec2cbdf130b94ada368e554291d1e0cd Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Fri, 30 Nov 2018 15:33:30 +0800
+Subject: [PATCH] add DSN transmission and setting Fragment
+
+- add DSN transmision Fragment
+- add DSN setting Fragment to set encrypt
+- add encrypt selection Dialog
+
+Change-Id: I8ff178de9de1e7d24e871101ed8d43ff0ec32479
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ res/drawable/ic_item_dsnfilelist.png               | Bin 0 -> 423 bytes
+ res/drawable/ic_item_dsnsetting.png                | Bin 0 -> 416 bytes
+ res/drawable/ring.xml                              |  17 +
+ res/drawable/stars_select.xml                      |  13 +
+ res/drawable/switch_thumb.xml                      |   5 +
+ res/drawable/switch_track.xml                      |  21 ++
+ res/layout/activity_dsn_transmission.xml           |  79 +++++
+ res/layout/dialog_dsn_select_encrypt.xml           |  59 ++++
+ res/layout/fragment_dsn_downloadfileslist.xml      |  14 +
+ res/layout/fragment_dsn_setting.xml                | 158 +++++++++
+ res/layout/fragment_dsn_uploadfileslist.xml        |  14 +
+ res/layout/item_doc_noitem.xml                     |  55 +++
+ res/layout/item_dsn_downloadfilesqueue.xml         |  86 +++++
+ res/layout/item_dsn_uploadfilesqueue.xml           |  88 +++++
+ res/layout/list_item_dsn.xml                       |   7 +-
+ res/menu/action_mode_menu.xml                      |   4 +-
+ res/values-en-rGB/strings.xml                      |   5 +
+ res/values-zh-rCN/strings.xml                      |   7 +
+ res/values/attrs.xml                               |   6 +
+ res/values/colors.xml                              |  14 +-
+ res/values/dimens.xml                              |   6 +-
+ res/values/strings.xml                             |   5 +-
+ .../android/documentsui/AbstractActionHandler.java |   4 +-
+ src/com/android/documentsui/ActionHandler.java     |   2 +-
+ src/com/android/documentsui/BaseActivity.java      |   1 -
+ .../android/documentsui/DSN/base/BaseActivity.java |   7 +-
+ .../documentsui/DSN/conmmon/ConfigConst.java       |  14 +
+ .../DSN/dirlist/DSNDirectoryAddonsAdapter.java     |  30 +-
+ .../DSN/dirlist/DSNDirectoryFragment.java          | 363 --------------------
+ .../DSN/dirlist/DSNListeningGestureDetector.java   |  30 +-
+ .../documentsui/DSN/dirlist/DSNRemoteFragment.java | 373 +++++++++++++++++++++
+ .../DSN/dirlist/DSNSettingFragment.java            | 177 ++++++++++
+ .../DSN/dirlist/DSNTransmissionFragment.java       | 225 +++++++++++++
+ .../DSN/dirlist/DSNUserInputHandler.java           |  31 +-
+ .../documentsui/DSN/dirlist/DownloadFilesList.java | 120 +++++++
+ .../DSN/dirlist/DownloadFilesQueueFragment.java    |  81 +++++
+ .../DSN/dirlist/DownloadRecycleAdapter.java        | 116 +++++++
+ .../DSN/dirlist/NoItemRecycleAdapter.java          |  78 +++++
+ .../documentsui/DSN/dirlist/PercentCircle.java     | 206 ++++++++++++
+ .../documentsui/DSN/dirlist/UploadFilesList.java   | 120 +++++++
+ .../DSN/dirlist/UploadFilesQueueFragment.java      |  79 +++++
+ .../DSN/dirlist/UploadRecycleAdapter.java          | 116 +++++++
+ .../documentsui/DSN/task/DownloadFilesJob.java     | 139 ++++++++
+ .../android/documentsui/DSN/task/UploadJob.java    | 300 +++++++++++++++++
+ .../DSN/ui/common/barcode/CaptureActivity.java     |  14 +
+ .../android/documentsui/DSN/util/CommonUtil.java   |  16 +
+ .../documentsui/DSN/util/PermissionUtil.java       |  31 +-
+ src/com/android/documentsui/DSN/util/PxUtils.java  |  33 ++
+ .../android/documentsui/DSN/util/QRCodeUtil.java   |  16 +
+ src/com/android/documentsui/MenuManager.java       |   4 +-
+ src/com/android/documentsui/base/Providers.java    |   8 +-
+ src/com/android/documentsui/base/RootInfo.java     |   4 +-
+ .../documentsui/dirlist/DirectoryFragment.java     |  28 +-
+ .../android/documentsui/files/ActionHandler.java   | 133 ++++++--
+ .../documentsui/files/DSNFilesActivity.java        |  33 +-
+ .../android/documentsui/roots/ProvidersCache.java  |  33 ++
+ .../android/documentsui/services/BackupJob.java    |   4 -
+ .../documentsui/services/FileOperation.java        |   7 +-
+ .../android/documentsui/sidebar/RootsFragment.java |  22 +-
+ .../android/documentsui/ui/DialogController.java   |   4 +-
+ src/com/android/documentsui/ui/MessageBuilder.java |   2 +-
+ 61 files changed, 3150 insertions(+), 517 deletions(-)
+ create mode 100644 res/drawable/ic_item_dsnfilelist.png
+ create mode 100644 res/drawable/ic_item_dsnsetting.png
+ create mode 100644 res/drawable/ring.xml
+ create mode 100644 res/drawable/stars_select.xml
+ create mode 100644 res/drawable/switch_thumb.xml
+ create mode 100644 res/drawable/switch_track.xml
+ create mode 100644 res/layout/activity_dsn_transmission.xml
+ create mode 100644 res/layout/dialog_dsn_select_encrypt.xml
+ create mode 100644 res/layout/fragment_dsn_downloadfileslist.xml
+ create mode 100644 res/layout/fragment_dsn_setting.xml
+ create mode 100644 res/layout/fragment_dsn_uploadfileslist.xml
+ create mode 100644 res/layout/item_doc_noitem.xml
+ create mode 100644 res/layout/item_dsn_downloadfilesqueue.xml
+ create mode 100644 res/layout/item_dsn_uploadfilesqueue.xml
+ create mode 100644 src/com/android/documentsui/DSN/conmmon/ConfigConst.java
+ delete mode 100644 src/com/android/documentsui/DSN/dirlist/DSNDirectoryFragment.java
+ create mode 100644 src/com/android/documentsui/DSN/dirlist/DSNRemoteFragment.java
+ create mode 100644 src/com/android/documentsui/DSN/dirlist/DSNSettingFragment.java
+ create mode 100644 src/com/android/documentsui/DSN/dirlist/DSNTransmissionFragment.java
+ create mode 100644 src/com/android/documentsui/DSN/dirlist/DownloadFilesList.java
+ create mode 100644 src/com/android/documentsui/DSN/dirlist/DownloadFilesQueueFragment.java
+ create mode 100644 src/com/android/documentsui/DSN/dirlist/DownloadRecycleAdapter.java
+ create mode 100644 src/com/android/documentsui/DSN/dirlist/NoItemRecycleAdapter.java
+ create mode 100644 src/com/android/documentsui/DSN/dirlist/PercentCircle.java
+ create mode 100644 src/com/android/documentsui/DSN/dirlist/UploadFilesList.java
+ create mode 100644 src/com/android/documentsui/DSN/dirlist/UploadFilesQueueFragment.java
+ create mode 100644 src/com/android/documentsui/DSN/dirlist/UploadRecycleAdapter.java
+ create mode 100644 src/com/android/documentsui/DSN/task/DownloadFilesJob.java
+ create mode 100644 src/com/android/documentsui/DSN/task/UploadJob.java
+ create mode 100644 src/com/android/documentsui/DSN/util/PxUtils.java
+
+diff --git a/res/drawable/ic_item_dsnfilelist.png b/res/drawable/ic_item_dsnfilelist.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..b402b5dd38b6261e9cb6dff41a4184c2d5d455ae
+GIT binary patch
+literal 423
+zcmV;Y0a*TtP)<h;3K|Lk000e1NJLTq001BW001Be1^@s6b9#F80004QNkl<ZScTQs
+z(QSh;5P;!-1V-oxY|w6yjKBtEgL;H+P&Q~bC>xXw$Og#<^x@8`YhmYbah0BQ0txK<
+zg5d1HorMEtU@6QQXiJNqfGf}gPaAUr20dO%5H0cxO7$c1^qNwH(}AVo0R)Iy&&_~Q
+z&mVwy;KPt_D}WI3X+?y926+#hA-e=%Ga>|(#2R1|q87l6s0lD3LO=t&81q@joRB_{
+zi!34rIAiuYrpNZ#B@rQ@BpTqX6CZ%bOdgO%)rS-O7T^&B_I1PU4cHQ6DWC(6nd=T)
+z=PLqqd_TS}anFLRj=KYV@kuj<r~>fCJASSKYltd<Yf#7oJnZ@xfcQR_x&CheQ#{WR
+z+m>t(K%2U6L|SBS(Xj#=9kVvq1zEgS!zm<gn`dOJW(Bm!3mVTe-WY!~tbl59cYqez
+zLHqt60$w$%0^$vZ2MowNQ2aN|3WyPl9;*~j0Yb!5vp7h@O6><4<on)K{0oi((s?SP
+R>%Ra1002ovPDHLkV1i_;t~&q#
+
+literal 0
+HcmV?d00001
+
+diff --git a/res/drawable/ic_item_dsnsetting.png b/res/drawable/ic_item_dsnsetting.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..d43806a51c03876c27b5c892bfd03d6bcc14c76d
+GIT binary patch
+literal 416
+zcmV;R0bl-!P)<h;3K|Lk000e1NJLTq001BW001Be1^@s6b9#F80004JNkl<ZScTnJ
+z+ik=k5S&sd;YvseDS;BwfhplSFdgJNI663YaPGi#;Cuj*LzZ12I45PK5g)+L0Lu&L
+zg8{H-G@Y@!a3c)Zzck<o18$_i1;8_w6js8(qcaxSVT(aG0Geo%iznvLhq|rC#8Ldn
+z34j7H7wV59b8LGp)UzfQCio~W(hT?$#l18G!1r|<O)ZHhQ0w<wnp$xnB++OCs>Oh<
+z2zZO5GL`MGEe5zmTtO$&1^h1BN@51UCxAP`X(o+?%VH&%-=oGoYEGyS%%@#~ZHzfQ
+zlRy5ofm4>i#7+)%cflJYuE1Ybd(?1I)06^nnfwI36BPJe<Qd~XV1-fa2-ofuIaiFl
+z=^#=S23o0F47~I*(kF-~YDv8GBpXHXNw%ISp4jyyGYCm!3-yT}A%7I;-&56->}bLR
+zcqiJF4CK&Rtfs%g!gQcc%+l0KvAW<018$^%gqMF#4Pn6a1o{FVyd#b)l5w2?0000<
+KMNUMnLSTY~-my#o
+
+literal 0
+HcmV?d00001
+
+diff --git a/res/drawable/ring.xml b/res/drawable/ring.xml
+new file mode 100644
+index 0000000..5791cdb
+--- /dev/null
++++ b/res/drawable/ring.xml
+@@ -0,0 +1,17 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--solid表示远的填充色，stroke则代表远的边框线，
++    所以两者结合可以实现带边缘的圆，当然也可以直接加上size控制高宽，-->
++<shape xmlns:android="http://schemas.android.com/apk/res/android"
++    android:shape= "oval"
++    android:useLevel= "false"
++    >
++
++    <!--<solid android:color= "@android:color/transparent" />-->
++
++    <stroke
++        android:width= "3dp"
++        android:color= "@color/colorMoreLightGray" />
++    <size android:height="36dp"
++          android:width="36dp"/>
++
++</shape>
+\ No newline at end of file
+diff --git a/res/drawable/stars_select.xml b/res/drawable/stars_select.xml
+new file mode 100644
+index 0000000..97bab10
+--- /dev/null
++++ b/res/drawable/stars_select.xml
+@@ -0,0 +1,13 @@
++<?xml version="1.0" encoding="utf-8"?>
++<selector xmlns:android="http://schemas.android.com/apk/res/android">
++    <item android:state_selected="true">
++        <shape android:shape="oval">
++            <solid android:color="@color/colorBlue" />
++        </shape>
++    </item>
++    <item android:state_selected="false">
++        <shape android:shape="oval">
++            <solid android:color="@color/item_doc_background_selected" />
++        </shape>
++    </item>
++</selector>
+diff --git a/res/drawable/switch_thumb.xml b/res/drawable/switch_thumb.xml
+new file mode 100644
+index 0000000..304a830
+--- /dev/null
++++ b/res/drawable/switch_thumb.xml
+@@ -0,0 +1,5 @@
++<?xml version="1.0" encoding="utf-8"?>
++<selector xmlns:android="http://schemas.android.com/apk/res/android">
++    <item android:state_checked="true" android:drawable="@drawable/abc_btn_switch_to_on_mtrl_00012" />
++    <item android:drawable="@drawable/abc_btn_switch_to_on_mtrl_00001" />
++</selector>
+diff --git a/res/drawable/switch_track.xml b/res/drawable/switch_track.xml
+new file mode 100644
+index 0000000..13bf9be
+--- /dev/null
++++ b/res/drawable/switch_track.xml
+@@ -0,0 +1,21 @@
++<?xml version="1.0" encoding="utf-8"?>
++<selector xmlns:android="http://schemas.android.com/apk/res/android">
++
++    <item  android:state_checked="true" >
++        <shape xmlns:android="http://schemas.android.com/apk/res/android">
++            <size android:width="@dimen/switch_w"
++                android:height="@dimen/switch_h"/>
++            <solid android:color="@color/colorButtonSelect"/>
++            <corners android:radius="@dimen/switch_r"/>
++        </shape>
++    </item>
++
++    <item  android:state_checked="false" >
++        <shape xmlns:android="http://schemas.android.com/apk/res/android">
++            <size android:width="@dimen/switch_w"
++                android:height="@dimen/switch_h"/>
++            <solid android:color="@color/colorNoButtonSelect"/>
++            <corners android:radius="@dimen/switch_r"/>
++        </shape>
++    </item>
++</selector>
+diff --git a/res/layout/activity_dsn_transmission.xml b/res/layout/activity_dsn_transmission.xml
+new file mode 100644
+index 0000000..2239bf8
+--- /dev/null
++++ b/res/layout/activity_dsn_transmission.xml
+@@ -0,0 +1,79 @@
++<?xml version="1.0" encoding="utf-8"?>
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:orientation="vertical">
++
++    <RadioGroup
++        android:id="@+id/home_rg"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:orientation="horizontal">
++
++        <RadioButton
++            android:id="@+id/home_rb_dujia"
++            android:layout_width="0dp"
++            android:layout_height="50dp"
++            android:layout_weight="1"
++            android:button="@null"
++            android:gravity="center"
++            android:padding="10dp"
++            android:textSize="16sp"
++            android:text="上传" />
++
++        <RadioButton
++            android:id="@+id/home_rb_ticker"
++            android:layout_width="0dp"
++            android:layout_height="50dp"
++            android:layout_weight="1"
++            android:button="@null"
++            android:gravity="center"
++            android:padding="10dp"
++            android:textSize="16sp"
++            android:text="下载" />
++
++    </RadioGroup>
++
++    <FrameLayout
++            android:layout_width="match_parent"
++            android:layout_gravity="center_vertical"
++            android:layout_height="2dp">
++
++        <View
++            android:layout_width="match_parent"
++            android:layout_height="1dp"
++            android:layout_gravity="center_vertical"
++            android:background="@color/colorGray" />
++
++        <View
++            android:id="@+id/home_fl_view"
++            android:layout_height="match_parent"
++            android:layout_width="match_parent"
++            android:layout_gravity="center_vertical"
++            android:background="@color/colorBlue" />
++    </FrameLayout>
++
++
++    <RelativeLayout
++        android:id="@+id/activity_main"
++        android:layout_width="match_parent"
++        android:layout_height="match_parent">
++
++        <android.support.v4.view.ViewPager
++            android:id="@+id/home_vp"
++            android:layout_width="match_parent"
++            android:layout_height="match_parent" />
++
++        <LinearLayout
++            android:id="@+id/main_ll"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:layout_alignParentBottom="true"
++            android:layout_marginBottom="20dp"
++            android:gravity="center"
++            android:orientation="horizontal" />
++
++    </RelativeLayout>
++
++
++</LinearLayout>
+diff --git a/res/layout/dialog_dsn_select_encrypt.xml b/res/layout/dialog_dsn_select_encrypt.xml
+new file mode 100644
+index 0000000..6826ce0
+--- /dev/null
++++ b/res/layout/dialog_dsn_select_encrypt.xml
+@@ -0,0 +1,59 @@
++<?xml version="1.0" encoding="utf-8"?>
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:orientation="vertical"
++    >
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="1dp"
++        android:background="@color/colorMoreLightGray"
++        android:layout_marginTop="@dimen/space_normal"
++        />
++
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:orientation="vertical"
++        android:layout_marginTop="@dimen/space_normal"
++        android:paddingLeft="16dp"
++        android:paddingRight="16dp"
++        >
++        <RadioGroup
++            android:id="@+id/radioGroup_id"
++            android:layout_width="match_parent"
++            android:layout_height="match_parent">
++            <RadioButton
++                android:id="@+id/radioButtonA"
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:textSize="18sp"
++                android:paddingLeft="16dp"
++                android:text="Without the password" />
++            <RadioButton
++                android:id="@+id/radioButtonB"
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:layout_marginTop="14dp"
++                android:textSize="18sp"
++                android:paddingLeft="16dp"
++                android:text="Systematic encryption" />
++            <RadioButton
++                android:id="@+id/radioButtonC"
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:layout_marginTop="14dp"
++                android:textSize="18sp"
++                android:paddingLeft="16dp"
++                android:text="Custom encryption" />
++        </RadioGroup>
++    </LinearLayout>>
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="1dp"
++        android:background="@color/colorMoreLightGray"
++        android:layout_marginTop="@dimen/space_normal"
++        />
++
++
++</LinearLayout>
+diff --git a/res/layout/fragment_dsn_downloadfileslist.xml b/res/layout/fragment_dsn_downloadfileslist.xml
+new file mode 100644
+index 0000000..a4218f9
+--- /dev/null
++++ b/res/layout/fragment_dsn_downloadfileslist.xml
+@@ -0,0 +1,14 @@
++<?xml version="1.0" encoding="utf-8"?>
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:fitsSystemWindows="true"
++    android:orientation="vertical">
++    <android.support.v7.widget.RecyclerView
++        android:id="@+id/collect_recyclerView"
++        android:layout_width="match_parent"
++        android:layout_height="match_parent">
++    </android.support.v7.widget.RecyclerView>
++
++</LinearLayout>
++
+diff --git a/res/layout/fragment_dsn_setting.xml b/res/layout/fragment_dsn_setting.xml
+new file mode 100644
+index 0000000..25d57da
+--- /dev/null
++++ b/res/layout/fragment_dsn_setting.xml
+@@ -0,0 +1,158 @@
++<?xml version="1.0" encoding="utf-8"?>
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent">
++
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="match_parent"
++        android:layout_marginLeft="16dp"
++        android:layout_marginRight="0dp"
++        android:layout_marginTop="10dp"
++        android:orientation="vertical">
++        <RelativeLayout
++            android:layout_width="match_parent"
++            android:layout_height="80dp"
++            android:gravity="center_vertical"
++            android:paddingEnd="@dimen/space_normal"
++            android:paddingStart="@dimen/space_normal">
++            <TextView
++                android:id="@+id/tv_name_title"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:text="选择加密模式"
++                android:textSize="18sp"
++                android:textColor="@color/colorDark"/>
++            <Switch
++                android:id="@+id/switch_cm"
++                android:layout_gravity="center_vertical"
++                android:layout_width="wrap_content"
++                android:layout_alignParentEnd="true"
++                android:layout_height="wrap_content" />
++        </RelativeLayout>
++
++        <LinearLayout
++            android:background="@color/colorLightGray"
++            android:layout_width="match_parent"
++            android:layout_height="1dp"
++            android:layout_gravity="center_horizontal"
++            android:layout_marginLeft="@dimen/space_normal"
++            android:layout_marginRight="@dimen/space"
++            >
++        </LinearLayout>
++
++        <RelativeLayout
++            android:layout_width="match_parent"
++            android:layout_height="80dp"
++            android:gravity="center_vertical"
++            android:layout_marginTop="12dp"
++            android:paddingEnd="@dimen/space_normal"
++            android:paddingStart="@dimen/space_normal">
++            <LinearLayout
++                android:layout_width="match_parent"
++                android:layout_height="match_parent"
++                android:orientation="vertical">
++                <TextView
++                    android:id="@+id/textView9"
++                    android:layout_marginTop="6dp"
++                    android:layout_width="wrap_content"
++                    android:layout_height="wrap_content"
++                    android:textSize="18sp"
++                    android:textColor="@color/colorGray"
++                    android:layout_gravity="center_vertical"
++                    android:text="无需加密模式" />
++                <TextView
++                    android:id="@+id/textView10"
++                    android:layout_width="wrap_content"
++                    android:layout_height="wrap_content"
++                    android:layout_marginTop="6dp"
++                    android:textSize="14sp"
++                    android:textColor="@color/colorGray"
++                    android:layout_gravity="center_vertical"
++                    android:text="无需加密模式在上传下载文件时不用设置密码" />
++            </LinearLayout>
++
++            <RadioButton
++                android:id="@+id/radioButton_ne"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:layout_alignParentEnd="true" />
++        </RelativeLayout>
++
++        <RelativeLayout
++            android:layout_width="match_parent"
++            android:layout_marginTop="10dp"
++            android:layout_height="80dp"
++            android:gravity="center_vertical"
++            android:paddingEnd="@dimen/space_normal"
++            android:paddingStart="@dimen/space_normal">
++            <LinearLayout
++                android:layout_width="match_parent"
++                android:layout_height="match_parent"
++                android:orientation="vertical">
++                <TextView
++                    android:id="@+id/textView3"
++                    android:layout_marginTop="6dp"
++                    android:layout_width="wrap_content"
++                    android:layout_height="wrap_content"
++                    android:textSize="18sp"
++                    android:textColor="@color/colorGray"
++                    android:layout_gravity="center_vertical"
++                    android:text="默认加密模式" />
++                <TextView
++                    android:id="@+id/textView14"
++                    android:layout_width="wrap_content"
++                    android:layout_height="wrap_content"
++                    android:layout_marginTop="6dp"
++                    android:textSize="14sp"
++                    android:textColor="@color/colorGray"
++                    android:layout_gravity="center_vertical"
++                    android:text="默认模式密码为Brahma OS系统帐号密码" />
++            </LinearLayout>
++
++            <RadioButton
++                android:id="@+id/radioButton_se"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:layout_alignParentEnd="true" />
++        </RelativeLayout>
++        <RelativeLayout
++            android:layout_width="match_parent"
++            android:layout_marginTop="10dp"
++            android:layout_height="80dp"
++            android:gravity="center_vertical"
++            android:paddingEnd="@dimen/space_normal"
++            android:paddingStart="@dimen/space_normal">
++            <LinearLayout
++                android:layout_width="match_parent"
++                android:layout_height="match_parent"
++                android:orientation="vertical">
++                <TextView
++                    android:id="@+id/textView2"
++                    android:layout_marginTop="6dp"
++                    android:layout_width="wrap_content"
++                    android:layout_height="wrap_content"
++                    android:textSize="18sp"
++                    android:textColor="@color/colorGray"
++                    android:layout_gravity="center_vertical"
++                    android:text="每次加密模式" />
++                <TextView
++                    android:id="@+id/textView"
++                    android:layout_marginTop="6dp"
++                    android:layout_width="wrap_content"
++                    android:layout_height="wrap_content"
++                    android:textSize="14sp"
++                    android:textColor="@color/colorGray"
++                    android:layout_gravity="center_vertical"
++                    android:text="每次加密在每次上传和下载文件时都需要手动输入密码，具有安全性" />
++            </LinearLayout>
++
++            <RadioButton
++                android:id="@+id/radioButton_ce"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:layout_alignParentEnd="true" />
++        </RelativeLayout>
++
++    </LinearLayout>
++</LinearLayout>
+\ No newline at end of file
+diff --git a/res/layout/fragment_dsn_uploadfileslist.xml b/res/layout/fragment_dsn_uploadfileslist.xml
+new file mode 100644
+index 0000000..a4218f9
+--- /dev/null
++++ b/res/layout/fragment_dsn_uploadfileslist.xml
+@@ -0,0 +1,14 @@
++<?xml version="1.0" encoding="utf-8"?>
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:fitsSystemWindows="true"
++    android:orientation="vertical">
++    <android.support.v7.widget.RecyclerView
++        android:id="@+id/collect_recyclerView"
++        android:layout_width="match_parent"
++        android:layout_height="match_parent">
++    </android.support.v7.widget.RecyclerView>
++
++</LinearLayout>
++
+diff --git a/res/layout/item_doc_noitem.xml b/res/layout/item_doc_noitem.xml
+new file mode 100644
+index 0000000..d71e2b4
+--- /dev/null
++++ b/res/layout/item_doc_noitem.xml
+@@ -0,0 +1,55 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Copyright (C) 2016 The Android Open Source Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++
++<FrameLayout
++    xmlns:android="http://schemas.android.com/apk/res/android"
++    android:id="@android:id/empty"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:background="@color/directory_background"
++    android:focusable="true"
++    android:clickable="true">
++
++    <RelativeLayout
++        android:id="@+id/content"
++        android:gravity="center"
++        android:layout_width="match_parent"
++        android:layout_height="match_parent">
++
++        <ImageView
++            android:id="@+id/artwork"
++            android:layout_above="@+id/message"
++            android:layout_height="wrap_content"
++            android:layout_width="fill_parent"
++            android:layout_marginBottom="25dp"
++            android:scaleType="fitCenter"
++            android:maxHeight="250dp"
++            android:src="@drawable/cabinet"
++            android:adjustViewBounds="true"
++            android:contentDescription="@null"/>
++
++        <TextView
++            android:id="@id/message"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_alignParentBottom="true"
++            android:layout_centerHorizontal="true"
++            android:text="@string/empty"
++            style="@android:style/TextAppearance.Material.Subhead"/>
++
++    </RelativeLayout>
++
++</FrameLayout>
+diff --git a/res/layout/item_dsn_downloadfilesqueue.xml b/res/layout/item_dsn_downloadfilesqueue.xml
+new file mode 100644
+index 0000000..722ada2
+--- /dev/null
++++ b/res/layout/item_dsn_downloadfilesqueue.xml
+@@ -0,0 +1,86 @@
++<?xml version="1.0" encoding="utf-8"?>
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="wrap_content"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
++    android:background="@drawable/grid_item_background"
++    android:clickable="true"
++    android:orientation="vertical">
++    <RelativeLayout
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:paddingTop="@dimen/space_small"
++        android:paddingBottom="@dimen/space_small"
++        android:paddingStart="@dimen/space_normal"
++        android:paddingEnd="@dimen/space_normal">
++        <ImageView
++            android:id="@+id/iv_dsn_icon"
++            android:layout_centerVertical="true"
++            android:layout_width="@dimen/icon_normal_large_size"
++            android:layout_height="@dimen/icon_normal_large_size"
++            android:padding="6dp"
++            android:src="@drawable/ic_lable_jpg"/>
++        <LinearLayout
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_marginStart="@dimen/space_normal"
++            android:layout_toEndOf="@id/iv_dsn_icon"
++            android:layout_centerVertical="true"
++            android:orientation="vertical">
++            <LinearLayout
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:orientation="horizontal">
++                <TextView
++                    android:id="@+id/tv_dsn_name"
++                    android:textAlignment="center"
++                    android:layout_width="wrap_content"
++                    android:layout_height="wrap_content"
++                    android:textColor="@color/color_dsn_size"
++                    android:textSize="@dimen/font_size_subheading"/>
++            </LinearLayout>
++        <RelativeLayout
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content">
++            <TextView
++                android:layout_alignParentLeft="true"
++                android:id="@+id/tv_dsn_size"
++                android:textAlignment="center"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:layout_marginTop="@dimen/space_unit"
++                android:textSize="@dimen/font_size_body"
++                android:textColor="@color/colorGray"/>
++            </RelativeLayout>
++        </LinearLayout>
++
++        <RelativeLayout
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_alignParentRight="true"
++            >
++
++            <ImageView
++                android:layout_centerInParent="true"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:src="@drawable/ring"/>
++            <com.android.documentsui.DSN.dirlist.PercentCircle
++                android:id="@+id/pc_dsn"
++                android:layout_centerInParent="true"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                app:circleBackground="#00000000"
++                app:ringColor="@color/colorBlue"
++                app:textColor="@color/color_dsn_size"
++                />
++        </RelativeLayout>
++
++    </RelativeLayout>
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="1px"
++        android:orientation="horizontal"
++        android:background="@color/horizontal_divider">
++    </LinearLayout>
++</LinearLayout>
+diff --git a/res/layout/item_dsn_uploadfilesqueue.xml b/res/layout/item_dsn_uploadfilesqueue.xml
+new file mode 100644
+index 0000000..3a45da7
+--- /dev/null
++++ b/res/layout/item_dsn_uploadfilesqueue.xml
+@@ -0,0 +1,88 @@
++<?xml version="1.0" encoding="utf-8"?>
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="wrap_content"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
++    android:background="@drawable/grid_item_background"
++    android:clickable="true"
++    android:orientation="vertical">
++    <RelativeLayout
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:paddingTop="@dimen/space_small"
++        android:paddingBottom="@dimen/space_small"
++        android:paddingStart="@dimen/space_normal"
++        android:paddingEnd="@dimen/space_normal">
++        <ImageView
++            android:id="@+id/iv_dsn_icon"
++            android:layout_centerVertical="true"
++            android:layout_width="@dimen/icon_normal_large_size"
++            android:layout_height="@dimen/icon_normal_large_size"
++            android:padding="6dp"
++            android:src="@drawable/ic_lable_jpg"/>
++        <LinearLayout
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_marginStart="@dimen/space_normal"
++            android:layout_toEndOf="@id/iv_dsn_icon"
++            android:layout_centerVertical="true"
++            android:orientation="vertical">
++            <LinearLayout
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:orientation="horizontal">
++                <TextView
++                    android:id="@+id/tv_dsn_short_name"
++                    android:textAlignment="center"
++                    android:layout_width="wrap_content"
++                    android:layout_height="wrap_content"
++                    android:textColor="@color/color_dsn_size"
++                    android:text="IMG_2018_0891.jpg"
++                    android:textSize="@dimen/font_size_subheading"/>
++            </LinearLayout>
++        <RelativeLayout
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content">
++            <TextView
++                android:layout_alignParentLeft="true"
++                android:id="@+id/tv_dsn_date"
++                android:textAlignment="center"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:layout_marginTop="@dimen/space_unit"
++                android:textSize="@dimen/font_size_body"
++                android:text="283KB"
++                android:textColor="@color/colorGray"/>
++            </RelativeLayout>
++        </LinearLayout>
++
++        <RelativeLayout
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_alignParentRight="true"
++            >
++
++            <ImageView
++                android:layout_centerInParent="true"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:src="@drawable/ring"/>
++            <dsnmanagersample.samples.brahmaos.io.myapplication.PercentCircle
++                android:id="@+id/percentCircle"
++                android:layout_centerInParent="true"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                app:circleBackground="#00000000"
++                app:ringColor="@color/colorBlue"
++                app:textColor="@color/color_dsn_size"
++                />
++        </RelativeLayout>
++
++    </RelativeLayout>
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="1px"
++        android:orientation="horizontal"
++        android:background="@color/horizontal_divider">
++    </LinearLayout>
++</LinearLayout>
+diff --git a/res/layout/list_item_dsn.xml b/res/layout/list_item_dsn.xml
+index 2d5307a..40c5cc3 100644
+--- a/res/layout/list_item_dsn.xml
++++ b/res/layout/list_item_dsn.xml
+@@ -20,7 +20,6 @@
+             android:layout_height="@dimen/icon_normal_size"
+             android:padding="6dp"
+             android:src="@drawable/ic_lable_jpg"/>
+-        
+         <LinearLayout
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+@@ -44,7 +43,7 @@
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content">
+             <TextView
+-		android:layout_alignParentLeft="true"
++                android:layout_alignParentLeft="true"
+                 android:id="@+id/tv_dsn_date"
+                 android:textAlignment="center"
+                 android:layout_width="wrap_content"
+@@ -55,10 +54,10 @@
+             <TextView
+                 android:id="@+id/tv_dsn_size"
+                 android:textAlignment="center"
+-		android:layout_alignParentRight="true"
++                android:layout_alignParentRight="true"
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+-		android:layout_marginRight="6dp"
++                android:layout_marginRight="6dp"
+                 android:layout_marginTop="@dimen/space_unit"
+                 android:textSize="14sp"
+                 android:textColor="@color/color_dsn_size"/>
+diff --git a/res/menu/action_mode_menu.xml b/res/menu/action_mode_menu.xml
+index de3559a..7ba5a09 100644
+--- a/res/menu/action_mode_menu.xml
++++ b/res/menu/action_mode_menu.xml
+@@ -73,8 +73,8 @@
+         android:showAsAction="never"
+         android:visible="false" />
+     <item
+-        android:id="@+id/action_menu_backup"
+-        android:title="@string/menu_backup"
++        android:id="@+id/action_menu_upload"
++        android:title="@string/menu_upload"
+         android:showAsAction="never"
+         android:visible="false" />
+ </menu>
+diff --git a/res/values-en-rGB/strings.xml b/res/values-en-rGB/strings.xml
+index cc9827f..44c728b 100644
+--- a/res/values-en-rGB/strings.xml
++++ b/res/values-en-rGB/strings.xml
+@@ -224,4 +224,9 @@
+     <string name="dsn_blockcount_title" msgid="3447621501565766962">"Links"</string>
+     <string name="dsn_qrcode_title" msgid="3447621501565766963">"File HashCode"</string>
+     <string name="dsn_encrypt_title" msgid="3447621501565766963">"File Encrypt"</string>
++    <string name="root_dsnprocesslist">DSN Transmission List</string>
++    <string name="root_dsnsetting">DSN Setting</string>
++    <string name="root_dsnremote">DSN Remote</string>
++    <string name="menu_upload">Upload files</string>
++
+ </resources>
+diff --git a/res/values-zh-rCN/strings.xml b/res/values-zh-rCN/strings.xml
+index d69f875..29c9f51 100644
+--- a/res/values-zh-rCN/strings.xml
++++ b/res/values-zh-rCN/strings.xml
+@@ -224,4 +224,11 @@
+     <string name="dsn_blockcount_title" msgid="3447621501565766962">"分开的区块数目"</string>
+     <string name="dsn_qrcode_title" msgid="3447621501565766963">"文件Hash二维码"</string>
+     <string name="dsn_encrypt_title" msgid="3447621501565766964">"文件加密"</string>
++    <string name="root_dsnprocesslist">DSN 传输列表</string>
++    <string name="root_dsnsetting">DSN 设置</string>
++    <string name="root_dsnremote">DSN 远程</string>
++    <string name="menu_upload">上传文件</string>
++    <string name="lable_upload_empty">无任何上传文件</string>
++    <string name="lable_download_empty">无任何下载文件</string>
++
+ </resources>
+diff --git a/res/values/attrs.xml b/res/values/attrs.xml
+index 678d9b4..153a013 100644
+--- a/res/values/attrs.xml
++++ b/res/values/attrs.xml
+@@ -29,4 +29,10 @@
+         <attr name="indicatorName" format="string"/>
+         <attr name="indicatorColor" format="color"/>
+     </declare-styleable>
++    <declare-styleable name="PercentageRing">
++        <attr name="radius" format="integer"/>
++        <attr name="circleBackground" format="color"/>
++        <attr name="ringColor" format="color"/>
++        <attr name="textColor" format = "color"/>
++    </declare-styleable>
+ </resources>
+diff --git a/res/values/colors.xml b/res/values/colors.xml
+index 150ee9a..8815467 100644
+--- a/res/values/colors.xml
++++ b/res/values/colors.xml
+@@ -84,7 +84,6 @@
+     <color name="divider">#18000000</color>
+     <color name="horizontal_divider">@color/divider</color>
+     <color name="white">#ffffff</color>
+-
+     <color name="colorBackgroundGray">#F0F0F0</color>
+     <color name="colorBackgroundWhite">#FFFFFF</color>
+     <color name="colorSubTitle">#666</color>
+@@ -98,4 +97,17 @@
+     <color name="colorAccent">#74a7f5</color>
+     <color name="black">#000000</color>
+     <color name="viewfinder_btn_bg">#20000000</color>
++    <color name="colorDark">#333333</color>
++    <color name="colorLightGray">#979797</color>
++    <color name="colorPrimary">#3F51B5</color>
++    <color name="colorPrimaryDark">#303F9F</color>
++    <color name="colorGray">#999999</color>
++    <color name="colorDefaultThemeGreen">#14B39F</color>
++    <color name="colorNoSelect">#14B39F</color>
++    <color name="colorSelect">#303F9F</color>
++    <color name="colorButtonSelect">#0160CE</color>
++    <color name="colorBlue">#0160CE</color>
++    <color name="colorNoButtonSelect">#999999</color>
++    <color name="colorWhite">#FFFFFF</color>
++    <color name="colorMoreLightGray">#D8D8D8</color>
+ </resources>
+diff --git a/res/values/dimens.xml b/res/values/dimens.xml
+index e356c03..acf5214 100644
+--- a/res/values/dimens.xml
++++ b/res/values/dimens.xml
+@@ -107,9 +107,13 @@
+     <dimen name="appbar_padding_top">8dp</dimen>
+     <dimen name="nav_header_vertical_spacing">8dp</dimen>
+     <dimen name="nav_header_height">176dp</dimen>
+-
++    <dimen name="icon_normal_large_size">45dp</dimen>
+     <dimen name="dialog_label_width">70dp</dimen>
+ 
+     <dimen name="font_subtitle">16sp</dimen>
+     <dimen name="font_subcontent">14sp</dimen>
++    <dimen name="switch_w">120dp</dimen>
++    <dimen name="switch_h">28dp</dimen>
++    <dimen name="switch_r">28dp</dimen>
++    <dimen name="space">18dp</dimen>
+ </resources>
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index efaa40a..634f2ca 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -74,7 +74,7 @@
+ 
+     <!-- Menu item title that creates a new window in the activity [CHAR LIMIT=28] -->
+     <string name="menu_new_window">New window</string>
+-    <string name="menu_backup">Backup files</string>
++    <string name="menu_upload">Upload files</string>
+     <!-- Menu item title that cuts the selected documents to clipboard [CHAR LIMIT=28] -->
+     <string name="menu_cut_to_clipboard">Cut</string>
+     <!-- Menu item title that copies the selected documents to clipboard [CHAR LIMIT=28] -->
+@@ -466,4 +466,7 @@
+     <string name="msg_camera_framework_bug">Sorry, the Android camera encountered a problem. You may need to restart the device.</string>
+     <string name="button_ok">OK</string>
+     <string name="tip_scan_code_failed">Scan code failed!</string>
++    <string name="root_dsnprocesslist">DSN Transmission List</string>
++    <string name="root_dsnsetting">DSN Setting</string>
++    <string name="root_dsnremote">DSN Remote</string>
+ </resources>
+diff --git a/src/com/android/documentsui/AbstractActionHandler.java b/src/com/android/documentsui/AbstractActionHandler.java
+index 77b84cd..6847f81 100644
+--- a/src/com/android/documentsui/AbstractActionHandler.java
++++ b/src/com/android/documentsui/AbstractActionHandler.java
+@@ -445,8 +445,8 @@ public abstract class AbstractActionHandler<T extends Activity & CommonAddons>
+         throw new UnsupportedOperationException("Delete not supported!");
+     }
+     @Override
+-    public void backupDocuments() {
+-        throw new UnsupportedOperationException("Backup not supported!");
++    public void uploadDocuments() {
++        throw new UnsupportedOperationException("Upload not supported!");
+     }
+     @Override
+     public void shareSelectedDocuments() {
+diff --git a/src/com/android/documentsui/ActionHandler.java b/src/com/android/documentsui/ActionHandler.java
+index ca7d699..0957ed3 100644
+--- a/src/com/android/documentsui/ActionHandler.java
++++ b/src/com/android/documentsui/ActionHandler.java
+@@ -137,7 +137,7 @@ public interface ActionHandler {
+     /**
+      * In general, selected = selection or single focused item
+      */
+-	void backupDocuments();
++    void uploadDocuments();
+ 
+     void shareSelectedDocuments();
+ 
+diff --git a/src/com/android/documentsui/BaseActivity.java b/src/com/android/documentsui/BaseActivity.java
+index 29277b1..e2de1a5 100644
+--- a/src/com/android/documentsui/BaseActivity.java
++++ b/src/com/android/documentsui/BaseActivity.java
+@@ -744,7 +744,6 @@ public abstract class BaseActivity
+                             setResult(RESULT_OK);
+                             finish();
+                         }
+-
+                         Metrics.logStartupMs(
+                                 BaseActivity.this, (int) (new Date().getTime() - mStartTime));
+ 
+diff --git a/src/com/android/documentsui/DSN/base/BaseActivity.java b/src/com/android/documentsui/DSN/base/BaseActivity.java
+index b601196..3945916 100644
+--- a/src/com/android/documentsui/DSN/base/BaseActivity.java
++++ b/src/com/android/documentsui/DSN/base/BaseActivity.java
+@@ -35,12 +35,7 @@ public abstract class BaseActivity extends AppCompatActivity {
+             Configuration config = newBase.getResources().getConfiguration();
+ 
+             Locale newLocale = Locale.ENGLISH;
+-/*
+-           if (BrahmaConfig.getInstance().getLanguageLocale()
+-                    .equals(BrahmaConst.LANGUAGE_CHINESE)) {
+-                newLocale = Locale.CHINESE;
+-            }
+-*/
++
+             config.setLocale(newLocale);
+             newBase = newBase.createConfigurationContext(config);
+         }
+diff --git a/src/com/android/documentsui/DSN/conmmon/ConfigConst.java b/src/com/android/documentsui/DSN/conmmon/ConfigConst.java
+new file mode 100644
+index 0000000..99b4f07
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/conmmon/ConfigConst.java
+@@ -0,0 +1,14 @@
++/**
++ * Copyright 2018 BRAHMACARIYA FOUNDATION LTD
++ */
++
++package com.android.documentsui.DSN.conmmon;
++
++
++public class ConfigConst {
++
++    public static final int WITHOUT_ENCRYPTION = 0;
++    public static final int SYSTEM_ENCRYPTION = 1;
++    public static final int CUSTOM_ENCRYPTION = 2;
++
++}
+diff --git a/src/com/android/documentsui/DSN/dirlist/DSNDirectoryAddonsAdapter.java b/src/com/android/documentsui/DSN/dirlist/DSNDirectoryAddonsAdapter.java
+index 01c8cc5..817f0d8 100644
+--- a/src/com/android/documentsui/DSN/dirlist/DSNDirectoryAddonsAdapter.java
++++ b/src/com/android/documentsui/DSN/dirlist/DSNDirectoryAddonsAdapter.java
+@@ -1,18 +1,18 @@
+-/*
+- * Copyright (C) 2015 The Android Open Source Project
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
+ 
+ package com.android.documentsui.DSN.dirlist;
+ 
+diff --git a/src/com/android/documentsui/DSN/dirlist/DSNDirectoryFragment.java b/src/com/android/documentsui/DSN/dirlist/DSNDirectoryFragment.java
+deleted file mode 100644
+index 063e493..0000000
+--- a/src/com/android/documentsui/DSN/dirlist/DSNDirectoryFragment.java
++++ /dev/null
+@@ -1,363 +0,0 @@
+-package com.android.documentsui.DSN.dirlist;
+-
+-import static com.android.documentsui.base.DocumentInfo.getCursorInt;
+-import static com.android.documentsui.base.DocumentInfo.getCursorString;
+-import static com.android.documentsui.base.Shared.DEBUG;
+-import static com.android.documentsui.base.Shared.VERBOSE;
+-import static com.android.documentsui.base.State.MODE_GRID;
+-import static com.android.documentsui.base.State.MODE_LIST;
+-
+-import android.annotation.DimenRes;
+-import android.annotation.FractionRes;
+-import android.annotation.IntDef;
+-import android.app.Activity;
+-import android.app.ActivityManager;
+-import android.app.Fragment;
+-import android.app.FragmentManager;
+-import android.app.FragmentTransaction;
+-import android.app.LoaderManager;
+-import android.content.Context;
+-import android.content.Intent;
+-import android.content.Loader;
+-import android.database.Cursor;
+-import android.net.Uri;
+-import android.os.Build;
+-import android.os.Bundle;
+-import android.os.Handler;
+-import android.os.Parcelable;
+-import android.provider.DocumentsContract;
+-import android.provider.DocumentsContract.Document;
+-import android.support.v4.widget.SwipeRefreshLayout;
+-import android.support.v7.widget.GridLayoutManager;
+-import android.support.v7.widget.GridLayoutManager.SpanSizeLookup;
+-import android.support.v7.widget.RecyclerView;
+-import android.support.v7.widget.RecyclerView.RecyclerListener;
+-import android.support.v7.widget.RecyclerView.ViewHolder;
+-import android.util.Log;
+-import android.util.SparseArray;
+-import android.view.ContextMenu;
+-import android.view.HapticFeedbackConstants;
+-import android.view.LayoutInflater;
+-import android.view.MenuInflater;
+-import android.view.MenuItem;
+-import android.view.MotionEvent;
+-import android.view.View;
+-import android.view.ViewGroup;
+-import android.widget.ImageView;
+-import android.widget.Toast;
+-import android.widget.TextView;
+-import android.os.Message;
+-
+-
+-import com.android.documentsui.AbstractActionHandler;
+-import com.android.documentsui.ActionHandler;
+-import com.android.documentsui.ActionModeController;
+-import com.android.documentsui.BaseActivity;
+-import com.android.documentsui.BaseActivity.RetainedState;
+-import com.android.documentsui.DirectoryReloadLock;
+-import com.android.documentsui.DocumentsApplication;
+-import com.android.documentsui.FocusManager;
+-import com.android.documentsui.Injector;
+-import com.android.documentsui.Injector.ContentScoped;
+-import com.android.documentsui.Injector.Injected;
+-import com.android.documentsui.Metrics;
+-import com.android.documentsui.Model;
+-import com.android.documentsui.R;
+-import com.android.documentsui.ThumbnailCache;
+-import com.android.documentsui.base.DocumentFilters;
+-import com.android.documentsui.base.DocumentInfo;
+-import com.android.documentsui.base.DocumentStack;
+-import com.android.documentsui.base.EventHandler;
+-import com.android.documentsui.base.EventListener;
+-import com.android.documentsui.base.Events.InputEvent;
+-import com.android.documentsui.base.Events.MotionInputEvent;
+-import com.android.documentsui.base.Features;
+-import com.android.documentsui.base.RootInfo;
+-import com.android.documentsui.base.Shared;
+-import com.android.documentsui.base.State;
+-import com.android.documentsui.base.State.ViewMode;
+-import com.android.documentsui.clipping.ClipStore;
+-import com.android.documentsui.clipping.DocumentClipper;
+-import com.android.documentsui.clipping.UrisSupplier;
+-import com.android.documentsui.dirlist.AnimationView.AnimationType;
+-import com.android.documentsui.picker.PickActivity;
+-import com.android.documentsui.selection.BandController;
+-import com.android.documentsui.selection.GestureSelector;
+-import com.android.documentsui.selection.Selection;
+-import com.android.documentsui.selection.SelectionManager;
+-import com.android.documentsui.selection.SelectionMetadata;
+-import com.android.documentsui.services.FileOperation;
+-import com.android.documentsui.services.FileOperationService;
+-import com.android.documentsui.services.FileOperationService.OpType;
+-import com.android.documentsui.services.FileOperations;
+-import com.android.documentsui.sorting.SortDimension;
+-import com.android.documentsui.sorting.SortModel;
+-import android.support.v7.widget.LinearLayoutManager;
+-import android.widget.LinearLayout;
+-//import com.android.documentsui.dirlist.DragHoverListener;
+-import com.android.documentsui.DSN.dirlist.DSNDirectoryAddonsAdapter;
+-//import com.android.documentsui.dirlist.DirectoryItemAnimator;
+-import com.android.documentsui.dirlist.IconHelper;
+-//import com.android.documentsui.dirlist.DirectoryItemAnimator;
+-import com.android.documentsui.dirlist.AnimationView;
+-
+-import com.android.documentsui.DSN.selection.DSNGestureSelector;
+-
+-import java.io.IOException;
+-import java.lang.annotation.Retention;
+-import java.lang.annotation.RetentionPolicy;
+-import java.util.List;
+-import java.util.ArrayList;
+-
+-
+-import javax.annotation.Nullable;
+-import com.android.documentsui.DSNObjectMeta;
+-import com.android.documentsui.httpnetwork.HttpServer;
+-import com.android.documentsui.httpnetwork.*;
+-
+-import com.fasterxml.jackson.core.type.TypeReference;
+-import com.fasterxml.jackson.databind.ObjectMapper;
+-import com.android.documentsui.httpnetwork.Networks;
+-import com.android.documentsui.widget.AVLoadingIndicatorView;
+-
+-
+-import java.util.Collections;
+-import java.util.HashMap;
+-import java.util.LinkedHashMap;
+-import java.util.Map;
+-import java.util.concurrent.TimeUnit;
+-import android.util.Log;
+-import android.view.Menu;
+-
+-
+-import rx.Completable;
+-import rx.Observable;
+-import rx.Observer;
+-import rx.android.schedulers.AndroidSchedulers;
+-import rx.schedulers.Schedulers;
+-
+-import static android.content.Context.DSNMANAGER_SERVICE;
+-import brahmaos.app.DSNManager;
+-import brahmaos.app.AddFileCallbackListener;
+-import brahmaos.app.ListFileCallbackListener;
+-import brahmaos.app.DSNMateObjectData;
+-import brahmaos.app.GetFileCallbackListener;
+-
+-
+-import android.os.RemoteException;
+-
+-
+-public class DSNDirectoryFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
+-    private static final String TAG = "DSNDirectoryFragment";
+-    protected BaseActivity mActivity;
+-    protected View mProgressBar;
+-    protected RecyclerView mRecView;
+-    protected SwipeRefreshLayout mRefreshLayout;
+-    @Injected
+-    @ContentScoped
+-    protected Injector<?> mInjector;
+-    protected State mState;
+-    protected Model mModel;
+-    protected final Runnable mOnDisplayStateChanged = this::onDisplayStateChanged;
+-    protected DocumentClipper mClipper;
+-   // protected @Nullable DragHoverListener mDragHoverListener;
+-    protected IconHelper mIconHelper;
+-    private DSNDirectoryAddonsAdapter mDSNDirectoryAddonsAdapter;
+-    private MenuItem mMenuItem;
+-    private AVLoadingIndicatorView avi;
+-    private AnimationView mAnimationView;
+-    private Handler mHandler;
+-    private List<ObjectMeta> objecMetaList;
+-
+-
+-    protected DSNUserInputHandler mInputHandler;
+-
+-    protected LinearLayout mLinearLayout;
+-    protected ActionModeController mActionModeController;
+-
+-
+-    public DSNDirectoryFragment() {
+-        super();
+-    }
+-
+-    @Override
+-    public View onCreateView(
+-            LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+-
+-        mActivity = (BaseActivity) getActivity();
+-        final View view = inflater.inflate(R.layout.fragment_dsn_directory, container, false);
+-
+-
+-        //mProgressBar = view.findViewById(R.id.progressbar);
+-        //assert(mProgressBar != null);
+-        //mProgressBar.setVisibility(View.VISIBLE);
+-
+-        avi= (AVLoadingIndicatorView) view.findViewById(R.id.avi);
+-        avi.setIndicator("BallSpinFadeLoaderIndicator");
+-        avi.show();
+-
+-        mAnimationView = (AnimationView)view.findViewById(R.id.animationview);
+-
+-
+-        mRecView = (RecyclerView) view.findViewById(R.id.dir_list);
+-
+-        mRecView.setRecyclerListener(
+-                new RecyclerListener() {
+-                    @Override
+-                    public void onViewRecycled(ViewHolder holder) {
+-                        cancelThumbnailTask(holder.itemView);
+-                    }
+-                });
+-        mIconHelper = new IconHelper(mActivity, MODE_GRID);
+-
+-        mRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.refresh_layout);
+-        mRefreshLayout.setOnRefreshListener(this);
+-        //mRecView.setItemAnimator(new DirectoryItemAnimator(mActivity));
+-
+-
+-        mInjector = mActivity.getInjector();
+-        mDSNDirectoryAddonsAdapter = new DSNDirectoryAddonsAdapter(this,getContext());
+-        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+-
+-        mRecView.setLayoutManager(layoutManager);
+-        mRecView.setAdapter(mDSNDirectoryAddonsAdapter);
+-
+-        DSNGestureSelector gestureSel = DSNGestureSelector.create(mRecView, null);
+-
+-        mActionModeController = mInjector.getActionModeController(
+-                null,
+-                this::handleMenuItemClick);
+-
+-        mInputHandler = new DSNUserInputHandler(
+-                mActivity,
+-                mRecView,
+-                mDSNDirectoryAddonsAdapter,
+-                null,
+-                null,
+-                null,
+-                null,
+-                () -> mRecView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS));
+-
+-        new DSNListeningGestureDetector(
+-                this.getContext(),
+-                mRecView,
+-                gestureSel,
+-                mInputHandler);
+-
+-        mInjector.actions.registerDisplayStateChangedListener(mOnDisplayStateChanged);
+-
+-        mClipper = DocumentsApplication.getDocumentClipper(getContext());
+-        // Make the recycler and the empty views responsive to drop events when allowed.
+-        //mRecView.setOnDragListener(mDragHoverListener);
+-        setHasOptionsMenu(true);
+-        return view;
+-
+-
+-    }
+-
+-    @Override
+-    public void onStart() {
+-        super.onStart();
+-        mDSNDirectoryAddonsAdapter.clearDNSModels();
+-        mHandler = new Handler(){
+-            public void handleMessage(Message msg) {
+-                switch (msg.what) {
+-                    case 1:
+-                        if(objecMetaList.size() == 0)
+-                            avi.hide();
+-                        else{
+-                            for(ObjectMeta objectMeta: objecMetaList)
+-                                mDSNDirectoryAddonsAdapter.addDNSModelsObjectMeta(objectMeta);
+-                            mAnimationView.setVisibility(View.VISIBLE);
+-                            mDSNDirectoryAddonsAdapter.notifyDataSetChanged();
+-                        }
+-                        break;
+-                    default: break; } }; };
+-
+-        onStartNetworkRequest();
+-
+-    }
+-    @Override
+-    public void onResume(){
+-        super.onStart();
+-        mLinearLayout = mActivity.findViewById(R.id.dropdown_sort_widget);
+-        mLinearLayout.setVisibility(View.GONE);
+-    }
+-    @Override
+-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater){
+-        super.onCreateOptionsMenu(menu, inflater);
+-
+-    }
+-    @Override
+-    public void onPrepareOptionsMenu(Menu menu) {
+-        super.onPrepareOptionsMenu(menu);
+-        menu.setGroupVisible(R.id.group_hide_when_searching, false);
+-        mMenuItem = menu.findItem(R.id.option_menu_search);
+-        menu.setGroupVisible(R.id.group_hide_when_searching, false);
+-        mMenuItem.setVisible(false);
+-    }
+-
+-    @Override
+-    public void onRefresh() {
+-        mRefreshLayout.setRefreshing(false);
+-    }
+-    private void onDisplayStateChanged() {
+-    }
+-    protected void cancelThumbnailTask(View view) {
+-        final ImageView iconThumb = (ImageView) view.findViewById(R.id.icon_thumb);
+-        if (iconThumb != null) {
+-            mIconHelper.stopLoading(iconThumb);
+-        }
+-    }
+-
+-    private void onStartNetworkRequest() {
+-        DSNManager mManager = (DSNManager) mActivity.getSystemService(DSNMANAGER_SERVICE);
+-        mManager.listFile(null,0,20, new ListFileCallbackListener(){
+-                @Override
+-                public void onCompleted(String status){
+-                    Log.d(TAG, "listFile" + ":" + "onCompleted");
+-                }
+-                @Override
+-                public void onError(String status){
+-                    Log.d(TAG, "listFile" + ":" + "onError");
+-                }
+-                @Override
+-                public void onNext(DSNMateObjectData mateObjectData){
+-                    if (mateObjectData.getResult() == 0 && mateObjectData.getData().containsKey(ApiConst.PARAM_QUOTES)) {
+-                         ObjectMapper objectMapper = new ObjectMapper();
+-                         Log.d(TAG,"listFile" + ":" + "onNext");
+-                         try {
+-                            objecMetaList = objectMapper.readValue(objectMapper.writeValueAsString(mateObjectData.getData().get(ApiConst.PARAM_QUOTES)), new TypeReference<List<ObjectMeta>>() {});
+-                            Message msg = new Message();
+-                            msg.what = 1;
+-                            mHandler.sendMessage(msg);
+-                         } catch (IOException e) {
+-                             e.printStackTrace();
+-                         }
+-                     } else {
+-
+-                     }
+-                }
+-                @Override
+-                public void onCallbackComplete(boolean result){
+-                    Log.d(TAG, "listFile" + ":" + "onCallbackComplete");
+-                }
+-
+-            });
+-
+-    }
+-    private boolean handleMenuItemClick(MenuItem item) {
+-        // Selection selection = mSelectionMgr.getSelection(new Selection());
+-
+-         switch (item.getItemId()) {
+-             case R.id.action_menu_open:
+-             case R.id.dir_menu_open:
+-               //  openDocuments(selection);
+-                // mActionModeController.finishActionMode();
+-                 return true;
+-     }
+-         return true;
+-
+-        }
+-
+-}
+diff --git a/src/com/android/documentsui/DSN/dirlist/DSNListeningGestureDetector.java b/src/com/android/documentsui/DSN/dirlist/DSNListeningGestureDetector.java
+index af85380..5e5aee9 100644
+--- a/src/com/android/documentsui/DSN/dirlist/DSNListeningGestureDetector.java
++++ b/src/com/android/documentsui/DSN/dirlist/DSNListeningGestureDetector.java
+@@ -1,18 +1,18 @@
+-/*
+- * Copyright (C) 2016 The Android Open Source Project
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
+ 
+ package com.android.documentsui.DSN.dirlist;
+ 
+diff --git a/src/com/android/documentsui/DSN/dirlist/DSNRemoteFragment.java b/src/com/android/documentsui/DSN/dirlist/DSNRemoteFragment.java
+new file mode 100644
+index 0000000..752c1e4
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/dirlist/DSNRemoteFragment.java
+@@ -0,0 +1,373 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package com.android.documentsui.DSN.dirlist;
++
++import static com.android.documentsui.base.DocumentInfo.getCursorInt;
++import static com.android.documentsui.base.DocumentInfo.getCursorString;
++import static com.android.documentsui.base.Shared.DEBUG;
++import static com.android.documentsui.base.Shared.VERBOSE;
++import static com.android.documentsui.base.State.MODE_GRID;
++import static com.android.documentsui.base.State.MODE_LIST;
++
++import android.annotation.DimenRes;
++import android.annotation.FractionRes;
++import android.annotation.IntDef;
++import android.app.Activity;
++import android.app.ActivityManager;
++import android.app.Fragment;
++import android.app.FragmentManager;
++import android.app.FragmentTransaction;
++import android.app.LoaderManager;
++import android.content.Context;
++import android.content.Intent;
++import android.content.Loader;
++import android.database.Cursor;
++import android.net.Uri;
++import android.os.Build;
++import android.os.Bundle;
++import android.os.Handler;
++import android.os.Parcelable;
++import android.provider.DocumentsContract;
++import android.provider.DocumentsContract.Document;
++import android.support.v4.widget.SwipeRefreshLayout;
++import android.support.v7.widget.GridLayoutManager;
++import android.support.v7.widget.GridLayoutManager.SpanSizeLookup;
++import android.support.v7.widget.RecyclerView;
++import android.support.v7.widget.RecyclerView.RecyclerListener;
++import android.support.v7.widget.RecyclerView.ViewHolder;
++import android.util.Log;
++import android.util.SparseArray;
++import android.view.ContextMenu;
++import android.view.HapticFeedbackConstants;
++import android.view.LayoutInflater;
++import android.view.MenuInflater;
++import android.view.MenuItem;
++import android.view.MotionEvent;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.ImageView;
++import android.widget.Toast;
++import android.widget.TextView;
++import android.os.Message;
++
++
++import com.android.documentsui.AbstractActionHandler;
++import com.android.documentsui.ActionHandler;
++import com.android.documentsui.ActionModeController;
++import com.android.documentsui.BaseActivity;
++import com.android.documentsui.BaseActivity.RetainedState;
++import com.android.documentsui.DirectoryReloadLock;
++import com.android.documentsui.DocumentsApplication;
++import com.android.documentsui.FocusManager;
++import com.android.documentsui.Injector;
++import com.android.documentsui.Injector.ContentScoped;
++import com.android.documentsui.Injector.Injected;
++import com.android.documentsui.Metrics;
++import com.android.documentsui.Model;
++import com.android.documentsui.R;
++import com.android.documentsui.ThumbnailCache;
++import com.android.documentsui.base.DocumentFilters;
++import com.android.documentsui.base.DocumentInfo;
++import com.android.documentsui.base.DocumentStack;
++import com.android.documentsui.base.EventHandler;
++import com.android.documentsui.base.EventListener;
++import com.android.documentsui.base.Events.InputEvent;
++import com.android.documentsui.base.Events.MotionInputEvent;
++import com.android.documentsui.base.Features;
++import com.android.documentsui.base.RootInfo;
++import com.android.documentsui.base.Shared;
++import com.android.documentsui.base.State;
++import com.android.documentsui.base.State.ViewMode;
++import com.android.documentsui.clipping.ClipStore;
++import com.android.documentsui.clipping.DocumentClipper;
++import com.android.documentsui.clipping.UrisSupplier;
++import com.android.documentsui.dirlist.AnimationView.AnimationType;
++import com.android.documentsui.picker.PickActivity;
++import com.android.documentsui.selection.BandController;
++import com.android.documentsui.selection.GestureSelector;
++import com.android.documentsui.selection.Selection;
++import com.android.documentsui.selection.SelectionManager;
++import com.android.documentsui.selection.SelectionMetadata;
++import com.android.documentsui.services.FileOperation;
++import com.android.documentsui.services.FileOperationService;
++import com.android.documentsui.services.FileOperationService.OpType;
++import com.android.documentsui.services.FileOperations;
++import com.android.documentsui.sorting.SortDimension;
++import com.android.documentsui.sorting.SortModel;
++import android.support.v7.widget.LinearLayoutManager;
++import android.widget.LinearLayout;
++import com.android.documentsui.DSN.dirlist.DSNDirectoryAddonsAdapter;
++import com.android.documentsui.dirlist.IconHelper;
++import com.android.documentsui.dirlist.AnimationView;
++
++import com.android.documentsui.DSN.selection.DSNGestureSelector;
++
++import java.io.IOException;
++import java.lang.annotation.Retention;
++import java.lang.annotation.RetentionPolicy;
++import java.util.List;
++import java.util.ArrayList;
++
++
++import javax.annotation.Nullable;
++import com.android.documentsui.DSNObjectMeta;
++import com.android.documentsui.httpnetwork.HttpServer;
++import com.android.documentsui.httpnetwork.*;
++
++import com.fasterxml.jackson.core.type.TypeReference;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import com.android.documentsui.httpnetwork.Networks;
++import com.android.documentsui.widget.AVLoadingIndicatorView;
++
++
++import java.util.Collections;
++import java.util.HashMap;
++import java.util.LinkedHashMap;
++import java.util.Map;
++import java.util.concurrent.TimeUnit;
++import android.util.Log;
++import android.view.Menu;
++
++
++import rx.Completable;
++import rx.Observable;
++import rx.Observer;
++import rx.android.schedulers.AndroidSchedulers;
++import rx.schedulers.Schedulers;
++
++import static android.content.Context.DSNMANAGER_SERVICE;
++import brahmaos.app.DSNManager;
++import brahmaos.app.AddFileCallbackListener;
++import brahmaos.app.ListFileCallbackListener;
++import brahmaos.app.DSNMateObjectData;
++import brahmaos.app.GetFileCallbackListener;
++
++
++import android.os.RemoteException;
++
++
++public class DSNRemoteFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
++    private static final String TAG = "DSNRemoteFragment";
++    protected BaseActivity mActivity;
++    protected View mProgressBar;
++    protected RecyclerView mRecView;
++    protected SwipeRefreshLayout mRefreshLayout;
++    @Injected
++    @ContentScoped
++    protected Injector<?> mInjector;
++    protected State mState;
++    protected Model mModel;
++    protected final Runnable mOnDisplayStateChanged = this::onDisplayStateChanged;
++    protected DocumentClipper mClipper;
++   // protected @Nullable DragHoverListener mDragHoverListener;
++    protected IconHelper mIconHelper;
++    private DSNDirectoryAddonsAdapter mDSNDirectoryAddonsAdapter;
++    private MenuItem mMenuItem;
++    private AVLoadingIndicatorView avi;
++    private AnimationView mAnimationView;
++    private Handler mHandler;
++    private List<ObjectMeta> objecMetaList;
++
++
++    protected DSNUserInputHandler mInputHandler;
++
++    protected LinearLayout mLinearLayout;
++    protected ActionModeController mActionModeController;
++
++
++    public DSNRemoteFragment() {
++        super();
++    }
++
++    @Override
++    public View onCreateView(
++            LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
++
++        mActivity = (BaseActivity) getActivity();
++        final View view = inflater.inflate(R.layout.fragment_dsn_directory, container, false);
++
++        //mProgressBar = view.findViewById(R.id.progressbar);
++        //assert(mProgressBar != null);
++        //mProgressBar.setVisibility(View.VISIBLE);
++
++        avi= (AVLoadingIndicatorView) view.findViewById(R.id.avi);
++        avi.setIndicator("BallSpinFadeLoaderIndicator");
++        avi.show();
++
++        mAnimationView = (AnimationView)view.findViewById(R.id.animationview);
++
++
++        mRecView = (RecyclerView) view.findViewById(R.id.dir_list);
++
++        mRecView.setRecyclerListener(
++                new RecyclerListener() {
++                    @Override
++                    public void onViewRecycled(ViewHolder holder) {
++                        cancelThumbnailTask(holder.itemView);
++                    }
++                });
++        mIconHelper = new IconHelper(mActivity, MODE_GRID);
++
++        mRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.refresh_layout);
++        mRefreshLayout.setOnRefreshListener(this);
++        //mRecView.setItemAnimator(new DirectoryItemAnimator(mActivity));
++
++
++        mInjector = mActivity.getInjector();
++        mDSNDirectoryAddonsAdapter = new DSNDirectoryAddonsAdapter(this,getContext());
++        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
++
++        mRecView.setLayoutManager(layoutManager);
++        mRecView.setAdapter(mDSNDirectoryAddonsAdapter);
++
++        DSNGestureSelector gestureSel = DSNGestureSelector.create(mRecView, null);
++
++        mActionModeController = mInjector.getActionModeController(
++                null,
++                this::handleMenuItemClick);
++
++        mInputHandler = new DSNUserInputHandler(
++                mActivity,
++                mRecView,
++                mDSNDirectoryAddonsAdapter,
++                null,
++                null,
++                null,
++                null,
++                () -> mRecView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS));
++
++        new DSNListeningGestureDetector(
++                this.getContext(),
++                mRecView,
++                gestureSel,
++                mInputHandler);
++
++        mInjector.actions.registerDisplayStateChangedListener(mOnDisplayStateChanged);
++
++        mClipper = DocumentsApplication.getDocumentClipper(getContext());
++        //Make the recycler and the empty views responsive to drop events when allowed.
++        //mRecView.setOnDragListener(mDragHoverListener);
++        setHasOptionsMenu(true);
++        return view;
++    }
++
++    @Override
++    public void onStart() {
++        super.onStart();
++        mDSNDirectoryAddonsAdapter.clearDNSModels();
++        mHandler = new Handler(){
++            public void handleMessage(Message msg) {
++                switch (msg.what) {
++                    case 1:
++                        if(objecMetaList.size() == 0)
++                            avi.hide();
++                        else{
++                            for(ObjectMeta objectMeta: objecMetaList)
++                                mDSNDirectoryAddonsAdapter.addDNSModelsObjectMeta(objectMeta);
++                            mAnimationView.setVisibility(View.VISIBLE);
++                            mDSNDirectoryAddonsAdapter.notifyDataSetChanged();
++                        }
++                        break;
++                    default: break; } }; };
++
++        onStartNetworkRequest();
++    }
++
++    @Override
++    public void onResume(){
++        super.onStart();
++        mLinearLayout = mActivity.findViewById(R.id.dropdown_sort_widget);
++        mLinearLayout.setVisibility(View.GONE);
++    }
++    @Override
++    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater){
++        super.onCreateOptionsMenu(menu, inflater);
++
++    }
++    @Override
++    public void onPrepareOptionsMenu(Menu menu) {
++        super.onPrepareOptionsMenu(menu);
++        menu.setGroupVisible(R.id.group_hide_when_searching, false);
++        mMenuItem = menu.findItem(R.id.option_menu_search);
++        menu.setGroupVisible(R.id.group_hide_when_searching, false);
++        mMenuItem.setVisible(false);
++    }
++
++    @Override
++    public void onRefresh() {
++        mRefreshLayout.setRefreshing(false);
++    }
++    private void onDisplayStateChanged() {
++    }
++    protected void cancelThumbnailTask(View view) {
++        final ImageView iconThumb = (ImageView) view.findViewById(R.id.icon_thumb);
++        if (iconThumb != null) {
++            mIconHelper.stopLoading(iconThumb);
++        }
++    }
++
++    private void onStartNetworkRequest() {
++        DSNManager mManager = (DSNManager) mActivity.getSystemService(DSNMANAGER_SERVICE);
++        mManager.listFile(null,0,20, new ListFileCallbackListener(){
++                @Override
++                public void onCompleted(String status){
++                    Log.d(TAG, "listFile" + ":" + "onCompleted");
++                }
++                @Override
++                public void onError(String status){
++                    Log.d(TAG, "listFile" + ":" + "onError");
++                }
++                @Override
++                public void onNext(DSNMateObjectData mateObjectData){
++                    if (mateObjectData.getResult() == 0 && mateObjectData.getData().containsKey(ApiConst.PARAM_QUOTES)) {
++                         ObjectMapper objectMapper = new ObjectMapper();
++                         Log.d(TAG,"listFile" + ":" + "onNext");
++                         try {
++                            objecMetaList = objectMapper.readValue(objectMapper.writeValueAsString(mateObjectData.getData().get(ApiConst.PARAM_QUOTES)), new TypeReference<List<ObjectMeta>>() {});
++                            Message msg = new Message();
++                            msg.what = 1;
++                            mHandler.sendMessage(msg);
++                         } catch (IOException e) {
++                             e.printStackTrace();
++                         }
++                     } else {
++
++                     }
++                }
++                @Override
++                public void onCallbackComplete(boolean result){
++                    Log.d(TAG, "listFile" + ":" + "onCallbackComplete");
++                }
++
++            });
++
++    }
++    private boolean handleMenuItemClick(MenuItem item) {
++        // Selection selection = mSelectionMgr.getSelection(new Selection());
++
++         switch (item.getItemId()) {
++             case R.id.action_menu_open:
++             case R.id.dir_menu_open:
++               //  openDocuments(selection);
++                // mActionModeController.finishActionMode();
++                 return true;
++     }
++         return true;
++
++        }
++
++}
+diff --git a/src/com/android/documentsui/DSN/dirlist/DSNSettingFragment.java b/src/com/android/documentsui/DSN/dirlist/DSNSettingFragment.java
+new file mode 100644
+index 0000000..d58abbe
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/dirlist/DSNSettingFragment.java
+@@ -0,0 +1,177 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package com.android.documentsui.DSN.dirlist;
++
++import android.app.Activity;
++import android.app.ActivityManager;
++import android.app.Fragment;
++import android.content.Context;
++import android.content.Intent;
++import android.os.Bundle;
++import android.util.Log;
++import android.util.SparseArray;
++import android.view.ContextMenu;
++import android.view.LayoutInflater;
++import android.view.MenuInflater;
++import android.view.MenuItem;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.ImageView;
++import android.widget.TextView;
++import android.widget.RadioButton;
++import android.widget.LinearLayout;
++import android.os.RemoteException;
++import android.view.Menu;
++import android.widget.Button;
++import android.widget.Switch;
++import android.widget.CompoundButton;
++
++import com.android.documentsui.BaseActivity;
++import com.android.documentsui.R;
++
++import java.io.IOException;
++import java.util.List;
++import java.util.ArrayList;
++import javax.annotation.Nullable;
++import java.util.HashMap;
++import java.util.LinkedHashMap;
++import java.util.Map;
++import io.ipfs.api.IPFS;
++
++public class DSNSettingFragment extends Fragment {
++    private static final String TAG = "DSNSettingFragment";
++    protected BaseActivity mActivity;
++    protected View mProgressBar;
++    private IPFS mDSNManagerHandle;
++    private Switch meSwtich;
++    private RadioButton neRadioButton;
++    private RadioButton seRadioButton;
++    private RadioButton ceRadioButton;
++    private View view;
++
++    private MenuItem mMenuItem;
++
++    protected LinearLayout mLinearLayout;
++
++    public DSNSettingFragment() {
++        super();
++    }
++
++    @Override
++    public View onCreateView(
++            LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
++
++        mActivity = (BaseActivity) getActivity();
++        view = inflater.inflate(R.layout.fragment_dsn_setting, container, false);
++
++        setHasOptionsMenu(true);
++        getIPFSConfig();
++        initView();
++        return view;
++    }
++
++    @Override
++    public void onStart() {
++        super.onStart();
++
++    }
++
++    public void initView() {
++        meSwtich = view.findViewById(R.id.switch_cm);
++        neRadioButton = view.findViewById(R.id.radioButton_ne);
++        seRadioButton = view.findViewById(R.id.radioButton_se);
++        ceRadioButton = view.findViewById(R.id.radioButton_ce);
++        meSwtich.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
++            @Override
++            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
++                if (isChecked == true) {
++                    neRadioButton.setEnabled(true);
++                    ceRadioButton.setEnabled(true);
++                    seRadioButton.setEnabled(true);
++                } else {
++                    neRadioButton.setEnabled(false);
++                    ceRadioButton.setEnabled(false);
++                    seRadioButton.setEnabled(false);
++                }
++            }
++        });
++        neRadioButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
++            @Override
++            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
++                if (!buttonView.isPressed())
++                    return;
++                seRadioButton.setChecked(false);
++                ceRadioButton.setChecked(false);
++            }
++
++        });
++        seRadioButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
++            @Override
++            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
++                if (!buttonView.isPressed())
++                    return;
++                neRadioButton.setChecked(false);
++                ceRadioButton.setChecked(false);
++            }
++
++        });
++        ceRadioButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
++            @Override
++            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
++                if (!buttonView.isPressed())
++                    return;
++                neRadioButton.setChecked(false);
++                seRadioButton.setChecked(false);
++            }
++
++        });
++    }
++    public void getIPFSConfig() {
++        new Thread(new Runnable() {
++            @Override
++            public void run() {
++                    IPFS DSNManagerHandle = new IPFS("/ip4/127.0.0.1/tcp/5001");
++                    try {
++                        Log.d(TAG, "---" + DSNManagerHandle.config.show());
++                    } catch (Exception e) {
++                        Log.d(TAG, "getIPFSConfig" + e);
++                    }
++            }
++         }).start();
++    }
++    @Override
++    public void onResume(){
++        super.onStart();
++        mLinearLayout = mActivity.findViewById(R.id.dropdown_sort_widget);
++        mLinearLayout.setVisibility(View.GONE);
++    }
++    @Override
++    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater){
++        super.onCreateOptionsMenu(menu, inflater);
++
++    }
++    @Override
++    public void onPrepareOptionsMenu(Menu menu) {
++        super.onPrepareOptionsMenu(menu);
++        menu.setGroupVisible(R.id.group_hide_when_searching, false);
++        mMenuItem = menu.findItem(R.id.option_menu_search);
++        menu.setGroupVisible(R.id.group_hide_when_searching, false);
++        mMenuItem.setVisible(false);
++    }
++
++
++}
+diff --git a/src/com/android/documentsui/DSN/dirlist/DSNTransmissionFragment.java b/src/com/android/documentsui/DSN/dirlist/DSNTransmissionFragment.java
+new file mode 100644
+index 0000000..a99a822
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/dirlist/DSNTransmissionFragment.java
+@@ -0,0 +1,225 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++
++package com.android.documentsui.DSN.dirlist;
++
++import android.annotation.DimenRes;
++import android.annotation.FractionRes;
++import android.annotation.IntDef;
++import android.app.Activity;
++import android.app.ActivityManager;
++import android.app.Fragment;
++import android.app.FragmentManager;
++import android.app.FragmentTransaction;
++import android.app.LoaderManager;
++import android.content.Context;
++import android.content.Intent;
++import android.content.Loader;
++import android.database.Cursor;
++import android.net.Uri;
++import android.os.Build;
++import android.os.Bundle;
++import android.os.Handler;
++import android.os.Parcelable;
++import android.provider.DocumentsContract;
++import android.provider.DocumentsContract.Document;
++import android.support.v4.widget.SwipeRefreshLayout;
++import android.support.v13.app.FragmentStatePagerAdapter;
++import android.support.v4.view.ViewPager;
++import android.support.v7.widget.GridLayoutManager;
++import android.support.v7.widget.GridLayoutManager.SpanSizeLookup;
++import android.support.v7.widget.RecyclerView;
++import android.support.v7.widget.RecyclerView.RecyclerListener;
++import android.support.v7.widget.RecyclerView.ViewHolder;
++import android.util.Log;
++import android.view.ContextMenu;
++import android.view.LayoutInflater;
++import android.view.MenuInflater;
++import android.view.MenuItem;
++import android.view.MotionEvent;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.ImageView;
++import android.widget.Toast;
++import android.widget.TextView;
++import android.os.Message;
++
++
++import com.android.documentsui.BaseActivity;
++import com.android.documentsui.R;
++import com.android.documentsui.DSN.selection.DSNGestureSelector;
++
++import java.io.IOException;
++
++import java.util.List;
++import java.util.ArrayList;
++
++
++import java.util.HashMap;
++import java.util.LinkedHashMap;
++import java.util.Map;
++import android.view.Menu;
++import android.widget.RadioGroup;
++
++
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.FrameLayout;
++import android.widget.LinearLayout;
++import android.widget.RadioGroup;
++
++import java.util.ArrayList;
++import java.util.List;
++import android.os.Bundle;
++
++
++
++public class DSNTransmissionFragment extends Fragment implements RadioGroup.OnCheckedChangeListener, ViewPager.OnPageChangeListener {
++    private static final String TAG = "DSNTransmissionFragment";
++    protected BaseActivity mActivity;
++    private RadioGroup rg;
++    private View vi;
++    private ViewPager vp;
++    private LinearLayout ll;
++    private List<Fragment> list = new ArrayList<>();
++    private int pageNumber = 2;
++    private View view;
++    private MenuItem mMenuItem;
++    protected LinearLayout mLinearLayout;
++
++    public DSNTransmissionFragment() {
++        super();
++    }
++
++    @Override
++    public View onCreateView(
++            LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
++
++        mActivity = (BaseActivity) getActivity();
++        view = inflater.inflate(R.layout.activity_dsn_transmission, container, false);
++        list.add(new UploadFilesQueueFragment());
++        list.add(new DownloadFilesQueueFragment());
++        initView();
++        //initPoints();
++
++        setHasOptionsMenu(true);
++        return view;
++
++    }
++    private void initView() {
++
++        rg = (RadioGroup) view.findViewById(R.id.home_rg);
++        vp = (ViewPager) view.findViewById(R.id.home_vp);
++        vi = view.findViewById(R.id.home_fl_view);
++
++        FragmentStatePagerAdapter adapter = new PagesAdapter(getFragmentManager());
++
++        vp.setAdapter(adapter);
++
++        rg.setOnCheckedChangeListener(this);
++
++        vp.addOnPageChangeListener(this);
++        initVi();
++
++    }
++
++    int width;
++    private void initVi() {
++        width = getResources().getDisplayMetrics().widthPixels / 2;
++        FrameLayout.LayoutParams par = new FrameLayout.LayoutParams(width, ViewGroup.LayoutParams.MATCH_PARENT);
++        vi.setLayoutParams(par);
++
++    }
++    @Override
++    public void onResume(){
++        super.onStart();
++        mLinearLayout = mActivity.findViewById(R.id.dropdown_sort_widget);
++        mLinearLayout.setVisibility(View.GONE);
++    }
++    @Override
++    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater){
++        super.onCreateOptionsMenu(menu, inflater);
++
++    }
++    @Override
++    public void onPrepareOptionsMenu(Menu menu) {
++        super.onPrepareOptionsMenu(menu);
++        menu.setGroupVisible(R.id.group_hide_when_searching, false);
++        mMenuItem = menu.findItem(R.id.option_menu_search);
++        menu.setGroupVisible(R.id.group_hide_when_searching, false);
++        mMenuItem.setVisible(false);
++    }
++
++    @Override
++    public void onCheckedChanged(RadioGroup group, int checkedId) {
++        vp.setCurrentItem(checkedId == R.id.home_rb_dujia ? 0 : 1);
++    }
++    @Override
++    public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
++
++        FrameLayout.LayoutParams par = (FrameLayout.LayoutParams) vi.getLayoutParams();
++        int left = (int) ((positionOffset + position) * width);
++        par.setMargins(left, 0, 0, 0);
++        vi.setLayoutParams(par);
++    }
++    int index = 0;
++    @Override
++    public void onPageSelected(int position) {
++       rg.check(position == 0 ? R.id.home_rb_dujia : R.id.home_rb_ticker);
++       //ll.getChildAt(index).setSelected(false);
++       index = position % pageNumber;
++       //ll.getChildAt(position % pageNumber).setSelected(true);
++    }
++
++    @Override
++    public void onPageScrollStateChanged(int state) {
++
++    }
++
++    class PagesAdapter extends FragmentStatePagerAdapter {
++
++        public PagesAdapter(FragmentManager fm) {
++            super(fm);
++        }
++
++        @Override
++        public Fragment getItem(int position) {
++            return list.get(position);
++        }
++
++        @Override
++        public int getCount() {
++            return list.size();
++        }
++    }
++    private void initPoints() {
++       ll = (LinearLayout) view.findViewById(R.id.main_ll);
++       for (int i = 0; i < pageNumber; i++) {
++           View view = new View(mActivity);
++           LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(40, 40);
++           params.setMargins(100, 10, 100, 10);
++           view.setBackgroundResource(R.drawable.stars_select);
++           view.setLayoutParams(params);
++           ll.addView(view);
++       }
++       ll.getChildAt(0).setSelected(true);
++   }
++
++
++
++
++}
+diff --git a/src/com/android/documentsui/DSN/dirlist/DSNUserInputHandler.java b/src/com/android/documentsui/DSN/dirlist/DSNUserInputHandler.java
+index 5dfbfb3..d84bc6b 100644
+--- a/src/com/android/documentsui/DSN/dirlist/DSNUserInputHandler.java
++++ b/src/com/android/documentsui/DSN/dirlist/DSNUserInputHandler.java
+@@ -1,18 +1,19 @@
+-/*
+- * Copyright (C) 2016 The Android Open Source Project
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
+ 
+ package com.android.documentsui.DSN.dirlist;
+ 
+diff --git a/src/com/android/documentsui/DSN/dirlist/DownloadFilesList.java b/src/com/android/documentsui/DSN/dirlist/DownloadFilesList.java
+new file mode 100644
+index 0000000..d7158b3
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/dirlist/DownloadFilesList.java
+@@ -0,0 +1,120 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package com.android.documentsui.DSN.dirlist;
++
++import java.util.ArrayList;
++import java.util.List;
++import android.support.v7.widget.RecyclerView;
++import com.android.documentsui.DSN.dirlist.DownloadFilesList;
++import com.android.documentsui.DSN.dirlist.DownloadRecycleAdapter;
++
++public class DownloadFilesList {
++    private ArrayList<Item> list = new ArrayList<Item>();
++    public String imgPath;
++
++    public String goodsName;
++
++    public String goodsPrice;
++
++    private static class SingletonHolder {
++
++        private static DownloadFilesList instance = new DownloadFilesList();
++    }
++
++    private DownloadFilesList(){
++
++    }
++
++    public static  DownloadFilesList getInstance() {
++        return SingletonHolder.instance;
++    }
++
++    public ArrayList<Item> getList() {
++        return this.list;
++    }
++
++    public Item getItemFromList() {
++        if(null == list || list.size() == 0 ) {
++            return null;
++        }else
++            return null;
++    }
++
++    public int addItem(Item e) {
++        list.add(e);
++        return list.size() - 1;
++    }
++
++    public boolean isListEmpty() {
++        if(null == list || list.size() == 0 ){
++            return true;
++        }else
++            return false;
++    }
++
++    public static class Item {
++        private String name;
++        private String mimeType;
++        private long length;
++        private int percent;
++        private DownloadRecycleAdapter.DownloadViewHodler viewHolder;
++
++        public Item() { }
++        public Item(String name, String mimeType, long length, int per) {
++            this.name = name;
++            this.mimeType = mimeType;
++            this.length = length;
++            this.percent = per;
++        }
++
++        public String getName() {
++            return this.name;
++        }
++
++        public String getMimeType() {
++            return this.mimeType;
++        }
++
++        public long getLength() {
++            return this.length;
++        }
++
++        public int getPercent() {
++            return this.percent;
++        }
++
++        public DownloadRecycleAdapter.DownloadViewHodler getViewHolder() {
++            return viewHolder;
++        }
++        public void setViewHolder(DownloadRecycleAdapter.DownloadViewHodler viewHolder) {
++            this.viewHolder = viewHolder;
++        }
++        public void setPercent(int per) {
++            this.percent = per;
++        }
++
++        public String toString() {
++            return "Item{" + "name='" + name + '\'' + ", " +
++                    "mimeType='" + mimeType + '\'' + ", goodsPrice='" + '\'' + '}';
++        }
++
++    }
++
++
++}
++
++
+diff --git a/src/com/android/documentsui/DSN/dirlist/DownloadFilesQueueFragment.java b/src/com/android/documentsui/DSN/dirlist/DownloadFilesQueueFragment.java
+new file mode 100644
+index 0000000..22dbba9
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/dirlist/DownloadFilesQueueFragment.java
+@@ -0,0 +1,81 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package com.android.documentsui.DSN.dirlist;
++
++import android.graphics.Color;
++import android.os.Bundle;
++import android.support.annotation.Nullable;
++import android.app.Fragment;
++import android.support.v7.widget.DividerItemDecoration;
++import android.support.v7.widget.LinearLayoutManager;
++import android.support.v7.widget.RecyclerView;
++import android.view.LayoutInflater;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.TextView;
++import android.widget.Toast;
++import android.util.Log;
++
++import java.util.ArrayList;
++import com.android.documentsui.R;
++import com.android.documentsui.DSN.dirlist.DownloadFilesList;
++
++
++public class DownloadFilesQueueFragment extends Fragment {
++
++    private final String TAG = "DownloadFilesQueueFragment";
++    private View view;
++    public RecyclerView mCollectRecyclerView;
++   // private ArrayList<DownloadFilesList.Item> goodsEntityList = new ArrayList<DownloadFilesList.Item>();
++    private ArrayList<DownloadFilesList.Item> goodsEntityList;
++    RecyclerView.Adapter mCollectRecyclerAdapter;
++    @Nullable
++    @Override
++    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
++
++        view = inflater.inflate(R.layout.fragment_dsn_downloadfileslist, container, false);
++        initData();
++        initRecyclerView();
++        return view;
++    }
++
++    private void initData() {
++        DownloadFilesList list = DownloadFilesList.getInstance();
++        goodsEntityList = list.getList();
++    }
++
++    private void initRecyclerView() {
++
++        mCollectRecyclerView=(RecyclerView)view.findViewById(R.id.collect_recyclerView);
++
++        if(goodsEntityList.size() == 0)
++            mCollectRecyclerAdapter = new NoItemRecycleAdapter(getActivity());
++        else
++            mCollectRecyclerAdapter = new DownloadRecycleAdapter(getActivity(), goodsEntityList);
++
++        mCollectRecyclerView.setAdapter(mCollectRecyclerAdapter);
++
++        mCollectRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
++        /*
++        mCollectRecyclerAdapter.setOnItemClickListener(new DownloadRecycleAdapter.OnItemClickListener() {
++            @Override public void OnItemClick(View view, DownloadFilesList.Item data) {
++
++                } });
++        */
++    }
++
++}
+diff --git a/src/com/android/documentsui/DSN/dirlist/DownloadRecycleAdapter.java b/src/com/android/documentsui/DSN/dirlist/DownloadRecycleAdapter.java
+new file mode 100644
+index 0000000..cf9a1fc
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/dirlist/DownloadRecycleAdapter.java
+@@ -0,0 +1,116 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package com.android.documentsui.DSN.dirlist;
++
++import android.content.Context;
++import android.support.v7.widget.RecyclerView;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.ImageView;
++import android.widget.TextView;
++import android.widget.Toast;
++import android.text.format.Formatter;
++import android.util.Log;
++
++import java.util.ArrayList;
++
++import com.android.documentsui.DSN.dirlist.DownloadFilesList;
++import com.android.documentsui.R;
++
++
++public class DownloadRecycleAdapter extends RecyclerView.Adapter<DownloadRecycleAdapter.DownloadViewHodler> {
++    private Context context;
++    private ArrayList<DownloadFilesList.Item> goodsEntityList;
++
++    public DownloadRecycleAdapter(Context context, ArrayList<DownloadFilesList.Item> goodsEntityList) {
++
++        this.context = context;
++
++        this.goodsEntityList = goodsEntityList;
++
++    }
++
++    public DownloadViewHodler onCreateViewHolder(ViewGroup parent, int viewType) {
++
++        View itemView = View.inflate(context, R.layout.item_dsn_downloadfilesqueue, null);
++        return new DownloadViewHodler(itemView);
++    }
++
++    @Override
++    public void onBindViewHolder(DownloadViewHodler holder, int position) {
++
++        DownloadFilesList.Item data = goodsEntityList.get(position);
++        data.setViewHolder(holder);
++        //holder.mItemImg;
++        holder.getItemName().setText(data.getName());
++        holder.getItemSize().setText(Formatter.formatFileSize(context, data.getLength()));
++        holder.getPercentCircle().setCurrentPercent(data.getPercent());
++        holder.getPercentCircle().setTargetPercent(data.getPercent());
++    }
++
++    @Override
++    public int getItemCount() {
++        if(goodsEntityList == null) {
++            return 0;
++        }
++        return goodsEntityList.size();
++    }
++
++    public class DownloadViewHodler extends RecyclerView.ViewHolder {
++        private ImageView mItemImg;
++        private TextView mItemName;
++        private TextView mItemSize;
++        private PercentCircle mPercentCircle;
++        public DownloadViewHodler(View itemView) {
++            super(itemView);
++            mItemImg = (ImageView) itemView.findViewById(R.id.iv_dsn_icon);
++            mItemName = (TextView) itemView.findViewById(R.id.tv_dsn_name);
++            mItemSize = (TextView) itemView.findViewById(R.id.tv_dsn_size);
++            mPercentCircle = (PercentCircle) itemView.findViewById(R.id.pc_dsn);
++
++            itemView.setOnClickListener(new View.OnClickListener() {
++                @Override
++                public void onClick(View v) {
++                    if(onItemClickListener!=null){
++                        onItemClickListener.OnItemClick(v, goodsEntityList.get(getLayoutPosition()));
++                    }
++                } });
++        }
++        public void setTargetPercent(int per) {
++            mPercentCircle.setTargetPercent(per);
++        }
++        public TextView getItemName() {
++            return this.mItemName;
++        }
++        public TextView getItemSize() {
++            return this.mItemSize;
++        }
++        public PercentCircle getPercentCircle() {
++            return this.mPercentCircle;
++        }
++    }
++
++    public interface OnItemClickListener {
++
++        public void OnItemClick(View view, DownloadFilesList.Item data);
++    }
++
++    private OnItemClickListener onItemClickListener;
++    public void setOnItemClickListener(OnItemClickListener onItemClickListener) {
++        this.onItemClickListener = onItemClickListener;
++    }
++}
+diff --git a/src/com/android/documentsui/DSN/dirlist/NoItemRecycleAdapter.java b/src/com/android/documentsui/DSN/dirlist/NoItemRecycleAdapter.java
+new file mode 100644
+index 0000000..99487b1
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/dirlist/NoItemRecycleAdapter.java
+@@ -0,0 +1,78 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++
++package com.android.documentsui.DSN.dirlist;
++
++import android.content.Context;
++import android.support.v7.widget.RecyclerView;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.ImageView;
++import android.widget.TextView;
++import android.widget.Toast;
++import android.text.format.Formatter;
++import android.util.Log;
++import android.view.LayoutInflater;
++
++import java.util.ArrayList;
++
++import com.android.documentsui.DSN.dirlist.DownloadFilesList;
++import com.android.documentsui.R;
++
++
++public class NoItemRecycleAdapter extends RecyclerView.Adapter<NoItemRecycleAdapter.NoItemViewHodler> {
++    private Context context;
++
++    public NoItemRecycleAdapter(Context context) {
++
++        this.context = context;
++    }
++
++    public NoItemViewHodler onCreateViewHolder(ViewGroup parent, int viewType) {
++
++        View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_doc_noitem,parent,false);
++        return new NoItemViewHodler(itemView);
++    }
++
++    @Override
++    public void onBindViewHolder(NoItemViewHodler holder, int position) {
++
++    }
++
++    @Override
++    public int getItemCount() {
++        return 1;
++    }
++
++    public class NoItemViewHodler extends RecyclerView.ViewHolder {
++        private ImageView mImageView;
++        private TextView mMsgView;
++        public NoItemViewHodler(View itemView) {
++            super(itemView);
++            mMsgView = (TextView) itemView.findViewById(R.id.message);
++            mImageView = (ImageView) itemView.findViewById(R.id.artwork);
++
++        }
++
++    }
++
++
++}
++
++
++
++
+diff --git a/src/com/android/documentsui/DSN/dirlist/PercentCircle.java b/src/com/android/documentsui/DSN/dirlist/PercentCircle.java
+new file mode 100644
+index 0000000..426081f
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/dirlist/PercentCircle.java
+@@ -0,0 +1,206 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package com.android.documentsui.DSN.dirlist;
++
++import android.content.Context;
++import android.content.res.TypedArray;
++import android.graphics.Canvas;
++import android.graphics.Paint;
++import android.graphics.RectF;
++import android.util.AttributeSet;
++import android.view.View;
++import com.android.documentsui.R;
++
++public class PercentCircle extends View {
++
++
++
++    private Paint mTextPaint;
++    private Paint mBackgroundPaint;
++    private Paint mRingPaint;
++
++    private int mCircleX;
++    private int mCircleY;
++
++    private float mCurrentAngle;
++    private RectF mArcRectF;
++    private float mStartSweepValue;
++
++    private int mTargetPercent;
++    private int mCurrentPercent;
++
++    private int mDefaultRadius = 60;
++    private int mRadius;
++
++    private int mDefaultBackgroundColor = 0xffafb4db;
++    private int mBackgroundColor;
++
++    private int mDefaultRingColor = 0xff6950a1;
++    private int mRingColor;
++
++    private int mDefaultTextSize = 13;
++    private int mTextSize;
++
++
++    private int mDefaultTextColor = 0xffffffff;
++    private int mTextColor;
++
++    public PercentCircle(Context context) {
++        super(context);
++        init(context);
++
++    }
++
++    public PercentCircle(Context context, AttributeSet attrs) {
++        super(context, attrs);
++
++        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.PercentageRing);
++
++
++        mRadius = typedArray.getInt(R.styleable.PercentageRing_radius, mDefaultRadius);
++
++        mBackgroundColor = typedArray.getColor(R.styleable.PercentageRing_circleBackground, mDefaultBackgroundColor);
++
++        mTextColor = typedArray.getColor(R.styleable.PercentageRing_textColor, mDefaultTextColor);
++
++        mRingColor = typedArray.getColor(R.styleable.PercentageRing_ringColor, mDefaultRingColor);
++
++        // Be sure to call recycle() when done with them
++        typedArray.recycle();
++
++        init(context);
++    }
++
++    public PercentCircle(Context context, AttributeSet attrs, int defStyleAttr) {
++        super(context, attrs, defStyleAttr);
++        init(context);
++    }
++
++    private void init(Context context){
++
++
++        mStartSweepValue = -90;
++
++        mCurrentAngle = 0;
++
++        mCurrentPercent = 0;
++
++
++        mBackgroundPaint = new Paint();
++        mBackgroundPaint.setAntiAlias(true);
++        mBackgroundPaint.setColor(mBackgroundColor);
++        mBackgroundPaint.setStyle(Paint.Style.FILL);
++
++
++        mTextPaint = new Paint();
++        mTextPaint.setColor(mTextColor);
++        mTextPaint.setAntiAlias(true);
++        mTextPaint.setStyle(Paint.Style.FILL);
++        mTextPaint.setStrokeWidth((int) (0.025*mRadius));
++//        mTextPaint.setTextSize(mRadius/2);
++        mTextPaint.setTextSize(45);
++        mTextPaint.setTextAlign(Paint.Align.CENTER);
++
++
++        mRingPaint = new Paint();
++        mRingPaint.setAntiAlias(true);
++        mRingPaint.setColor(mRingColor);
++        mRingPaint.setStyle(Paint.Style.STROKE);
++//        mRingPaint.setStrokeWidth((float) (0.075*mRadius));
++        mRingPaint.setStrokeWidth((float) (0.14*(mRadius-2)));
++
++
++        mTextSize = (int) mTextPaint.getTextSize();
++    }
++
++
++    @Override
++    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
++        setMeasuredDimension(measure(widthMeasureSpec), measure(widthMeasureSpec));
++    }
++
++
++    private int measure(int measureSpec){
++        int result = 0;
++
++        int specMode = MeasureSpec.getMode(measureSpec);
++        int specSize = MeasureSpec.getSize(measureSpec);
++        if( specMode == MeasureSpec.EXACTLY){
++            result = specSize;
++        }else {
++            //result = 2*mRadius;
++            //result =(int) (1.075*mRadius*2);
++            result =(int) (mRadius*2 + mRingPaint.getStrokeWidth()*2);
++            if(specMode == MeasureSpec.AT_MOST){
++                result = Math.min(result, specSize);
++            }
++        }
++        return result;
++    }
++
++    @Override
++    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
++        super.onLayout(changed, left, top, right, bottom);
++
++        mCircleX = getMeasuredWidth()/2;
++        mCircleY = getMeasuredHeight()/2;
++        if(mRadius > mCircleX){
++            mRadius = mCircleX;
++            mRadius = (int) (mCircleX-0.075*mRadius);
++            mTextPaint.setStrokeWidth((float) (0.025*mRadius));
++            mTextPaint.setTextSize(mRadius/2);
++            mRingPaint.setStrokeWidth((float) (0.075*mRadius));
++            mTextSize = (int) mTextPaint.getTextSize();
++        }
++        mArcRectF = new RectF(mCircleX-mRadius, mCircleY-mRadius, mCircleX+mRadius, mCircleY+mRadius);
++    }
++
++    @Override
++    protected void onDraw(Canvas canvas) {
++        super.onDraw(canvas);
++
++        if(mCurrentPercent == 100)
++            mCurrentAngle = 360;
++        else
++            mCurrentAngle = (float)(mCurrentPercent%100*3.6);
++
++        canvas.drawCircle(mCircleX, mCircleY, mRadius, mBackgroundPaint);
++        canvas.drawText(String.valueOf(mCurrentPercent)+"%", mCircleX, mCircleY+mTextSize/4, mTextPaint);
++        canvas.drawArc(mArcRectF, mStartSweepValue, mCurrentAngle, false, mRingPaint);
++
++
++        if(mCurrentPercent < mTargetPercent){
++
++            mCurrentPercent+=1;
++
++            mCurrentAngle+=3.6;
++            if(mCurrentPercent > 100)
++                return;
++            postInvalidateDelayed(10);
++        } else {
++            postInvalidateDelayed(100);
++        }
++
++    }
++
++    public void setTargetPercent(int targetPercent){
++        mTargetPercent = targetPercent;
++    }
++    public void setCurrentPercent(int currentPercent){
++        mCurrentPercent = currentPercent;
++    }
++}
+diff --git a/src/com/android/documentsui/DSN/dirlist/UploadFilesList.java b/src/com/android/documentsui/DSN/dirlist/UploadFilesList.java
+new file mode 100644
+index 0000000..7fe13b2
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/dirlist/UploadFilesList.java
+@@ -0,0 +1,120 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++
++package com.android.documentsui.DSN.dirlist;
++
++import java.util.ArrayList;
++import java.util.List;
++import android.support.v7.widget.RecyclerView;
++import com.android.documentsui.DSN.dirlist.UploadRecycleAdapter;
++
++public class UploadFilesList {
++    private ArrayList<Item> list = new ArrayList<Item>();
++    public String imgPath;
++
++    public String goodsName;
++
++    public String goodsPrice;
++
++    private static class SingletonHolder {
++
++        private static UploadFilesList instance = new UploadFilesList();
++    }
++
++    private UploadFilesList(){
++
++    }
++
++    public static  UploadFilesList getInstance() {
++        return SingletonHolder.instance;
++    }
++
++    public ArrayList<Item> getList() {
++        return this.list;
++    }
++
++    public Item getItemFromList() {
++        if(null == list || list.size() == 0 ) {
++            return null;
++        }else
++            return null;
++    }
++
++    public int addItem(Item e) {
++        list.add(e);
++        return list.size() - 1;
++    }
++
++    public boolean isListEmpty() {
++        if(null == list || list.size() == 0 ){
++            return true;
++        }else
++            return false;
++    }
++
++    public static class Item {
++        private String name;
++        private String mimeType;
++        private long length;
++        private int percent;
++        private UploadRecycleAdapter.UploadViewHodler viewHolder;
++
++        public Item() { }
++        public Item(String name, String mimeType, long length, int per) {
++            this.name = name;
++            this.mimeType = mimeType;
++            this.length = length;
++            this.percent = per;
++        }
++
++        public String getName() {
++            return this.name;
++        }
++
++        public String getMimeType() {
++            return this.mimeType;
++        }
++
++        public long getLength() {
++            return this.length;
++        }
++
++        public int getPercent() {
++            return this.percent;
++        }
++
++        public UploadRecycleAdapter.UploadViewHodler getViewHolder() {
++            return viewHolder;
++        }
++        public void setViewHolder(UploadRecycleAdapter.UploadViewHodler viewHolder) {
++            this.viewHolder = viewHolder;
++        }
++        public void setPercent(int per) {
++            this.percent = per;
++        }
++
++        public String toString() {
++            return "Item{" + "name='" + name + '\'' + ", " +
++                    "mimeType='" + mimeType + '\'' + ", goodsPrice='" + '\'' + '}';
++        }
++
++    }
++
++
++}
++
++
+diff --git a/src/com/android/documentsui/DSN/dirlist/UploadFilesQueueFragment.java b/src/com/android/documentsui/DSN/dirlist/UploadFilesQueueFragment.java
+new file mode 100644
+index 0000000..aa4879c
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/dirlist/UploadFilesQueueFragment.java
+@@ -0,0 +1,79 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package com.android.documentsui.DSN.dirlist;
++
++import android.graphics.Color;
++import android.os.Bundle;
++import android.support.annotation.Nullable;
++import android.app.Fragment;
++import android.support.v7.widget.LinearLayoutManager;
++import android.support.v7.widget.RecyclerView;
++import android.support.v7.widget.GridLayoutManager;
++import android.view.LayoutInflater;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.TextView;
++import android.widget.Toast;
++import com.android.documentsui.R;
++import com.android.documentsui.DSN.dirlist.UploadFilesList;
++import com.android.documentsui.DSN.dirlist.UploadRecycleAdapter;
++import android.util.Log;
++
++import java.util.ArrayList;
++
++public class UploadFilesQueueFragment extends Fragment {
++
++    private View view;
++    public RecyclerView mCollectRecyclerView;
++    private ArrayList<UploadFilesList.Item> goodsEntityList = new ArrayList<UploadFilesList.Item>();
++    RecyclerView.Adapter mCollectRecyclerAdapter;
++    @Nullable
++    @Override
++    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
++        view = inflater.inflate(R.layout.fragment_dsn_uploadfileslist, container, false);
++        getUploadFilesData();
++        initRecyclerView();
++        return view;
++    }
++
++    private void getUploadFilesData() {
++        UploadFilesList list = UploadFilesList.getInstance();
++        goodsEntityList = list.getList();
++
++    }
++
++    private void initRecyclerView() {
++
++        mCollectRecyclerView=(RecyclerView)view.findViewById(R.id.collect_recyclerView);
++
++        if(goodsEntityList.size() == 0)
++            mCollectRecyclerAdapter = new NoItemRecycleAdapter(getActivity());
++        else
++            mCollectRecyclerAdapter = new UploadRecycleAdapter(getActivity(), goodsEntityList);
++
++        mCollectRecyclerView.setAdapter(mCollectRecyclerAdapter);
++
++        mCollectRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
++        /*
++        mCollectRecyclerAdapter.setOnItemClickListener(new UploadRecycleAdapter.OnItemClickListener() {
++            @Override public void OnItemClick(View view, UploadFilesList.Item data) {
++
++            } });
++        */
++       }
++
++}
+diff --git a/src/com/android/documentsui/DSN/dirlist/UploadRecycleAdapter.java b/src/com/android/documentsui/DSN/dirlist/UploadRecycleAdapter.java
+new file mode 100644
+index 0000000..ed1bea3
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/dirlist/UploadRecycleAdapter.java
+@@ -0,0 +1,116 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package com.android.documentsui.DSN.dirlist;
++
++import android.content.Context;
++import android.support.v7.widget.RecyclerView;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.ImageView;
++import android.widget.TextView;
++import android.widget.Toast;
++import android.text.format.Formatter;
++import android.util.Log;
++
++import java.util.ArrayList;
++
++import com.android.documentsui.DSN.dirlist.UploadFilesList;
++import com.android.documentsui.R;
++
++
++public class UploadRecycleAdapter extends RecyclerView.Adapter<UploadRecycleAdapter.UploadViewHodler> {
++    private Context context;
++    private ArrayList<UploadFilesList.Item> goodsEntityList;
++
++    public UploadRecycleAdapter(Context context, ArrayList<UploadFilesList.Item> goodsEntityList) {
++
++        this.context = context;
++
++        this.goodsEntityList = goodsEntityList;
++
++    }
++
++    public UploadViewHodler onCreateViewHolder(ViewGroup parent, int viewType) {
++        View itemView = View.inflate(context, R.layout.item_dsn_downloadfilesqueue, null);
++        return new UploadViewHodler(itemView);
++    }
++
++    @Override
++    public void onBindViewHolder(UploadViewHodler holder, int position) {
++
++        UploadFilesList.Item data = goodsEntityList.get(position);
++        data.setViewHolder(holder);
++        holder.getItemName().setText(data.getName());
++        holder.getItemSize().setText(Formatter.formatFileSize(context, data.getLength()));
++        holder.getPercentCircle().setCurrentPercent(data.getPercent());
++        holder.getPercentCircle().setTargetPercent(data.getPercent());
++
++    }
++
++
++    @Override
++    public int getItemCount() {
++        if(goodsEntityList == null) {
++            return 0;
++        }
++        return goodsEntityList.size();
++    }
++
++    public class UploadViewHodler extends RecyclerView.ViewHolder {
++        private ImageView mItemImg;
++        private TextView mItemName;
++        private TextView mItemSize;
++        private PercentCircle mPercentCircle;
++        public UploadViewHodler(View itemView) {
++            super(itemView);
++            mItemImg = (ImageView) itemView.findViewById(R.id.iv_dsn_icon);
++            mItemName = (TextView) itemView.findViewById(R.id.tv_dsn_name);
++            mItemSize = (TextView) itemView.findViewById(R.id.tv_dsn_size);
++            mPercentCircle = (PercentCircle) itemView.findViewById(R.id.pc_dsn);
++
++            itemView.setOnClickListener(new View.OnClickListener() {
++                @Override
++                public void onClick(View v) {
++                    if(onItemClickListener!=null){
++                        onItemClickListener.OnItemClick(v, goodsEntityList.get(getLayoutPosition()));
++                    }
++                } });
++        }
++        public void setTargetPercent(int per) {
++            mPercentCircle.setTargetPercent(per);
++        }
++        public TextView getItemName() {
++            return this.mItemName;
++        }
++        public TextView getItemSize() {
++            return this.mItemSize;
++        }
++        public PercentCircle getPercentCircle() {
++            return this.mPercentCircle;
++        }
++    }
++
++    public interface OnItemClickListener {
++
++        public void OnItemClick(View view,  UploadFilesList.Item data);
++    }
++
++    private OnItemClickListener onItemClickListener;
++    public void setOnItemClickListener(OnItemClickListener onItemClickListener) {
++        this.onItemClickListener = onItemClickListener;
++    }
++}
+diff --git a/src/com/android/documentsui/DSN/task/DownloadFilesJob.java b/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
+new file mode 100644
+index 0000000..f66a7e2
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/task/DownloadFilesJob.java
+@@ -0,0 +1,139 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package com.android.documentsui.DSN.task;
++
++import static com.android.documentsui.base.Shared.DEBUG;
++import static com.android.documentsui.services.FileOperationService.OPERATION_DELETE;
++
++import android.app.Notification;
++import android.app.Notification.Builder;
++import android.content.ContentResolver;
++import android.content.Context;
++import android.net.Uri;
++import android.util.Log;
++import android.os.StatFs;
++import android.os.Environment;
++import android.content.Context;
++
++import com.android.documentsui.Metrics;
++import com.android.documentsui.R;
++import com.android.documentsui.base.DocumentInfo;
++import com.android.documentsui.base.DocumentStack;
++import com.android.documentsui.base.Features;
++import com.android.documentsui.clipping.UrisSupplier;
++import com.android.documentsui.DocumentsApplication;
++import com.android.documentsui.httpnetwork.ObjectMeta;
++
++import javax.annotation.Nullable;
++
++import java.io.FileNotFoundException;
++import java.io.IOException;
++import java.util.List;
++import java.io.File;
++import java.lang.String.*;
++import java.lang.*;
++import java.util.Map;
++import java.util.HashMap;
++import java.util.LinkedHashMap;
++import java.io.FileInputStream;
++import java.io.FileOutputStream;
++import java.io.File;
++import java.io.InputStream;
++
++import io.ipfs.api.MerkleNode;
++import io.ipfs.api.NamedStreamable;
++import io.ipfs.multihash.Multihash;
++import io.ipfs.api.IPFS;
++import io.ipfs.cid.Cid;
++import io.ipfs.api.JSONParser;
++
++import static android.content.Context.DSNMANAGER_SERVICE;
++import brahmaos.app.DSNManager;
++import brahmaos.app.GetFileCallbackListener;
++import com.android.documentsui.DSN.dirlist.DownloadFilesList;
++import com.android.documentsui.DSN.dirlist.DownloadRecycleAdapter;
++
++
++public class DownloadFilesJob implements Runnable {
++    private static final String TAG = "DownloadDocumentsFromDSNJob";
++    private String PATH_PREFIX = "/sdcard/LocalHD";
++    private ObjectMeta mObjectMeta;
++    private DownloadFilesList.Item mItem;
++
++    private Context mappContext;
++    private IPFS mhandleIPFS;
++
++    public DownloadFilesJob(Context appContext, ObjectMeta objectMeta, DownloadFilesList.Item item) {
++        mObjectMeta = objectMeta;
++        mappContext = appContext;
++        mItem = item;
++    }
++    @Override
++    public void run(){
++        String mObjectName = mObjectMeta.getObjectName();
++        String mMimeType = mObjectMeta.getMimeType();
++        String mHashKey = mObjectMeta.getObjectKey();
++        int mLength = mObjectMeta.getObjectSize();
++
++        DSNManager mManager = (DSNManager) mappContext.getSystemService(DSNMANAGER_SERVICE);
++        mManager.getFile(mHashKey, null, new GetFileCallbackListener() {
++
++            @Override
++            public void onGetFileProcess(long filesize, long uploadsize){
++                Log.d(TAG, "DDD:" + String.valueOf(mLength)+":" + String.valueOf(uploadsize));
++                mItem.setPercent((int)(uploadsize*100/mLength+1));
++                if(mItem.getViewHolder() != null) {
++                    DownloadRecycleAdapter.DownloadViewHodler vh = mItem.getViewHolder();
++                    vh.setTargetPercent((int)(uploadsize*100/mLength+1));
++                }
++
++            }
++
++            @Override
++            public void onCallbackComplete(boolean status){
++                if(status == true) {
++                    if (!mHashKey.equals(mObjectName)) {
++                        File oldFile = new File(PATH_PREFIX + "/" + mHashKey);
++                        File newFile = new File(PATH_PREFIX + "/" + mObjectName);
++                        if(!oldFile.exists()){
++                            return;
++                        }
++                        if (newFile.exists())
++                            Log.d(TAG, "rename cannot sucess file has exist!");
++                        else {
++                            oldFile.renameTo(newFile);
++                            oldFile.delete();
++                        }
++                    } else
++                        Log.d(TAG, "newName is same to oldName!");
++                } else
++                    Log.d(TAG, "getFile onCallbackComplete return failure!");
++            }
++        });
++    }
++
++    private long getSDAvailableSize() {
++        File path = Environment.getExternalStorageDirectory();
++        StatFs stat = new StatFs(path.getPath());
++        long blockSize = stat.getBlockSize();
++        long availableBlocks = stat.getAvailableBlocks();
++        return availableBlocks;
++    }
++
++
++}
++
+diff --git a/src/com/android/documentsui/DSN/task/UploadJob.java b/src/com/android/documentsui/DSN/task/UploadJob.java
+new file mode 100644
+index 0000000..6e2e18f
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/task/UploadJob.java
+@@ -0,0 +1,300 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package com.android.documentsui.DSN.task;
++
++import static com.android.documentsui.base.Shared.DEBUG;
++import static com.android.documentsui.services.FileOperationService.OPERATION_DELETE;
++
++import android.app.Notification;
++import android.app.Notification.Builder;
++import android.content.ContentResolver;
++import android.content.Context;
++import android.net.Uri;
++import android.util.Log;
++import android.provider.DocumentsContract.Path;
++import android.icu.text.SimpleDateFormat;
++import android.provider.DocumentsContract;
++
++
++import com.android.documentsui.Metrics;
++import com.android.documentsui.R;
++import com.android.documentsui.base.DocumentInfo;
++import com.android.documentsui.base.DocumentStack;
++import com.android.documentsui.base.Features;
++import com.android.documentsui.clipping.UrisSupplier;
++import com.android.documentsui.DocumentsApplication;
++import com.android.documentsui.httpnetwork.HttpServer;
++
++import okhttp3.Interceptor;
++import okhttp3.OkHttpClient;
++import okhttp3.Request;
++import okhttp3.Response;
++import okhttp3.ResponseBody;
++import okhttp3.logging.HttpLoggingInterceptor;
++import okio.BufferedSource;
++import retrofit2.Retrofit;
++import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
++import retrofit2.converter.jackson.JacksonConverterFactory;
++import android.os.RemoteException;
++import android.os.Bundle;
++
++import java.util.List;
++import java.util.ArrayList;
++import java.io.FileNotFoundException;
++import javax.annotation.Nullable;
++import java.util.Date;
++
++import io.ipfs.api.MerkleNode;
++import io.ipfs.api.NamedStreamable;
++import io.ipfs.multihash.Multihash;
++import io.ipfs.api.IPFS;
++import java.io.IOException;
++import java.util.List;
++import io.ipfs.cid.Cid;
++import io.ipfs.api.JSONParser;
++import java.io.File;
++import java.lang.String.*;
++import java.lang.*;
++import android.webkit.MimeTypeMap;
++import java.util.Map;
++import java.util.HashMap;
++import java.util.LinkedHashMap;
++import com.android.documentsui.base.RootInfo;
++import java.io.FileNotFoundException;
++import java.io.IOException;
++import com.android.documentsui.services.ResourceException;
++
++import brahmaos.app.DSNManager;
++import brahmaos.app.AddFileCallbackListener;
++import com.android.documentsui.DSN.dirlist.UploadFilesList;
++import com.android.documentsui.DSN.dirlist.UploadRecycleAdapter;
++
++import static android.content.Context.DSNMANAGER_SERVICE;
++
++
++public class UploadJob implements Runnable {
++
++    private static final String TAG = "UploadJob";
++    private static final String ABSOlUTE_PATH_PREFIX = "/sdcard/";
++    private static final String ABSOlUTE_PATH_DOWNLOAD_PREFIX = "/sdcard/Download";
++    private static final String PRIMARY_PREFIX = "primary:";
++    private static final String RAW_PREFIX = "raw:";
++    private static final String RAW_STORAGE_PREFIX = "raw:/storage/emulated/0/";
++    private Uri mParentUri;
++    private volatile int mDocsProcessed = 0;
++    private Context mContext;
++    private UrisSupplier mSrcs;
++    private Uri msrcParent;
++    final List<DocumentInfo> mResolvedDocs;
++
++
++    public UploadJob(Context appContext, UrisSupplier srcs, @Nullable Uri srcParent) {
++        mContext = appContext;
++        mSrcs = srcs;
++        mParentUri = srcParent;
++        mResolvedDocs = new ArrayList<>(srcs.getItemCount());
++    }
++
++    public boolean setUp() {
++        /*
++         try {
++             Iterable<Uri> uris = msrcs.getUris(appContext);
++             for (Uri uri : uris) {
++                 try {
++                     if (ArchivesProvider.AUTHORITY.equals(uri.getAuthority())) {
++                         ArchivesProvider.acquireArchive(getClient(uri), uri);
++                         mAcquiredArchivedUris.add(uri);
++                     }
++                 } catch (RemoteException e) {
++                     Log.e(TAG, "Failed to acquire an archive.");
++                     return false;
++                 }
++             }
++         } catch (IOException e) {
++             Log.e(TAG, "Failed to read list of target resource Uris. Cannot continue.", e);
++             return false;
++         }
++         */
++         int docsResolved = buildDocumentList();
++         if (docsResolved < mSrcs.getItemCount()) {
++             if (docsResolved == 0) {
++                 Log.e(TAG, "Failed to load any documents. Aborting.");
++                 return false;
++             } else {
++                 Log.e(TAG, "Failed to load some documents. Processing loaded documents only.");
++             }
++         }
++
++         return true;
++     }
++    boolean isEligibleDoc(DocumentInfo doc, RootInfo root) {
++        return true;
++    }
++    public int buildDocumentList() {
++          final ContentResolver resolver = mContext.getContentResolver();
++          Iterable<Uri> uris;
++          try {
++              uris = mSrcs.getUris(mContext);
++          } catch (IOException e) {
++              Log.e(TAG, "Failed to read list of target resource Uris. Cannot continue.", e);
++              return 0;
++          }
++          int docsLoaded = 0;
++          for (Uri uri : uris) {
++
++              DocumentInfo doc;
++              try {
++                  doc = DocumentInfo.fromUri(resolver, uri);
++              } catch (FileNotFoundException e) {
++                  Log.e(TAG, "Failed to resolve content from Uri: " + uri
++                          + ". Skipping to next resource.", e);
++                  //onResolveFailed(uri);
++                  continue;
++              }
++              mResolvedDocs.add(doc);
++              docsLoaded++;
++          }
++
++          return docsLoaded;
++    }
++
++    @Override
++    public void run(){
++        if(setUp()==true) {
++             Log.d(TAG, "SetUp scuess! " );
++
++        };
++        Log.d(TAG, "SetUp run! " );
++        ContentResolver resolver = mContext.getContentResolver();
++        DocumentInfo parentDoc;
++        try {
++            parentDoc = mParentUri != null
++                ? DocumentInfo.fromUri(resolver, mParentUri)
++                : null;
++        } catch (FileNotFoundException e) {
++          Log.e(TAG, "Failed to resolve parent from Uri: " + mParentUri + ". Cannot continue.", e);
++          return;
++        }
++
++        for (DocumentInfo doc : mResolvedDocs) {
++            if (DEBUG) Log.d(TAG, "Backuping document @ " + doc.derivedUri);
++            try {
++                UploadFiles(doc, parentDoc);
++            } catch (ResourceException e) {
++                Log.e(TAG, "Failed to Backuping document @ " + doc.derivedUri, e);
++            }
++
++            mDocsProcessed++;
++        }
++    }
++    final void UploadFiles(DocumentInfo doc, @Nullable DocumentInfo parent)
++             throws ResourceException {
++            NamedStreamable.FileWrapper file;
++
++            Log.d(TAG,"UploadFiles:" + doc.toString());
++            if(doc.isDirectory())
++                return;
++
++            String mPath;
++            if(doc.documentId.startsWith(PRIMARY_PREFIX)){
++                mPath = doc.documentId.replace(PRIMARY_PREFIX,ABSOlUTE_PATH_PREFIX);
++            } else if(doc.documentId.startsWith(RAW_PREFIX)){
++                mPath = doc.documentId.replace(RAW_STORAGE_PREFIX,ABSOlUTE_PATH_PREFIX);
++            } else {
++                Log.d(TAG,"UploadFiles:" +"is DB data ");
++                return;
++            }
++
++            String createFileTime;
++            String lastModifiedFileTime;
++            String fileType;
++            int blockCnt;
++
++            DSNManager mManager = (DSNManager) mContext.getSystemService(DSNMANAGER_SERVICE);
++
++            List<String> filenames = getFileListame(mPath);
++            if(filenames!= null){
++                for(String filename : filenames){
++                    UploadFilesList list = UploadFilesList.getInstance();
++                    UploadFilesList.Item item = new UploadFilesList.Item(doc.displayName, doc.mimeType, doc.size, 0);
++                    list.addItem(item);
++
++                    mManager.addFile(filename, null, new AddFileCallbackListener(){
++                        @Override
++                        public void onUploadProcess(long filesize, long uploadsize){
++                            item.setPercent((int)(uploadsize*100/filesize));
++                            if(item.getViewHolder() != null) {
++                                UploadRecycleAdapter.UploadViewHodler vh = item.getViewHolder();
++                                vh.setTargetPercent((int)(uploadsize*100/filesize));
++                            }
++                        }
++                        @Override
++                        public void onCompleted(String status){
++                            Log.d(TAG, "DSNManager onCompleted:" + status);
++                        }
++                        @Override
++                        public void onError(String status){
++                            Log.d(TAG, "DSNManager OnError:" + status);
++                        }
++                        @Override
++                        public void onNext(String status){
++                            Log.d(TAG, "DSNManager onNext:" + status);
++                        }
++                        @Override
++                        public void onCallbackComplete(boolean result, Map resultMap){
++                            Log.d(TAG, "DSNManager onCallbackComplete:" + resultMap.get("account_id"));
++                            Log.d(TAG, "DSNManager onCallbackComplete:" + resultMap.get("object_key"));
++                            Log.d(TAG, "DSNManager onCallbackComplete:" + String.valueOf(resultMap.get("object_block_cnt")));
++                        }
++                    });
++                }
++            } else
++                return;
++    }
++
++    public List<String> getFileListame(String strPath) {
++        List<String> returnList = new ArrayList();
++        File dir = new File(strPath);
++        if(!dir.isDirectory()){
++            returnList.add(strPath);
++            return returnList;
++        }
++        File[] fs = dir.listFiles();
++        for(File f:fs){
++            if(f.isDirectory())
++                returnList.addAll(getFileListame(f.getAbsolutePath()));
++            if(f.isFile()) {
++                returnList.add(f.getAbsolutePath());
++            }
++
++        }
++        return returnList;
++    }
++    /**
++     * Get the last element
++     */
++    public static <T> T getLastElement(List<T> list) {
++        return list.get(list.size() - 1);
++    }
++    /**
++     * Get the first element
++     */
++    public static <T> T getFirstElement(List<T> list) {
++        return list.get(0);
++    }
++
++}
+diff --git a/src/com/android/documentsui/DSN/ui/common/barcode/CaptureActivity.java b/src/com/android/documentsui/DSN/ui/common/barcode/CaptureActivity.java
+index 2bbce9f..5434f17 100644
+--- a/src/com/android/documentsui/DSN/ui/common/barcode/CaptureActivity.java
++++ b/src/com/android/documentsui/DSN/ui/common/barcode/CaptureActivity.java
+@@ -38,6 +38,7 @@ import com.android.documentsui.DSN.ui.common.barcode.result.ResultHandlerFactory
+ import com.android.documentsui.DSN.util.CommonUtil;
+ import com.android.documentsui.DSN.base.BaseActivity;
+ import com.android.documentsui.DSN.ui.common.barcode.BeepManager;
++import android.view.MenuItem;
+ 
+ /**
+  *
+@@ -200,6 +201,19 @@ public class CaptureActivity extends BaseActivity implements SurfaceHolder.Callb
+         super.onPause();
+     }
+ 
++    @Override
++    public boolean onOptionsItemSelected(MenuItem item) {
++        switch (item.getItemId()) {
++            case android.R.id.home:
++                finish();
++                break;
++            default:
++                return super.onOptionsItemSelected(item);
++        }
++        return true;
++    }
++
++
+     /**
+      * A valid barcode has been found, so give an indication of success and show the results.
+      *
+diff --git a/src/com/android/documentsui/DSN/util/CommonUtil.java b/src/com/android/documentsui/DSN/util/CommonUtil.java
+index b89decd..8f29c7f 100644
+--- a/src/com/android/documentsui/DSN/util/CommonUtil.java
++++ b/src/com/android/documentsui/DSN/util/CommonUtil.java
+@@ -1,3 +1,19 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
+ package com.android.documentsui.DSN.util;
+ 
+ import android.Manifest;
+diff --git a/src/com/android/documentsui/DSN/util/PermissionUtil.java b/src/com/android/documentsui/DSN/util/PermissionUtil.java
+index b8b537c..0494c5a 100644
+--- a/src/com/android/documentsui/DSN/util/PermissionUtil.java
++++ b/src/com/android/documentsui/DSN/util/PermissionUtil.java
+@@ -1,18 +1,19 @@
+-/*
+-* Copyright 2015 The Android Open Source Project
+-*
+-* Licensed under the Apache License, Version 2.0 (the "License");
+-* you may not use this file except in compliance with the License.
+-* You may obtain a copy of the License at
+-*
+-*     http://www.apache.org/licenses/LICENSE-2.0
+-*
+-* Unless required by applicable law or agreed to in writing, software
+-* distributed under the License is distributed on an "AS IS" BASIS,
+-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-* See the License for the specific language governing permissions and
+-* limitations under the License.
+-*/
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
+ 
+ package com.android.documentsui.DSN.util;
+ 
+diff --git a/src/com/android/documentsui/DSN/util/PxUtils.java b/src/com/android/documentsui/DSN/util/PxUtils.java
+new file mode 100644
+index 0000000..9f4c1c1
+--- /dev/null
++++ b/src/com/android/documentsui/DSN/util/PxUtils.java
+@@ -0,0 +1,33 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
++package com.android.documentsui.DSN.util;
++
++import android.content.Context;
++import android.util.TypedValue;
++
++public class PxUtils {
++
++    public static int dpToPx(int dp, Context context) {
++        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, context.getResources().getDisplayMetrics());
++    }
++
++    public static int spToPx(int sp,Context context) {
++        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, context.getResources().getDisplayMetrics());
++    }
++
++
++}
+diff --git a/src/com/android/documentsui/DSN/util/QRCodeUtil.java b/src/com/android/documentsui/DSN/util/QRCodeUtil.java
+index 0a99b7c..742642e 100644
+--- a/src/com/android/documentsui/DSN/util/QRCodeUtil.java
++++ b/src/com/android/documentsui/DSN/util/QRCodeUtil.java
+@@ -1,3 +1,19 @@
++/**
++     Copyright (C) 2018 BRAHMACARIYA FOUNDATION LTD.
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++  */
++
+ package com.android.documentsui.DSN.util;
+ 
+ 
+diff --git a/src/com/android/documentsui/MenuManager.java b/src/com/android/documentsui/MenuManager.java
+index 221224c..f1670f6 100644
+--- a/src/com/android/documentsui/MenuManager.java
++++ b/src/com/android/documentsui/MenuManager.java
+@@ -64,7 +64,7 @@ public abstract class MenuManager {
+         updateExtractTo(menu.findItem(R.id.action_menu_extract_to), selection);
+         updateViewInOwner(menu.findItem(R.id.action_menu_view_in_owner), selection);
+         updateInspector(menu.findItem(R.id.action_menu_inspector), selection);
+-        updateBackup(menu.findItem(R.id.action_menu_backup));
++        updateBackup(menu.findItem(R.id.action_menu_upload));
+ 
+         Menus.disableHiddenItems(menu);
+     }
+@@ -79,7 +79,7 @@ public abstract class MenuManager {
+                 menu.findItem(R.id.option_menu_list));
+         updateAdvanced(menu.findItem(R.id.option_menu_advanced));
+         updateDebug(menu.findItem(R.id.option_menu_debug));
+-		updateDebug(menu.findItem(R.id.option_menu_debug));
++        updateDebug(menu.findItem(R.id.option_menu_debug));
+ 
+         Menus.disableHiddenItems(menu);
+     }
+diff --git a/src/com/android/documentsui/base/Providers.java b/src/com/android/documentsui/base/Providers.java
+index 14bce47..d6116a0 100644
+--- a/src/com/android/documentsui/base/Providers.java
++++ b/src/com/android/documentsui/base/Providers.java
+@@ -36,8 +36,12 @@ public final class Providers {
+     public static final String ROOT_ID_DOWNLOADS = "downloads";
+ 
+     public static final String AUTHORITY_MEDIA = "com.android.providers.media.documents";
+-    public static final String AUTHORITY_DSNLocal = "com.android.providers.decenterlocaldisk.documents";
+-    public static final String AUTHORITY_DSNRemote = "com.android.providers.decentercloud.documents";
++    public static final String AUTHORITY_DSNLOCAL = "com.android.providers.decenterlocaldisk.documents";
++    public static final String AUTHORITY_DSNREMOTE = "com.android.documentsui.authority.dsnremote";
++    public static final String AUTHORITY_DSNSETTING = "com.android.documentsui.authority.dsnsetting";
++    public static final String AUTHORITY_DSNTRANSMISSION = "com.android.documentsui.authority.dsntransmission";
++
++
+     public static final String ROOT_ID_IMAGES = "images_root";
+     public static final String ROOT_ID_VIDEOS = "videos_root";
+     public static final String ROOT_ID_AUDIO = "audio_root";
+diff --git a/src/com/android/documentsui/base/RootInfo.java b/src/com/android/documentsui/base/RootInfo.java
+index 81d5b59..f80070f 100644
+--- a/src/com/android/documentsui/base/RootInfo.java
++++ b/src/com/android/documentsui/base/RootInfo.java
+@@ -278,10 +278,10 @@ public class RootInfo implements Durable, Parcelable, Comparable<RootInfo> {
+                 && Providers.ROOT_ID_AUDIO.equals(rootId);
+     }
+     public boolean isDSNLocal() {
+-        return Providers.AUTHORITY_DSNLocal.equals(authority);
++        return Providers.AUTHORITY_DSNLOCAL.equals(authority);
+     }
+      public boolean isDSNRemote() {
+-        return Providers.AUTHORITY_DSNRemote.equals(authority);
++        return Providers.AUTHORITY_DSNREMOTE.equals(authority);
+     }
+ 
+     public boolean isMtp() {
+diff --git a/src/com/android/documentsui/dirlist/DirectoryFragment.java b/src/com/android/documentsui/dirlist/DirectoryFragment.java
+index 29e6510..7f2e873 100644
+--- a/src/com/android/documentsui/dirlist/DirectoryFragment.java
++++ b/src/com/android/documentsui/dirlist/DirectoryFragment.java
+@@ -110,7 +110,10 @@ import java.util.List;
+ 
+ import javax.annotation.Nullable;
+ 
+-import com.android.documentsui.DSN.dirlist.DSNDirectoryFragment;
++import com.android.documentsui.DSN.dirlist.DSNRemoteFragment;
++import com.android.documentsui.DSN.dirlist.DSNSettingFragment;
++import com.android.documentsui.DSN.dirlist.DSNTransmissionFragment;
++import com.android.documentsui.base.Providers;
+ 
+ import brahmaos.app.DSNManager;
+ import android.app.AlertDialog;
+@@ -648,7 +651,7 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+                 // It won't end action mode if user cancels the delete.
+                 mActions.deleteSelectedDocuments();
+                 return true;
+-            case R.id.action_menu_backup:
++            case R.id.action_menu_upload:
+                 // deleteDocuments will end action mode if the documents are deleted.
+                 // It won't end action mode if user cancels the delete.
+                 DSNManager mManager = (DSNManager) getContext().getSystemService(DSNMANAGER_SERVICE);
+@@ -661,7 +664,8 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+                         .show();
+                         return true;
+                 }
+-                mActions.backupDocuments();
++
++                mActions.uploadDocuments();
+                 return true;
+ 
+             case R.id.action_menu_copy_to:
+@@ -1053,8 +1057,22 @@ public class DirectoryFragment extends Fragment implements SwipeRefreshLayout.On
+         final FragmentTransaction ft = fm.beginTransaction();
+         AnimationView.setupAnimations(ft, anim, args);
+ 
+-        if (root != null && root.authority != null && root.authority.equals("com.android.providers.decentercloud.documents")) {
+-            final Fragment fragment = new DSNDirectoryFragment();
++        if (root != null && root.authority != null && root.authority.equals(Providers.AUTHORITY_DSNREMOTE)) {
++            final Fragment fragment = new DSNRemoteFragment();
++            args.putBoolean(Shared.FRAGMENT_MARK, true);
++            fragment.setArguments(args);
++
++            ft.replace(getFragmentId(), fragment);
++            ft.commitAllowingStateLoss();
++        } else if (root != null && root.authority != null && root.authority.equals(Providers.AUTHORITY_DSNSETTING)) {
++            final Fragment fragment = new DSNSettingFragment();
++            args.putBoolean(Shared.FRAGMENT_MARK, true);
++            fragment.setArguments(args);
++
++            ft.replace(getFragmentId(), fragment);
++            ft.commitAllowingStateLoss();
++        } else if (root != null && root.authority != null && root.authority.equals(Providers.AUTHORITY_DSNTRANSMISSION)) {
++            final Fragment fragment = new DSNTransmissionFragment();
+             args.putBoolean(Shared.FRAGMENT_MARK, true);
+             fragment.setArguments(args);
+ 
+diff --git a/src/com/android/documentsui/files/ActionHandler.java b/src/com/android/documentsui/files/ActionHandler.java
+index 6d4d68f..3258a9b 100644
+--- a/src/com/android/documentsui/files/ActionHandler.java
++++ b/src/com/android/documentsui/files/ActionHandler.java
+@@ -28,6 +28,14 @@ import android.net.Uri;
+ import android.provider.DocumentsContract;
+ import android.util.Log;
+ import android.view.DragEvent;
++import android.app.AlertDialog;
++import android.content.DialogInterface;
++import android.view.LayoutInflater;
++import android.view.View;
++import android.widget.Button;
++import android.widget.RadioButton;
++import android.widget.RadioGroup;
++import android.widget.RadioGroup.OnCheckedChangeListener;
+ 
+ import com.android.documentsui.AbstractActionHandler;
+ import com.android.documentsui.ActionModeAddons;
+@@ -66,6 +74,12 @@ import com.android.documentsui.services.FileOperation;
+ import com.android.documentsui.services.FileOperationService;
+ import com.android.documentsui.services.FileOperations;
+ import com.android.documentsui.ui.DialogController;
++import com.android.documentsui.ui.MessageBuilder;
++import com.android.documentsui.base.Providers;
++import com.android.documentsui.DSN.conmmon.ConfigConst;
++import com.android.documentsui.DSN.task.UploadJob;
++
++
+ import com.android.internal.annotations.VisibleForTesting;
+ 
+ import java.util.ArrayList;
+@@ -89,6 +103,12 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+     private final ClipStore mClipStore;
+     private final DragAndDropManager mDragAndDropManager;
+     private final Model mModel;
++    private Button btnOk;
++    private Button btnSet;
++    private Button btnCancle;
++    private RadioGroup radioGroup;
++    private OnCheckedChangeListener listen;
++    private int itemChoice;
+ 
+     ActionHandler(
+             T activity,
+@@ -338,7 +358,7 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+         mDialogs.confirmDelete(docs, result);
+     }
+     @Override
+-    public void backupDocuments() {
++    public void uploadDocuments() {
+         Metrics.logUserAction(mActivity, Metrics.USER_ACTION_DELETE);
+         Selection selection = getSelectedOrFocused();
+         if (selection.isEmpty()) {
+@@ -349,44 +369,93 @@ public class ActionHandler<T extends Activity & Addons> extends AbstractActionHa
+ 
+         // Model must be accessed in UI thread, since underlying cursor is not threadsafe.
+         List<DocumentInfo> docs = mModel.getDocuments(selection);
+-
+-        ConfirmationCallback result = (@Result int code) -> {
+-            // share the news with our caller, be it good or bad.
+-            mActionModeAddons.finishOnConfirmed(code);
+-
+-            if (code != ConfirmationCallback.CONFIRM) {
+-                return;
++        UrisSupplier srcs;
++        try {
++            srcs = UrisSupplier.create(
++                    selection,
++                    mModel::getItemUri,
++                    mClipStore);
++        } catch (Exception e) {
++            Log.e(TAG,"Failed to delete a file because we were unable to get item URIs.", e);
++            mDialogs.showFileOperationStatus(
++                    FileOperations.Callback.STATUS_FAILED,
++                    FileOperationService.OPERATION_BACKUP,
++                    selection.size());
++            return;
++        }
++        itemChoice = -1;
++        MessageBuilder mMessages = new MessageBuilder(mActivity);
++        AlertDialog singleChoiceDialog =
++                new AlertDialog.Builder(mActivity)
++                        .setTitle(mMessages.generateUploadMessage(docs))
++                .setNeutralButton("SET",
++                new DialogInterface.OnClickListener() {
++                    @Override
++                    public void onClick(DialogInterface dialog, int which) {
++                        RootInfo mDSNSettingRoot = new RootInfo() {{
++                            derivedIcon = R.drawable.ic_item_dsnremote;
++                            authority = Providers.AUTHORITY_DSNSETTING;
++                            availableBytes = -1;
++                        }};
++                        openRoot(mDSNSettingRoot);
++                    }
++                }).setNegativeButton("CANCLE",
++                new DialogInterface.OnClickListener() {
++                    @Override
++                    public void onClick(DialogInterface dialog, int which) {
++
++                    }
++                }).setPositiveButton("OK",
++                    new DialogInterface.OnClickListener() {
++                        @Override
++                        public void onClick(DialogInterface dialog, int which) {
++                            Uri uriParent = (srcParent == null ? null : srcParent.derivedUri);
++                            UploadJob uploadJob= new UploadJob(mActivity.getApplicationContext(), srcs, uriParent);
++                            Thread mThreadJob = new Thread(uploadJob);
++                            mThreadJob.start();
++                    }
++                }).create();
++        View view = LayoutInflater.from(mActivity).inflate(R.layout.dialog_dsn_select_encrypt,null);
++        singleChoiceDialog.setView(view);
++        singleChoiceDialog.show();
++        btnOk = ((AlertDialog) singleChoiceDialog).getButton(DialogInterface.BUTTON_POSITIVE);
++        btnSet = ((AlertDialog) singleChoiceDialog).getButton(DialogInterface.BUTTON_NEUTRAL);
++        btnCancle = ((AlertDialog) singleChoiceDialog).getButton(DialogInterface.BUTTON_NEGATIVE);
++        btnOk.setEnabled(false);
++
++        radioGroup=(RadioGroup)view.findViewById(R.id.radioGroup_id);
++        radioGroup.setOnCheckedChangeListener(new OnCheckedChangeListener() {
++            @Override
++            public void onCheckedChanged(RadioGroup group, int checkedId) {
++                int id= group.getCheckedRadioButtonId();
++                switch (group.getCheckedRadioButtonId()) {
++                        case R.id.radioButtonA:
++                            itemChoice = ConfigConst.WITHOUT_ENCRYPTION;
++                            break;
++                        case R.id.radioButtonB:
++                            itemChoice = ConfigConst.SYSTEM_ENCRYPTION;
++                            break;
++                        case R.id.radioButtonC:
++                            itemChoice = ConfigConst.CUSTOM_ENCRYPTION;
++                            break;
++                        default:
++                            Log.d(TAG ,"no RadioButtonId Select!");
++                            break;
++
++                }
++                btnOk.setEnabled(true);
+             }
++        });
+ 
+-            UrisSupplier srcs;
+-            try {
+-                srcs = UrisSupplier.create(
+-                        selection,
+-                        mModel::getItemUri,
+-                        mClipStore);
+-            } catch (Exception e) {
+-                Log.e(TAG,"Failed to delete a file because we were unable to get item URIs.", e);
+-                mDialogs.showFileOperationStatus(
+-                        FileOperations.Callback.STATUS_FAILED,
+-                        FileOperationService.OPERATION_BACKUP,
+-                        selection.size());
+-                return;
+-            }
++    }
++
++    public void dailogCustomEncrypt() {
+ 
+-            FileOperation operation = new FileOperation.Builder()
+-                    .withOpType(FileOperationService.OPERATION_BACKUP)
+-                    .withDestination(mState.stack)
+-                    .withSrcs(srcs)
+-                    .withSrcParent(srcParent == null ? null : srcParent.derivedUri)
+-                    .build();
+ 
+-            FileOperations.start(mActivity, operation, mDialogs::showFileOperationStatus,
+-                    FileOperations.createJobId());
+-        };
+ 
+-        mDialogs.confirmBackup(docs, result);
+     }
+ 
++
+     @Override
+     public void shareSelectedDocuments() {
+         Metrics.logUserAction(mActivity, Metrics.USER_ACTION_SHARE);
+diff --git a/src/com/android/documentsui/files/DSNFilesActivity.java b/src/com/android/documentsui/files/DSNFilesActivity.java
+index 9e94689..efcfc33 100644
+--- a/src/com/android/documentsui/files/DSNFilesActivity.java
++++ b/src/com/android/documentsui/files/DSNFilesActivity.java
+@@ -95,7 +95,8 @@ import android.annotation.IntDef;
+ import javax.annotation.Nullable;
+ import java.lang.annotation.Retention;
+ import java.lang.annotation.RetentionPolicy;
+-import com.android.documentsui.services.DownloadDocumentsFromDSNJob;
++import com.android.documentsui.DSN.task.DownloadFilesJob;
++import com.android.documentsui.DSN.dirlist.DownloadFilesList;
+ import com.android.documentsui.httpnetwork.ObjectMeta;
+ import com.android.documentsui.DSN.DSNAddressQrcodeActivity;
+ 
+@@ -125,7 +126,7 @@ public class DSNFilesActivity extends AppCompatActivity  {
+ 
+     @Injected
+     @ContentScoped
+-    protected ActionHandler mActions;
++   //protected ActionHandler mActions;
+     protected DirectoryReloadLock mReloadLock = new DirectoryReloadLock();
+ 
+     protected DialogController mDialogs;
+@@ -203,14 +204,12 @@ public class DSNFilesActivity extends AppCompatActivity  {
+         setResult(Activity.RESULT_CANCELED);
+         mApp = (DocumentsApplication)getApplication();
+         mInjector = mApp.mInjector;
+-        mActions = (ActionHandler)mInjector.getActionHandler(mReloadLock);
++      //  mActions = (ActionHandler)mInjector.getActionHandler(mReloadLock);
+ 
+         MessageBuilder messages = new MessageBuilder(this);
+         Features features = Features.create(this);
+ 
+         mDialogs = DialogController.create(features, this, messages);
+-
+-
+     }
+ 
+     public void onPreferenceChanged(String pref) {
+@@ -218,11 +217,12 @@ public class DSNFilesActivity extends AppCompatActivity  {
+         // just limits the scope of what we expect to come flowing
+         // through here until we know we want more and fancier options.
+         assert(Preferences.shouldBackup(pref));
+-
++        /*
+         switch (pref) {
+             case ScopedPreferences.INCLUDE_DEVICE_ROOT:
+                 updateDisplayAdvancedDevices(mInjector.prefs.getShowDeviceRoot());
+         }
++        */
+     }
+ 
+     @Override
+@@ -266,11 +266,11 @@ public class DSNFilesActivity extends AppCompatActivity  {
+ 
+         //includeState(state);
+ 
+-        state.showAdvanced = Shared.mustShowDeviceRoot(intent)
+-                || mInjector.prefs.getShowDeviceRoot();
++       // state.showAdvanced = Shared.mustShowDeviceRoot(intent)
++       //         || mInjector.prefs.getShowDeviceRoot();
+ 
+         // Only show the toggle if advanced isn't forced enabled.
+-        state.showDeviceStorageOption = !Shared.mustShowDeviceRoot(intent);
++       // state.showDeviceStorageOption = !Shared.mustShowDeviceRoot(intent);
+ 
+         if (DEBUG) Log.d(mTag, "Created new state object: " + state);
+ 
+@@ -359,7 +359,7 @@ public class DSNFilesActivity extends AppCompatActivity  {
+                     .withOpType(FileOperationService.OPERATION_DOWNLOADDOCUMENTSFROMDSN)
+                     .build();
+ 
+-            startDownloadDocumentsFromDSN(operation, mDialogs::showFileOperationStatus,
++            startDownloadFileJob(operation, mDialogs::showFileOperationStatus,
+                     FileOperations.createJobId());
+         };
+ 
+@@ -371,12 +371,17 @@ public class DSNFilesActivity extends AppCompatActivity  {
+         return DirectoryFragment.get(getFragmentManager());
+     }
+ 
+-    public void startDownloadDocumentsFromDSN(FileOperation operation, Callback callback,
++    public void startDownloadFileJob(FileOperation operation, Callback callback,
+             @Nullable String jobId) {
+ 
+         callback.onOperationResult(Callback.STATUS_ACCEPTED, operation.getOpType(),1);
+-        DownloadDocumentsFromDSNJob mDownloadDocumentsFromDSNJob= new DownloadDocumentsFromDSNJob(this,mObjectMeta);
+-        Thread mThreadJob = new Thread(mDownloadDocumentsFromDSNJob);
++        DownloadFilesList list = DownloadFilesList.getInstance();
++        DownloadFilesList.Item item = new DownloadFilesList.Item(mObjectMeta.getObjectName(), mObjectMeta.getMimeType(),
++            mObjectMeta.getObjectSize(),0);
++
++        list.addItem(item);
++        DownloadFilesJob mDownloadFilesJob= new DownloadFilesJob(this, mObjectMeta, item);
++        Thread mThreadJob = new Thread(mDownloadFilesJob);
+         mThreadJob.start();
+     }
+ 
+@@ -419,7 +424,7 @@ public class DSNFilesActivity extends AppCompatActivity  {
+         Metrics.logUserAction(this,
+                 display ? Metrics.USER_ACTION_SHOW_ADVANCED : Metrics.USER_ACTION_HIDE_ADVANCED);
+ 
+-        mInjector.prefs.setShowDeviceRoot(display);
++        //mInjector.prefs.setShowDeviceRoot(display);
+         updateDisplayAdvancedDevices(display);
+     }
+ 
+diff --git a/src/com/android/documentsui/roots/ProvidersCache.java b/src/com/android/documentsui/roots/ProvidersCache.java
+index 76178d0..ce051e8 100644
+--- a/src/com/android/documentsui/roots/ProvidersCache.java
++++ b/src/com/android/documentsui/roots/ProvidersCache.java
+@@ -84,6 +84,9 @@ public class ProvidersCache implements ProvidersAccess {
+     private final ContentObserver mObserver;
+ 
+     private final RootInfo mRecentsRoot;
++    private final RootInfo mDSNSettingRoot;
++    private final RootInfo mDSNRemoteRoot;
++    private final RootInfo mDSNTransmissionListRoot;
+ 
+     private final Object mLock = new Object();
+     private final CountDownLatch mFirstLoad = new CountDownLatch(1);
+@@ -114,6 +117,33 @@ public class ProvidersCache implements ProvidersAccess {
+                 title = mContext.getString(R.string.root_recent);
+                 availableBytes = -1;
+             }};
++        mDSNSettingRoot = new RootInfo() {{
++                // Special root for recents
++                derivedIcon = R.drawable.ic_item_dsnsetting;
++                //derivedType = RootInfo.TYPE_RECENTS;
++                flags = Root.FLAG_LOCAL_ONLY | Root.FLAG_SUPPORTS_IS_CHILD;
++                title = mContext.getString(R.string.root_dsnsetting);
++                authority = Providers.AUTHORITY_DSNSETTING;
++                availableBytes = -1;
++            }};
++       mDSNRemoteRoot = new RootInfo() {{
++                // Special root for recents
++                derivedIcon = R.drawable.ic_item_dsnremote;
++                //derivedType = RootInfo.TYPE_RECENTS;
++                flags = Root.FLAG_LOCAL_ONLY | Root.FLAG_SUPPORTS_IS_CHILD;
++                title = mContext.getString(R.string.root_dsnremote);
++                authority = Providers.AUTHORITY_DSNREMOTE;
++                availableBytes = -1;
++            }};
++        mDSNTransmissionListRoot = new RootInfo() {{
++                // Special root for recents
++                derivedIcon = R.drawable.ic_item_dsnfilelist;
++                //derivedType = RootInfo.TYPE_RECENTS;
++                flags = Root.FLAG_LOCAL_ONLY | Root.FLAG_SUPPORTS_IS_CHILD;
++                title = mContext.getString(R.string.root_dsnprocesslist);
++                authority = Providers.AUTHORITY_DSNTRANSMISSION;
++                availableBytes = -1;
++            }};
+     }
+ 
+     private class RootsChangedObserver extends ContentObserver {
+@@ -436,6 +466,9 @@ public class ProvidersCache implements ProvidersAccess {
+             final long start = SystemClock.elapsedRealtime();
+ 
+             mTaskRoots.put(mRecentsRoot.authority, mRecentsRoot);
++            mTaskRoots.put(mDSNSettingRoot.authority, mDSNSettingRoot);
++            mTaskRoots.put(mDSNRemoteRoot.authority, mDSNRemoteRoot);
++            mTaskRoots.put(mDSNTransmissionListRoot.authority, mDSNTransmissionListRoot);
+ 
+             final PackageManager pm = mContext.getPackageManager();
+ 
+diff --git a/src/com/android/documentsui/services/BackupJob.java b/src/com/android/documentsui/services/BackupJob.java
+index bb1e64a..4b0b350 100644
+--- a/src/com/android/documentsui/services/BackupJob.java
++++ b/src/com/android/documentsui/services/BackupJob.java
+@@ -176,8 +176,6 @@ final class BackupJob extends ResolvedResourcesJob {
+         // try {
+             NamedStreamable.FileWrapper file;
+ 
+-           // Path path = DocumentsContract.findDocumentPath(getClient(doc), doc.derivedUri);
+-
+             Log.d(TAG,"backupDocument:" + doc.toString());
+ 
+             String mPath;
+@@ -226,8 +224,6 @@ final class BackupJob extends ResolvedResourcesJob {
+                 }
+             } else
+                 return;
+-
+-
+     }
+ 
+     public List<String> getFileListame(String strPath) {
+diff --git a/src/com/android/documentsui/services/FileOperation.java b/src/com/android/documentsui/services/FileOperation.java
+index 51cbfb8..a8f5bc4 100644
+--- a/src/com/android/documentsui/services/FileOperation.java
++++ b/src/com/android/documentsui/services/FileOperation.java
+@@ -313,7 +313,6 @@ public abstract class FileOperation implements Parcelable {
+                 DocumentStack destination, @Nullable Uri srcParent) {
+             super(opType, srcs, destination);
+             mSrcParent = srcParent;
+-			Log.d("XULU_LOG","BackupGetOperation");
+         }
+ 
+         @Override
+@@ -373,7 +372,7 @@ public abstract class FileOperation implements Parcelable {
+                 DocumentStack destination, @Nullable Uri srcParent) {
+             super(opType, srcs, destination);
+             mSrcParent = srcParent;
+-			Log.d("XULU_LOG","downloadFromDSNOperation");
++            Log.d("XULU_LOG","downloadFromDSNOperation");
+         }
+ 
+         @Override
+@@ -455,7 +454,7 @@ public abstract class FileOperation implements Parcelable {
+         }
+ 
+         public FileOperation build() {
+-			Log.d("TAG","FileOperation" + mOpType);
++            Log.d("TAG","FileOperation" + mOpType);
+             switch (mOpType) {
+                 case OPERATION_COPY:
+                     return new CopyOperation(mSrcs, mDestination);
+@@ -466,7 +465,7 @@ public abstract class FileOperation implements Parcelable {
+                 case OPERATION_MOVE:
+                 case OPERATION_DELETE:
+                     return new MoveDeleteOperation(mOpType, mSrcs, mDestination, mSrcParent);
+-				case OPERATION_BACKUP:
++                case OPERATION_BACKUP:
+                     return new BackupGetOperation(mOpType, mSrcs, mDestination, mSrcParent);
+                 case OPERATION_DOWNLOADDOCUMENTSFROMDSN:
+                     return new downloadFromDSNOperation(mOpType, mSrcs, mDestination, mSrcParent);
+diff --git a/src/com/android/documentsui/sidebar/RootsFragment.java b/src/com/android/documentsui/sidebar/RootsFragment.java
+index d7de6b3..2c7e65e 100644
+--- a/src/com/android/documentsui/sidebar/RootsFragment.java
++++ b/src/com/android/documentsui/sidebar/RootsFragment.java
+@@ -73,6 +73,9 @@ import java.util.Comparator;
+ import java.util.List;
+ import java.util.Objects;
+ 
++import com.android.documentsui.base.Providers;
++
++
+ /**
+  * Display list of known storage backend roots.
+  */
+@@ -259,7 +262,8 @@ public class RootsFragment extends Fragment {
+ 
+         final List<RootItem> libraries = new ArrayList<>();
+         final List<RootItem> others = new ArrayList<>();
+-        final List<RootItem> decenters = new ArrayList<>();
++        final List<RootItem> itemDSNStorage = new ArrayList<>();
++        final List<RootItem> itemDSNOthers = new ArrayList<>();
+ 
+         for (final RootInfo root : roots) {
+             if(root.derivedType == root.TYPE_LOCAL)
+@@ -270,17 +274,19 @@ public class RootsFragment extends Fragment {
+                 continue;
+             } else if (root.isLibrary()) {
+                 libraries.add(item);
+-            } else if(root.authority.equals("com.android.providers.decenterlocaldisk.documents")||
+-                root.authority.equals("com.android.providers.decentercloud.documents")){
+-                decenters.add(item);
+-            }else {
++            } else if (root.authority.equals(Providers.AUTHORITY_DSNLOCAL) ||
++                root.authority.equals(Providers.AUTHORITY_DSNREMOTE)) {
++                itemDSNStorage.add(item);
++            } else if (root.authority.equals(Providers.AUTHORITY_DSNSETTING) ||
++                root.authority.equals(Providers.AUTHORITY_DSNTRANSMISSION)) {
++                itemDSNOthers.add(item);
++            } else {
+                 others.add(item);
+             }
+         }
+         final RootComparator comp = new RootComparator();
+         Collections.sort(libraries, comp);
+         Collections.sort(others, comp);
+-        Collections.sort(decenters, comp);
+ 
+         if (VERBOSE) Log.v(TAG, "Adding library roots: " + libraries);
+         result.addAll(libraries);
+@@ -292,7 +298,9 @@ public class RootsFragment extends Fragment {
+         if (VERBOSE) Log.v(TAG, "Adding plain roots: " + libraries);
+         result.addAll(others);
+         result.add(new SpacerItem());
+-        result.addAll(decenters);
++        result.addAll(itemDSNStorage);
++        result.add(new SpacerItem());
++        result.addAll(itemDSNOthers);
+ 
+         // Include apps that can handle this intent too.
+         if (handlerAppIntent != null) {
+diff --git a/src/com/android/documentsui/ui/DialogController.java b/src/com/android/documentsui/ui/DialogController.java
+index 8662290..b8f5156 100644
+--- a/src/com/android/documentsui/ui/DialogController.java
++++ b/src/com/android/documentsui/ui/DialogController.java
+@@ -63,7 +63,7 @@ public interface DialogController {
+ 
+     // Should be private, but Java doesn't like me treating an interface like a mini-package.
+     public static final class RuntimeDialogController implements DialogController {
+-		private static final String TAG = "RuntimeDialogController";
++        private static final String TAG = "RuntimeDialogController";
+ 
+         private final Activity mActivity;
+         private final MessageBuilder mMessages;
+@@ -118,7 +118,7 @@ public interface DialogController {
+             TextView message =
+                     (TextView) mActivity.getLayoutInflater().inflate(
+                             R.layout.dialog_delete_confirmation, null);
+-            message.setText(mMessages.generateBackupMessage(docs));
++            message.setText(mMessages.generateUploadMessage(docs));
+ 
+             // For now, we implement this dialog NOT
+             // as a fragment (which can survive rotation and have its own state),
+diff --git a/src/com/android/documentsui/ui/MessageBuilder.java b/src/com/android/documentsui/ui/MessageBuilder.java
+index 2e8565e..07be4b4 100644
+--- a/src/com/android/documentsui/ui/MessageBuilder.java
++++ b/src/com/android/documentsui/ui/MessageBuilder.java
+@@ -79,7 +79,7 @@ public class MessageBuilder {
+         return message;
+     }
+ 
+-    public String generateBackupMessage(List<DocumentInfo> docs) {
++    public String generateUploadMessage(List<DocumentInfo> docs) {
+         String message;
+         int dirsCount = 0;
+ 
+-- 
+2.7.4
+
