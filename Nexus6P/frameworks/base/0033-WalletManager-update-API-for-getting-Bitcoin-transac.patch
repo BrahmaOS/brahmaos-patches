@@ -1,0 +1,60 @@
+From fdc7ef3306189387eefe7368d9e381c26e153b86 Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Wed, 19 Dec 2018 17:30:13 +0800
+Subject: [PATCH] [WalletManager]: update API for getting Bitcoin transactions
+ details
+
+Change-Id: I5722410571a967330cc3179363186d217aa54e39
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ core/java/brahmaos/content/TransactionDetails.java | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/core/java/brahmaos/content/TransactionDetails.java b/core/java/brahmaos/content/TransactionDetails.java
+index 2a3dd53..04d2ef0 100644
+--- a/core/java/brahmaos/content/TransactionDetails.java
++++ b/core/java/brahmaos/content/TransactionDetails.java
+@@ -13,6 +13,8 @@ public class TransactionDetails implements Parcelable {
+     public long updateTime;
+     public int depthInBlocks;
+     public int confirmBlockHeight;
++    public long fee;
++    public int bytesLength;
+     public List<Map<String, Long>> inputs = new ArrayList<>();//<address, amount>
+     public List<Map<String, Long>> outputs = new ArrayList<>();//<address, amount>
+ 
+@@ -27,6 +29,9 @@ public class TransactionDetails implements Parcelable {
+         dest.writeLong(amount);
+         dest.writeLong(updateTime);
+         dest.writeInt(depthInBlocks);
++        dest.writeInt(confirmBlockHeight);
++        dest.writeLong(fee);
++        dest.writeInt(bytesLength);
+         dest.writeList(inputs);
+         dest.writeList(outputs);
+     }
+@@ -37,7 +42,10 @@ public class TransactionDetails implements Parcelable {
+                 + "hash=" + hash
+                 + ", amount=" + amount
+                 + ", updateTime=" + updateTime
+-                + ", depthInBlocks" + depthInBlocks
++                + ", depthInBlocks=" + depthInBlocks
++                + ", confirmBlockHeight=" + confirmBlockHeight
++                + ", fee=" + fee
++                + ", transactionBytes=" + bytesLength
+                 + ", inputMaps=" + inputs
+                 + ", outputMaps" + outputs;
+     }
+@@ -53,6 +61,9 @@ public class TransactionDetails implements Parcelable {
+             datails.amount = source.readLong();
+             datails.updateTime = source.readLong();
+             datails.depthInBlocks = source.readInt();
++            datails.confirmBlockHeight = source.readInt();
++            datails.fee = source.readLong();
++            datails.bytesLength = source.readInt();
+             source.readList(datails.inputs, loader);
+             source.readList(datails.outputs, loader);
+ 
+-- 
+2.7.4
+
