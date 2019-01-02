@@ -1,0 +1,37 @@
+From 9f9df9a03527ab73152b915aed06b19e0132f5fa Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Wed, 19 Dec 2018 11:02:06 +0800
+Subject: [PATCH] [WalletManager]: fix error with nullpointer
+
+Change-Id: I43a1d295235316e33738e66b2d25514c7703dee2
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ core/java/brahmaos/content/TransactionDetails.java | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/core/java/brahmaos/content/TransactionDetails.java b/core/java/brahmaos/content/TransactionDetails.java
+index f53d6cb..2a3dd53 100644
+--- a/core/java/brahmaos/content/TransactionDetails.java
++++ b/core/java/brahmaos/content/TransactionDetails.java
+@@ -3,6 +3,7 @@ package brahmaos.content;
+ import android.os.Parcel;
+ import android.os.Parcelable;
+ 
++import java.util.ArrayList;
+ import java.util.List;
+ import java.util.Map;
+ 
+@@ -12,8 +13,8 @@ public class TransactionDetails implements Parcelable {
+     public long updateTime;
+     public int depthInBlocks;
+     public int confirmBlockHeight;
+-    public List<Map<String, Long>> inputs;//<address, amount>
+-    public List<Map<String, Long>> outputs;//<address, amount>
++    public List<Map<String, Long>> inputs = new ArrayList<>();//<address, amount>
++    public List<Map<String, Long>> outputs = new ArrayList<>();//<address, amount>
+ 
+     @Override
+     public int describeContents() {
+-- 
+2.7.4
+
