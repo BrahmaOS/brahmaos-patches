@@ -1,0 +1,238 @@
+From 77611bdeea8301e7bf257f8a3847b157e93240a4 Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Wed, 19 Dec 2018 18:36:53 +0800
+Subject: [PATCH] [DSNManagerService] make update-api
+
+Change-Id: I813e29dff27471861e308978fa8bc5fd87b2b4d1
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ api/current.txt        | 42 +++++++++++++++++++++++++++++++++++++++++-
+ api/system-current.txt | 42 +++++++++++++++++++++++++++++++++++++++++-
+ api/test-current.txt   | 42 +++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 123 insertions(+), 3 deletions(-)
+
+diff --git a/api/current.txt b/api/current.txt
+index dd869c1..5f0e2c9 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -34709,6 +34709,33 @@ package android.provider {
+     field public static final java.lang.String ENTRY_CONTENT_TYPE = "vnd.android.cursor.item/radio";
+   }
+ 
++  public static final class MediaStore.DSNMeta {
++    ctor public MediaStore.DSNMeta();
++  }
++
++  public static abstract interface MediaStore.DSNMeta.DSNMetaColumns implements android.provider.MediaStore.MediaColumns {
++    field public static final java.lang.String BUCKET_DISPLAY_NAME = "bucket_display_name";
++    field public static final java.lang.String BUCKET_ID = "bucket_id";
++    field public static final java.lang.String DATE_TAKEN = "datetaken";
++    field public static final java.lang.String DESCRIPTION = "description";
++    field public static final java.lang.String IS_PRIVATE = "isprivate";
++    field public static final java.lang.String LOCKMODE = "lock_mode";
++    field public static final java.lang.String MINI_THUMB_MAGIC = "mini_thumb_magic";
++    field public static final java.lang.String ORIENTATION = "orientation";
++    field public static final java.lang.String PICASA_ID = "picasa_id";
++  }
++
++  public static final class MediaStore.DSNMeta.Media implements android.provider.MediaStore.DSNMeta.DSNMetaColumns {
++    ctor public MediaStore.DSNMeta.Media();
++    method public static android.net.Uri getContentUri(java.lang.String);
++    method public static final android.database.Cursor query(android.content.ContentResolver, android.net.Uri, java.lang.String[]);
++    method public static final android.database.Cursor query(android.content.ContentResolver, android.net.Uri, java.lang.String[], java.lang.String, java.lang.String);
++    method public static final android.database.Cursor query(android.content.ContentResolver, android.net.Uri, java.lang.String[], java.lang.String, java.lang.String[], java.lang.String);
++    field public static final java.lang.String DEFAULT_SORT_ORDER = "bucket_display_name";
++    field public static final android.net.Uri EXTERNAL_CONTENT_URI;
++    field public static final android.net.Uri INTERNAL_CONTENT_URI;
++  }
++
+   public static final class MediaStore.Files {
+     ctor public MediaStore.Files();
+     method public static android.net.Uri getContentUri(java.lang.String);
+@@ -34718,6 +34745,7 @@ package android.provider {
+   public static abstract interface MediaStore.Files.FileColumns implements android.provider.MediaStore.MediaColumns {
+     field public static final java.lang.String MEDIA_TYPE = "media_type";
+     field public static final int MEDIA_TYPE_AUDIO = 2; // 0x2
++    field public static final int MEDIA_TYPE_DSNMETA = 5; // 0x5
+     field public static final int MEDIA_TYPE_IMAGE = 1; // 0x1
+     field public static final int MEDIA_TYPE_NONE = 0; // 0x0
+     field public static final int MEDIA_TYPE_PLAYLIST = 4; // 0x4
+@@ -52049,7 +52077,7 @@ package brahmaos.app {
+   }
+ 
+   public abstract interface IDSNManager implements android.os.IInterface {
+-    method public abstract void addFile(java.lang.String, java.lang.String, brahmaos.app.IAddFileCallback) throws android.os.RemoteException;
++    method public abstract void addFile(java.lang.String, int, java.lang.String, brahmaos.app.IAddFileCallback) throws android.os.RemoteException;
+     method public abstract int getDSNManagerStatus() throws android.os.RemoteException;
+     method public abstract void getFile(java.lang.String, java.lang.String, brahmaos.app.IGetFileCallback) throws android.os.RemoteException;
+     method public abstract void listFile(java.lang.String, int, int, brahmaos.app.IListFileCallback) throws android.os.RemoteException;
+@@ -52090,6 +52118,18 @@ package brahmaos.app {
+     method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+   }
+ 
++  public abstract interface IOnETHBlanceGetListener implements android.os.IInterface {
++    method public abstract void onETHBlanceGetError() throws android.os.RemoteException;
++    method public abstract void onETHBlanceGetSuccess(java.lang.String) throws android.os.RemoteException;
++  }
++
++  public static abstract class IOnETHBlanceGetListener.Stub extends android.os.Binder implements brahmaos.app.IOnETHBlanceGetListener {
++    ctor public IOnETHBlanceGetListener.Stub();
++    method public android.os.IBinder asBinder();
++    method public static brahmaos.app.IOnETHBlanceGetListener asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public abstract interface IWalletManager implements android.os.IInterface {
+     method public abstract boolean checkBitcoinDoneDownloaded(java.lang.String) throws android.os.RemoteException;
+     method public abstract boolean checkPasswordForWallet(brahmaos.content.WalletData, java.lang.String) throws android.os.RemoteException;
+diff --git a/api/system-current.txt b/api/system-current.txt
+index ec6b92e..dc4cd53 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -37657,6 +37657,33 @@ package android.provider {
+     field public static final java.lang.String ENTRY_CONTENT_TYPE = "vnd.android.cursor.item/radio";
+   }
+ 
++  public static final class MediaStore.DSNMeta {
++    ctor public MediaStore.DSNMeta();
++  }
++
++  public static abstract interface MediaStore.DSNMeta.DSNMetaColumns implements android.provider.MediaStore.MediaColumns {
++    field public static final java.lang.String BUCKET_DISPLAY_NAME = "bucket_display_name";
++    field public static final java.lang.String BUCKET_ID = "bucket_id";
++    field public static final java.lang.String DATE_TAKEN = "datetaken";
++    field public static final java.lang.String DESCRIPTION = "description";
++    field public static final java.lang.String IS_PRIVATE = "isprivate";
++    field public static final java.lang.String LOCKMODE = "lock_mode";
++    field public static final java.lang.String MINI_THUMB_MAGIC = "mini_thumb_magic";
++    field public static final java.lang.String ORIENTATION = "orientation";
++    field public static final java.lang.String PICASA_ID = "picasa_id";
++  }
++
++  public static final class MediaStore.DSNMeta.Media implements android.provider.MediaStore.DSNMeta.DSNMetaColumns {
++    ctor public MediaStore.DSNMeta.Media();
++    method public static android.net.Uri getContentUri(java.lang.String);
++    method public static final android.database.Cursor query(android.content.ContentResolver, android.net.Uri, java.lang.String[]);
++    method public static final android.database.Cursor query(android.content.ContentResolver, android.net.Uri, java.lang.String[], java.lang.String, java.lang.String);
++    method public static final android.database.Cursor query(android.content.ContentResolver, android.net.Uri, java.lang.String[], java.lang.String, java.lang.String[], java.lang.String);
++    field public static final java.lang.String DEFAULT_SORT_ORDER = "bucket_display_name";
++    field public static final android.net.Uri EXTERNAL_CONTENT_URI;
++    field public static final android.net.Uri INTERNAL_CONTENT_URI;
++  }
++
+   public static final class MediaStore.Files {
+     ctor public MediaStore.Files();
+     method public static android.net.Uri getContentUri(java.lang.String);
+@@ -37666,6 +37693,7 @@ package android.provider {
+   public static abstract interface MediaStore.Files.FileColumns implements android.provider.MediaStore.MediaColumns {
+     field public static final java.lang.String MEDIA_TYPE = "media_type";
+     field public static final int MEDIA_TYPE_AUDIO = 2; // 0x2
++    field public static final int MEDIA_TYPE_DSNMETA = 5; // 0x5
+     field public static final int MEDIA_TYPE_IMAGE = 1; // 0x1
+     field public static final int MEDIA_TYPE_NONE = 0; // 0x0
+     field public static final int MEDIA_TYPE_PLAYLIST = 4; // 0x4
+@@ -56007,7 +56035,7 @@ package brahmaos.app {
+   }
+ 
+   public abstract interface IDSNManager implements android.os.IInterface {
+-    method public abstract void addFile(java.lang.String, java.lang.String, brahmaos.app.IAddFileCallback) throws android.os.RemoteException;
++    method public abstract void addFile(java.lang.String, int, java.lang.String, brahmaos.app.IAddFileCallback) throws android.os.RemoteException;
+     method public abstract int getDSNManagerStatus() throws android.os.RemoteException;
+     method public abstract void getFile(java.lang.String, java.lang.String, brahmaos.app.IGetFileCallback) throws android.os.RemoteException;
+     method public abstract void listFile(java.lang.String, int, int, brahmaos.app.IListFileCallback) throws android.os.RemoteException;
+@@ -56048,6 +56076,18 @@ package brahmaos.app {
+     method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+   }
+ 
++  public abstract interface IOnETHBlanceGetListener implements android.os.IInterface {
++    method public abstract void onETHBlanceGetError() throws android.os.RemoteException;
++    method public abstract void onETHBlanceGetSuccess(java.lang.String) throws android.os.RemoteException;
++  }
++
++  public static abstract class IOnETHBlanceGetListener.Stub extends android.os.Binder implements brahmaos.app.IOnETHBlanceGetListener {
++    ctor public IOnETHBlanceGetListener.Stub();
++    method public android.os.IBinder asBinder();
++    method public static brahmaos.app.IOnETHBlanceGetListener asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public abstract interface IWalletManager implements android.os.IInterface {
+     method public abstract boolean checkBitcoinDoneDownloaded(java.lang.String) throws android.os.RemoteException;
+     method public abstract boolean checkPasswordForWallet(brahmaos.content.WalletData, java.lang.String) throws android.os.RemoteException;
+diff --git a/api/test-current.txt b/api/test-current.txt
+index 3009b32..3376eb5 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -34898,6 +34898,33 @@ package android.provider {
+     field public static final java.lang.String ENTRY_CONTENT_TYPE = "vnd.android.cursor.item/radio";
+   }
+ 
++  public static final class MediaStore.DSNMeta {
++    ctor public MediaStore.DSNMeta();
++  }
++
++  public static abstract interface MediaStore.DSNMeta.DSNMetaColumns implements android.provider.MediaStore.MediaColumns {
++    field public static final java.lang.String BUCKET_DISPLAY_NAME = "bucket_display_name";
++    field public static final java.lang.String BUCKET_ID = "bucket_id";
++    field public static final java.lang.String DATE_TAKEN = "datetaken";
++    field public static final java.lang.String DESCRIPTION = "description";
++    field public static final java.lang.String IS_PRIVATE = "isprivate";
++    field public static final java.lang.String LOCKMODE = "lock_mode";
++    field public static final java.lang.String MINI_THUMB_MAGIC = "mini_thumb_magic";
++    field public static final java.lang.String ORIENTATION = "orientation";
++    field public static final java.lang.String PICASA_ID = "picasa_id";
++  }
++
++  public static final class MediaStore.DSNMeta.Media implements android.provider.MediaStore.DSNMeta.DSNMetaColumns {
++    ctor public MediaStore.DSNMeta.Media();
++    method public static android.net.Uri getContentUri(java.lang.String);
++    method public static final android.database.Cursor query(android.content.ContentResolver, android.net.Uri, java.lang.String[]);
++    method public static final android.database.Cursor query(android.content.ContentResolver, android.net.Uri, java.lang.String[], java.lang.String, java.lang.String);
++    method public static final android.database.Cursor query(android.content.ContentResolver, android.net.Uri, java.lang.String[], java.lang.String, java.lang.String[], java.lang.String);
++    field public static final java.lang.String DEFAULT_SORT_ORDER = "bucket_display_name";
++    field public static final android.net.Uri EXTERNAL_CONTENT_URI;
++    field public static final android.net.Uri INTERNAL_CONTENT_URI;
++  }
++
+   public static final class MediaStore.Files {
+     ctor public MediaStore.Files();
+     method public static android.net.Uri getContentUri(java.lang.String);
+@@ -34907,6 +34934,7 @@ package android.provider {
+   public static abstract interface MediaStore.Files.FileColumns implements android.provider.MediaStore.MediaColumns {
+     field public static final java.lang.String MEDIA_TYPE = "media_type";
+     field public static final int MEDIA_TYPE_AUDIO = 2; // 0x2
++    field public static final int MEDIA_TYPE_DSNMETA = 5; // 0x5
+     field public static final int MEDIA_TYPE_IMAGE = 1; // 0x1
+     field public static final int MEDIA_TYPE_NONE = 0; // 0x0
+     field public static final int MEDIA_TYPE_PLAYLIST = 4; // 0x4
+@@ -52531,7 +52559,7 @@ package brahmaos.app {
+   }
+ 
+   public abstract interface IDSNManager implements android.os.IInterface {
+-    method public abstract void addFile(java.lang.String, java.lang.String, brahmaos.app.IAddFileCallback) throws android.os.RemoteException;
++    method public abstract void addFile(java.lang.String, int, java.lang.String, brahmaos.app.IAddFileCallback) throws android.os.RemoteException;
+     method public abstract int getDSNManagerStatus() throws android.os.RemoteException;
+     method public abstract void getFile(java.lang.String, java.lang.String, brahmaos.app.IGetFileCallback) throws android.os.RemoteException;
+     method public abstract void listFile(java.lang.String, int, int, brahmaos.app.IListFileCallback) throws android.os.RemoteException;
+@@ -52572,6 +52600,18 @@ package brahmaos.app {
+     method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
+   }
+ 
++  public abstract interface IOnETHBlanceGetListener implements android.os.IInterface {
++    method public abstract void onETHBlanceGetError() throws android.os.RemoteException;
++    method public abstract void onETHBlanceGetSuccess(java.lang.String) throws android.os.RemoteException;
++  }
++
++  public static abstract class IOnETHBlanceGetListener.Stub extends android.os.Binder implements brahmaos.app.IOnETHBlanceGetListener {
++    ctor public IOnETHBlanceGetListener.Stub();
++    method public android.os.IBinder asBinder();
++    method public static brahmaos.app.IOnETHBlanceGetListener asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
+   public abstract interface IWalletManager implements android.os.IInterface {
+     method public abstract boolean checkBitcoinDoneDownloaded(java.lang.String) throws android.os.RemoteException;
+     method public abstract boolean checkPasswordForWallet(brahmaos.content.WalletData, java.lang.String) throws android.os.RemoteException;
+-- 
+2.7.4
+
