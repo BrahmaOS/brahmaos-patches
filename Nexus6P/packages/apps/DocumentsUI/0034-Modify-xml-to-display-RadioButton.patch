@@ -1,0 +1,44 @@
+From 73cb8a4ac363b47a255a213b76c44b0e9e89cc5e Mon Sep 17 00:00:00 2001
+From: koala <koala@brahmaos.io>
+Date: Thu, 27 Dec 2018 10:36:26 +0800
+Subject: [PATCH] Modify xml to display RadioButton
+
+Change-Id: I2c76b808b7ecb50ea148f035c2158a1de36df267
+Signed-off-by: koala <koala@brahmaos.io>
+---
+ res/layout/dialog_dsn_select_encrypt.xml | 1 -
+ res/values/strings.xml                   | 6 +++---
+ 2 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/res/layout/dialog_dsn_select_encrypt.xml b/res/layout/dialog_dsn_select_encrypt.xml
+index 34c515d..e1bc691 100644
+--- a/res/layout/dialog_dsn_select_encrypt.xml
++++ b/res/layout/dialog_dsn_select_encrypt.xml
+@@ -37,7 +37,6 @@
+                 android:layout_marginTop="14dp"
+                 android:textSize="18sp"
+                 android:paddingLeft="16dp"
+-                android:visibility="gone"
+                 android:text="@string/dialog_systemencrypt_content" />
+             <RadioButton
+                 android:id="@+id/radioButtonC"
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index 5aba954..cd178e6 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -470,9 +470,9 @@
+     <string name="root_dsnprocesslist">DSN Transmission List</string>
+     <string name="root_dsnsetting">DSN Setting</string>
+     <string name="root_dsnremote">DSN Remote</string>
+-    <string name="dialog_noencrypt_content">"Without the password."</string>
+-    <string name="dialog_systemencrypt_content">"System encryption."</string>
+-    <string name="dialog_customencrypt_content">"Custom encryption."</string>
++    <string name="dialog_noencrypt_content">"Without the password"</string>
++    <string name="dialog_systemencrypt_content">"System encryption"</string>
++    <string name="dialog_customencrypt_content">"Custom encryption"</string>
+     <string name="dialog_cb_showpassword">"show password"</string>
+     <string name="dialog_tv_pasword_hint">"File Encryption the password contains letters or numbers, can not use special characters, the length is between 6-12. "</string>
+     <string name="rb_transmission_upload_title">"Upload"</string>
+-- 
+2.7.4
+
