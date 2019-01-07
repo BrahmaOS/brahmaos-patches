@@ -1,0 +1,308 @@
+From 54a087eaef429c43777f7e466014c9fdf1511a60 Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Fri, 4 Jan 2019 18:38:57 +0800
+Subject: [PATCH] [WalletManager]: add exchange APIs based on Kyber Network
+ Proxy
+
+Change-Id: I5103abff450ea70b967a01cb88828e3b03be6138
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ api/current.txt                                 |   4 +
+ api/system-current.txt                          |   4 +
+ api/test-current.txt                            |   4 +
+ core/java/brahmaos/app/IWalletManager.aidl      |  10 ++
+ core/java/brahmaos/app/WalletManager.java       | 133 +++++++++++++++++++++++-
+ core/java/brahmaos/content/BrahmaConstants.java |   1 +
+ 6 files changed, 155 insertions(+), 1 deletion(-)
+
+diff --git a/api/current.txt b/api/current.txt
+index a4805bd..b80a170 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -52119,6 +52119,7 @@ package brahmaos.app {
+   }
+ 
+   public abstract interface IWalletManager implements android.os.IInterface {
++    method public abstract java.lang.String approveKyberNetwork(java.lang.String, java.lang.String, double, java.lang.String, java.lang.String, double, long) throws android.os.RemoteException;
+     method public abstract boolean checkBitcoinDoneDownloaded(java.lang.String) throws android.os.RemoteException;
+     method public abstract boolean checkPasswordForWallet(brahmaos.content.WalletData, java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData createBitcoinWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+@@ -52126,6 +52127,7 @@ package brahmaos.app {
+     method public abstract brahmaos.content.WalletData createEthereumWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> createWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int deleteWalletByAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String exchangeToken(java.lang.String, java.lang.String, java.lang.String, double, java.lang.String, java.lang.String, java.lang.String, java.lang.String, double, long) throws android.os.RemoteException;
+     method public abstract java.lang.String exportEthereumWalletPrivateKey(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getAllWallets() throws android.os.RemoteException;
+     method public abstract long getBitcoinBalance(java.lang.String) throws android.os.RemoteException;
+@@ -52135,9 +52137,11 @@ package brahmaos.app {
+     method public abstract long getBitcoinPendingTxAmount(java.lang.String) throws android.os.RemoteException;
+     method public abstract int getBitcoinPrivateKeysCount(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.TransactionDetails> getBitcoinTransactionsByTime(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String getContractAllowance(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumBalanceStringByAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<java.lang.String> getExpectedRate(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData getWalletDataByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getWalletsForChainType(java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData importBitcoinWallet(java.lang.String, java.lang.String, java.lang.String, int) throws android.os.RemoteException;
+diff --git a/api/system-current.txt b/api/system-current.txt
+index dd7dafc..699d050 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -56077,6 +56077,7 @@ package brahmaos.app {
+   }
+ 
+   public abstract interface IWalletManager implements android.os.IInterface {
++    method public abstract java.lang.String approveKyberNetwork(java.lang.String, java.lang.String, double, java.lang.String, java.lang.String, double, long) throws android.os.RemoteException;
+     method public abstract boolean checkBitcoinDoneDownloaded(java.lang.String) throws android.os.RemoteException;
+     method public abstract boolean checkPasswordForWallet(brahmaos.content.WalletData, java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData createBitcoinWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+@@ -56084,6 +56085,7 @@ package brahmaos.app {
+     method public abstract brahmaos.content.WalletData createEthereumWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> createWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int deleteWalletByAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String exchangeToken(java.lang.String, java.lang.String, java.lang.String, double, java.lang.String, java.lang.String, java.lang.String, java.lang.String, double, long) throws android.os.RemoteException;
+     method public abstract java.lang.String exportEthereumWalletPrivateKey(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getAllWallets() throws android.os.RemoteException;
+     method public abstract long getBitcoinBalance(java.lang.String) throws android.os.RemoteException;
+@@ -56093,9 +56095,11 @@ package brahmaos.app {
+     method public abstract long getBitcoinPendingTxAmount(java.lang.String) throws android.os.RemoteException;
+     method public abstract int getBitcoinPrivateKeysCount(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.TransactionDetails> getBitcoinTransactionsByTime(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String getContractAllowance(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumBalanceStringByAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<java.lang.String> getExpectedRate(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData getWalletDataByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getWalletsForChainType(java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData importBitcoinWallet(java.lang.String, java.lang.String, java.lang.String, int) throws android.os.RemoteException;
+diff --git a/api/test-current.txt b/api/test-current.txt
+index e065bd0..bae2949 100644
+--- a/api/test-current.txt
++++ b/api/test-current.txt
+@@ -52601,6 +52601,7 @@ package brahmaos.app {
+   }
+ 
+   public abstract interface IWalletManager implements android.os.IInterface {
++    method public abstract java.lang.String approveKyberNetwork(java.lang.String, java.lang.String, double, java.lang.String, java.lang.String, double, long) throws android.os.RemoteException;
+     method public abstract boolean checkBitcoinDoneDownloaded(java.lang.String) throws android.os.RemoteException;
+     method public abstract boolean checkPasswordForWallet(brahmaos.content.WalletData, java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData createBitcoinWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+@@ -52608,6 +52609,7 @@ package brahmaos.app {
+     method public abstract brahmaos.content.WalletData createEthereumWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> createWallet(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract int deleteWalletByAddress(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String exchangeToken(java.lang.String, java.lang.String, java.lang.String, double, java.lang.String, java.lang.String, java.lang.String, java.lang.String, double, long) throws android.os.RemoteException;
+     method public abstract java.lang.String exportEthereumWalletPrivateKey(java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getAllWallets() throws android.os.RemoteException;
+     method public abstract long getBitcoinBalance(java.lang.String) throws android.os.RemoteException;
+@@ -52617,9 +52619,11 @@ package brahmaos.app {
+     method public abstract long getBitcoinPendingTxAmount(java.lang.String) throws android.os.RemoteException;
+     method public abstract int getBitcoinPrivateKeysCount(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.TransactionDetails> getBitcoinTransactionsByTime(java.lang.String) throws android.os.RemoteException;
++    method public abstract java.lang.String getContractAllowance(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumBalanceStringByAddress(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumGasPrice(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.lang.String getEthereumTransactionByHash(java.lang.String, java.lang.String) throws android.os.RemoteException;
++    method public abstract java.util.List<java.lang.String> getExpectedRate(java.lang.String, java.lang.String, java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData getWalletDataByAddress(java.lang.String) throws android.os.RemoteException;
+     method public abstract java.util.List<brahmaos.content.WalletData> getWalletsForChainType(java.lang.String) throws android.os.RemoteException;
+     method public abstract brahmaos.content.WalletData importBitcoinWallet(java.lang.String, java.lang.String, java.lang.String, int) throws android.os.RemoteException;
+diff --git a/core/java/brahmaos/app/IWalletManager.aidl b/core/java/brahmaos/app/IWalletManager.aidl
+index 27256ec..c2466f7 100644
+--- a/core/java/brahmaos/app/IWalletManager.aidl
++++ b/core/java/brahmaos/app/IWalletManager.aidl
+@@ -54,6 +54,16 @@ interface IWalletManager {
+                                      double gasPrice, long gasLimit, String remark);
+     String getEthereumTransactionByHash(String networkUrl, String transactionHash);
+ 
++    List<String> getExpectedRate(String networkUrl, String srcAddress, String destAddress);
++    String exchangeToken(String networkUrl, String src,
++                                        String dest, double amount, String walletAddress,
++                                        String maxReceiveAmount,
++                                        String minConversionRate, String password, double gasPrice,
++                                        long gasLimit);
++    String approveKyberNetwork(String networkUrl, String src, double amount, String walletAddress,
++                                   String password, double gasPrice, long gasLimit);
++    String getContractAllowance(String networkUrl, String walletAddress, String src);
++
+     long getBitcoinBalance(String address);
+     long getBitcoinPendingTxAmount(String mainAddress);
+     String transferBitcoin(String address, String receiveAddress, String password,
+diff --git a/core/java/brahmaos/app/WalletManager.java b/core/java/brahmaos/app/WalletManager.java
+index 2e27a04..f7201f5 100644
+--- a/core/java/brahmaos/app/WalletManager.java
++++ b/core/java/brahmaos/app/WalletManager.java
+@@ -40,7 +40,12 @@ public class WalletManager {
+     public static final int CODE_DEFAULT_WALLET_CANNOT_DELETE = 500;
+     public static final int CODE_OTHER_ERROR = -100;
+ 
++    public static final String KYBER_MAIN_NETWORK_ADDRESS = "0x818e6fecd516ecc3849daf6845e3ec868087b755";
++    public static final String KYBER_ROPSTEN_NETWORK_ADDRESS = "0x818E6FECD516Ecc3849DAf6845e3EC868087B755";
++    public static final String KYBER_NETWORK_ETH_ADDRESS = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
++
+     public static final String MAINNET_URL = "https://mainnet.infura.io/Gy3Csyt4bzKIGsctm3g0";
++    public static final String ROPSTEN_TEST_URL = "https://ropsten.infura.io/Gy3Csyt4bzKIGsctm3g0";
+ 
+     /** define the min confirm block count of BTC transfer **/
+     public static final int MIN_CONFIRMATIONS = 6;
+@@ -480,6 +485,132 @@ public class WalletManager {
+     }
+ 
+     /**
++     * @param src the String value of source ERC20 token contract address
++     * @param dest the String value of destination ERC20 token contract address
++     *
++     * @return the String value of 'wei' amount of expected exchange rate and slippage rate.
++     *
++     * Note that these returned values are in 18 decimals regardless of the destination token's decimals.
++     **/
++    public List<String> getExpectedRate(String src, String dest) {
++        return getExpectedRate(MAINNET_URL, src, dest);
++    }
++
++    /**
++     * Similar to {@link #getExpectedRate(String srcAddress, String destAddress)}
++     * Developer can use test URL by setting param networkUrl.
++     **/
++    public List<String> getExpectedRate(String networkUrl, String src, String dest) {
++        try {
++            return getWalletService().getExpectedRate(networkUrl, src, dest);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getExpectedRate", re);
++        }
++        return null;
++    }
++
++    /**
++     * Used to exchange between tokens.
++     * @param src the String value of source ERC20 token contract address
++     * @param dest the String value of destination ERC20 token contract address
++     * @param amount 'ether' amount of source ERC20 token
++     * @param walletAddress the String value of recipient address for destination ERC20 token
++     * @param maxReceiveAmount limit on the 'wei' amount of destination tokens
++     * @param minConversionRate minimum conversion rate with unit 'wei'; trade is canceled if actual rate is lower
++     * @param gasPrice 'gwei' amount of this transaction
++     * @param gasLimit the limit 'wei' amount for this transaction
++     *
++     * @return the transaction hash of this exchange
++     **/
++    public String exchangeToken(String src,
++                                String dest, double amount, String walletAddress,
++                                String maxReceiveAmount,
++                                String minConversionRate, String password, double gasPrice,
++                                long gasLimit) {
++        return exchangeToken(MAINNET_URL, src, dest, amount, walletAddress,
++                             maxReceiveAmount, minConversionRate, password, gasPrice, gasLimit);
++    }
++
++    /**
++     * Similar to {@link #exchangeToken(String src, String dest, double amount,
++     *                                  String walletAddress, String maxReceiveAmount,
++     *                                  String minConversionRate, String password, double gasPrice,
++     *                                  long gasLimit)}
++     * Developer can use test URL by setting param networkUrl.
++     */
++    public String exchangeToken(String networkUrl, String src,
++                                String dest, double amount, String walletAddress,
++                                String maxReceiveAmount,
++                                String minConversionRate, String password, double gasPrice,
++                                long gasLimit) {
++        try {
++            return getWalletService().exchangeToken(networkUrl, src,
++                    dest, amount, walletAddress,
++                    maxReceiveAmount, minConversionRate, password, gasPrice, gasLimit);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#exchangeToken", re);
++        }
++        return null;
++    }
++
++    /**
++     * Used to approve the kyber network contract transfer value of 'ether' amount from the
++     * source token account. If source is ETH, no need to approve.
++     * @param src the String value of source ERC20 token contract address
++     * @param amount the 'ether' value of allowance
++     * @param walletAddress the String value of recipient address for destination ERC20 token
++     * @param password the password of this wallet
++     * @param gasPrice 'gwei' amount of this transaction
++     * @param gasLimit the limit 'wei' amount for this transaction
++     *
++     * @return the transaction hash of this approve transaction
++     **/
++    public String approveKyberNetwork(String src, double amount, String walletAddress,
++                               String password, double gasPrice, long gasLimit) {
++        return approveKyberNetwork(MAINNET_URL, src, amount, walletAddress, password, gasPrice, gasLimit);
++    }
++
++    /**
++     * Similar to {@link #approveKyberNetwork(String src, double amount, String walletAddress,
++     *                                        String password, double gasPrice, long gasLimit)}
++     * Developer can use test URL by setting param networkUrl.
++     */
++    public String approveKyberNetwork(String networkUrl, String src, double amount, String walletAddress,
++                               String password, double gasPrice, long gasLimit) {
++        try {
++            return getWalletService().approveKyberNetwork(networkUrl,src, amount, walletAddress,
++                    password, gasPrice, gasLimit);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#approveKyberNetwork", re);
++        }
++        return null;
++    }
++
++    /**
++     * Used to get the allowance of 'wei' amount of the source token contract.
++     * @param walletAddress the String value of wallet address for the ERC20 token
++     * @param src the String value of source ERC20 token contract address
++     *
++     * @return the String value of 'wei' amount of allowance.
++     **/
++    public String getContractAllowance(String walletAddress, String src) {
++        return getContractAllowance(MAINNET_URL, walletAddress, src);
++    }
++
++    /**
++     * Similar to {@link #getContractAllowance(String walletAddress, String src)}
++     * Developer can use test URL by setting param networkUrl.
++     */
++    public String getContractAllowance(String networkUrl, String walletAddress, String src) {
++        try {
++            return getWalletService().getContractAllowance(networkUrl, walletAddress, src);
++        } catch (RemoteException re) {
++            Log.e(TAG, "Error calling IWalletManager#getContractAllowance", re);
++        }
++        return null;
++    }
++
++    /**
+      * Get the number of Satoshis of this monetary value.
+      *
+      * @param address it should be base-58 encoded String representation of the main address of bitcoin wallet.
+@@ -512,7 +643,7 @@ public class WalletManager {
+      *               it should be base-58 encoded String representation of the main address of bitcoin wallet.
+      * @param receiveAddress the receive address of bitcoin wallet.
+      * @param amount number of BTC of the transfer amount. For user's convenience, we use BTC unit for amount instead of Satoshi.
+-     * @param fee munber of Satoshi per byte of the transfer fee.
++     * @param fee number of Satoshi per byte of the transfer fee.
+      **/
+     public String transferBitcoin(String address, String receiveAddress, String password,
+                                   double amount, long fee, String remark) {
+diff --git a/core/java/brahmaos/content/BrahmaConstants.java b/core/java/brahmaos/content/BrahmaConstants.java
+index f80c0fe..5dc33e8 100644
+--- a/core/java/brahmaos/content/BrahmaConstants.java
++++ b/core/java/brahmaos/content/BrahmaConstants.java
+@@ -11,6 +11,7 @@ public class BrahmaConstants {
+     public static final String BIP_BRM_PATH = "M/44H/60H/0H/0/1";
+     public static final String BIP_BRM_OS_PATH = "M/44H/2048H/0H/0/0";
+     private static String[] mMnemonicPaths = new String[]{
++            BIP_BTC_PATH,
+             BIP_ETH_PATH};
+ 
+     /** Judge whether support generate mnemonics by the PATH**/
+-- 
+2.7.4
+
