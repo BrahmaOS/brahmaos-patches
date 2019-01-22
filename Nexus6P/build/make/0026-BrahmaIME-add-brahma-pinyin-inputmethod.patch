@@ -1,0 +1,28 @@
+From 3c27012d8f152b77dc3c5d734908c7662a12650f Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Fri, 11 Jan 2019 16:45:45 +0800
+Subject: [PATCH] [BrahmaIME]: add brahma pinyin inputmethod
+
+Change-Id: Ia59a4412b4255341443f7e571987d443195a055c
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ target/product/core.mk | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/target/product/core.mk b/target/product/core.mk
+index 8022f99..86dc389 100644
+--- a/target/product/core.mk
++++ b/target/product/core.mk
+@@ -74,7 +74,8 @@ PRODUCT_PACKAGES += \
+     UnifiedNlpApi \
+     MPermissionHelper \
+     WalletServer \
+-    BrahmaToolbox
++    BrahmaToolbox \
++    BrahmaIME
+ 
+ # The set of packages whose code can be loaded by the system server.
+ PRODUCT_SYSTEM_SERVER_APPS += \
+-- 
+2.7.4
+

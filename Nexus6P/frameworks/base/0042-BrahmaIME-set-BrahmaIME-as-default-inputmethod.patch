@@ -1,0 +1,81 @@
+From 29a3ecdc8076bac49c0d75b61ab33602cb8d49be Mon Sep 17 00:00:00 2001
+From: Azalea <azalea.pan@brahmaos.io>
+Date: Fri, 18 Jan 2019 17:00:28 +0800
+Subject: [PATCH] [BrahmaIME]: set BrahmaIME as default inputmethod
+
+Change-Id: I807f595cf92008c094c6bbe59061d5ab7a3ee936
+Signed-off-by: Azalea <azalea.pan@brahmaos.io>
+---
+ packages/SettingsProvider/res/values/defaults.xml  |  3 +++
+ .../providers/settings/SettingsProvider.java       | 28 ++++++++++++++++++++++
+ .../android/server/InputMethodManagerService.java  |  3 ++-
+ 3 files changed, 33 insertions(+), 1 deletion(-)
+
+diff --git a/packages/SettingsProvider/res/values/defaults.xml b/packages/SettingsProvider/res/values/defaults.xml
+index 20b028b..e560019 100644
+--- a/packages/SettingsProvider/res/values/defaults.xml
++++ b/packages/SettingsProvider/res/values/defaults.xml
+@@ -190,4 +190,7 @@
+ 
+     <!-- default setting for Settings.Global.DEFAULT_RESTRICT_BACKGROUND_DATA -->
+     <bool name="def_restrict_background_data">false</bool>
++
++    <string name="config_enabled_input_method" translatable="false">io.brahmaos.inputmethod.pinyin/.BrahmaIME:com.android.inputmethod.latin/.LatinIME</string>
++    <string name="config_default_input_method" translatable="false">io.brahmaos.inputmethod.pinyin/.BrahmaIME</string>
+ </resources>
+diff --git a/packages/SettingsProvider/src/com/android/providers/settings/SettingsProvider.java b/packages/SettingsProvider/src/com/android/providers/settings/SettingsProvider.java
+index 7d7f9ae..f7efc3f 100644
+--- a/packages/SettingsProvider/src/com/android/providers/settings/SettingsProvider.java
++++ b/packages/SettingsProvider/src/com/android/providers/settings/SettingsProvider.java
+@@ -3456,6 +3456,34 @@ public class SettingsProvider extends ContentProvider {
+                     currentVersion = 148;
+                 }
+ 
++                if (currentVersion == 148) {
++                    // Version 149: Set the default value for ENABLED_INPUT_METHODS.
++                    if (userId == UserHandle.USER_SYSTEM) {
++                        final SettingsState secureSettings = getSecureSettingsLocked(mUserId);
++                        final Setting currentSetting = secureSettings.getSettingLocked(
++                                Settings.Secure.ENABLED_INPUT_METHODS);
++                        if (currentSetting.isNull()) {
++                            secureSettings.insertSettingLocked(
++                                    Settings.Secure.ENABLED_INPUT_METHODS,
++                                    getContext().getResources().getString(
++                                            R.string.config_enabled_input_method),
++                                    null, true, SettingsState.SYSTEM_PACKAGE_NAME);
++                        }
++
++
++                        final Setting defaultSetting = secureSettings.getSettingLocked(
++                                Settings.Secure.DEFAULT_INPUT_METHOD);
++                        if (defaultSetting.isNull()) {
++                            secureSettings.insertSettingLocked(
++                                    Settings.Secure.DEFAULT_INPUT_METHOD,
++                                    getContext().getResources().getString(
++                                            R.string.config_default_input_method),
++                                    null, true, SettingsState.SYSTEM_PACKAGE_NAME);
++                        }
++                    }
++                    currentVersion = 149;
++                }
++
+                 // vXXX: Add new settings above this point.
+ 
+                 if (currentVersion != newVersion) {
+diff --git a/services/core/java/com/android/server/InputMethodManagerService.java b/services/core/java/com/android/server/InputMethodManagerService.java
+index c23757f..75b2ff2 100644
+--- a/services/core/java/com/android/server/InputMethodManagerService.java
++++ b/services/core/java/com/android/server/InputMethodManagerService.java
+@@ -1340,7 +1340,8 @@ public class InputMethodManagerService extends IInputMethodManager.Stub
+ 
+     private void resetDefaultImeLocked(Context context) {
+         // Do not reset the default (current) IME when it is a 3rd-party IME
+-        if (mCurMethodId != null && !InputMethodUtils.isSystemIme(mMethodMap.get(mCurMethodId))) {
++        if (mCurMethodId != null && (!InputMethodUtils.isSystemIme(mMethodMap.get(mCurMethodId)) ||
++                "io.brahmaos.inputmethod.pinyin/.BrahmaIME".equals(mCurMethodId))) {//Azalea add to set BrahmaIME default
+             return;
+         }
+         final List<InputMethodInfo> suitableImes = InputMethodUtils.getDefaultEnabledImes(
+-- 
+2.7.4
+

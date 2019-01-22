@@ -1,0 +1,26 @@
+From 32fe4d9b0f4ae7bf1aa9b697e0d22b8452aa28a5 Mon Sep 17 00:00:00 2001
+From: "winton.liu" <admin@brahmaos.io>
+Date: Mon, 7 Jan 2019 09:40:00 +0800
+Subject: [PATCH] Release BrahmaOS V0.2.1
+
+Change-Id: I963f269d73baae7e86f241a768f8fefbc37b67b6
+Signed-off-by: winton.liu <admin@brahmaos.io>
+---
+ core/build_id.mk | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/core/build_id.mk b/core/build_id.mk
+index 494653d..4e11288 100644
+--- a/core/build_id.mk
++++ b/core/build_id.mk
+@@ -18,5 +18,5 @@
+ # (like "CRB01").  It must be a single word, and is
+ # capitalized by convention.
+ 
+-export BUILD_ID=BrahmaOS_0.1.4
+-export BRAHMAOS_VERSION=0.1.4
++export BUILD_ID=BrahmaOS_0.2.1
++export BRAHMAOS_VERSION=0.2.1
+-- 
+2.7.4
+
